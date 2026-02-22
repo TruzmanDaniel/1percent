@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.navigation
 
+import es.uc3m.android.a1percent.ui.screens.CreateGoalScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.*
 import es.uc3m.android.a1percent.ui.screens.HomeScreen
@@ -20,7 +21,11 @@ fun NavGraph() {
         }
 
         composable("home") {
-            HomeScreen()
+            HomeScreen(navController)
+        }
+
+        composable("createGoal") {
+            CreateGoalScreen(navController)
         }
 
     }
