@@ -35,7 +35,9 @@ fun HomeBodyContent(uiState: HomeUiState,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Text(uiState.title)
+        Text("Welcome, ${uiState.user.name}")
+        Text("Goal: ${uiState.goal.title}")
+        Text("Tasks: ${uiState.tasks.size}")
 
         Button(onClick = onProfileClick) {
             Text("Profile")

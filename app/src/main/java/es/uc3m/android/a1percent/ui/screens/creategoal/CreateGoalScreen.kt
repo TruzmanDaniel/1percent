@@ -9,14 +9,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Goal
-import java.util.UUID
+import es.uc3m.android.a1percent.data.model.enums.Category
 
 @Composable
 fun CreateGoalScreen(navController: NavController) {
 
     var goalText by remember { mutableStateOf("") }
 
-    var difficulty by remember { mutableStateOf(3f) }
+    var difficulty by remember { mutableFloatStateOf(3f) }
 
     Column(
         modifier = Modifier.padding(20.dp)
@@ -61,13 +61,10 @@ fun CreateGoalScreen(navController: NavController) {
             onClick = {
 
                 val goal = Goal(
-
-                    id = UUID.randomUUID().toString(),
-
                     title = goalText,
-
-                    difficulty = difficulty.toInt()
-
+                    category = Category.PERSONAL,
+                    difficulty = difficulty.toInt(),
+                    xp = difficulty.toInt() * 20
                 )
 
                 println(goal)

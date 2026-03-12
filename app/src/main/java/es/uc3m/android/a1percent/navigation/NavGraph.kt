@@ -31,6 +31,7 @@ fun NavGraph(
     onAddClick: () -> Unit = {} // Function defining what happens when the add button is clicked
 ) {
     val navController = rememberNavController() // Constant that we will use in each screen. It is the GPS
+
     val navBackStackEntry by navController.currentBackStackEntryAsState() // Current route
     val currentRoute = navBackStackEntry?.destination?.route
     val currentBaseRoute = currentRoute?.substringBefore("/")  // so base_route/param counts as base_route
