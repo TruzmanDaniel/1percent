@@ -13,11 +13,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
-import es.uc3m.android.a1percent.ui.screens.HomeScreen
-import es.uc3m.android.a1percent.ui.screens.ProfileScreen
-import es.uc3m.android.a1percent.ui.screens.ProgressScreen
-import es.uc3m.android.a1percent.ui.screens.SocialScreen
-import es.uc3m.android.a1percent.ui.screens.TargetsScreen
+import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
+import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
+import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
+import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
+import es.uc3m.android.a1percent.ui.screens.targets.TargetsScreen
 
 /**
  * BASE LAYOUT. Global integration with Scaffold.
