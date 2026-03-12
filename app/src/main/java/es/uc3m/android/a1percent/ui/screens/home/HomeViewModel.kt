@@ -15,7 +15,7 @@ class HomeViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // Function that returns a parameter to be passed
+    // Function that returns a parameter to be passed (it is an example)
     fun onProfileClicked(): String {
         return "Parametro Hardcodeado en HomeViewModel"
     }

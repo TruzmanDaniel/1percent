@@ -42,4 +42,3 @@ fun HomeBodyContent(uiState: HomeUiState,
         }
     }
 }
-
