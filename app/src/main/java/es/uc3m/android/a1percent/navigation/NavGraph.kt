@@ -44,26 +44,25 @@ fun NavGraph(
     val currentScreenTitle = AppScreens.topLevelScreens
         .firstOrNull { it.route == currentRoute }?.label ?: "" // It searches in AppScreens toplevel ones the first one which 'route' coincides which 'currentRoute', to obtain its label
 
-    // Scaffold integrated here for optimizing screens nesting
+    // Global Scaffold integrated here for optimizing screens nesting, with a shared architecture
     Scaffold(
         // TOP NAVIGATION BAR
-            // Will be shown in top-level screens (except in profile screen)
         topBar = {
 
                 // Top Nav Bar for Profile Screen:
                 if (currentBaseRoute == AppScreens.ProfileScreen.route) {
                     ProfileTopBar(onBack = { navController.popBackStack() })
+                // Default Top Nav Bar (shows profile pic and current Screen title)
                 } else if(currentBaseRoute in topLevelRoutes) {
-
                         DefaultTopBar(
                             title = currentScreenTitle,
                             onProfileClick = {
                                 navController.navigate(AppScreens.ProfileScreen.route + "/placeholder")
 
                             }
-                                )
-                    }
-                    },
+                        )
+                }
+        },
 
 
         // BOTTOM NAVIGATION BAR

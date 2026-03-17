@@ -9,7 +9,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 
-// DEFAULT TOP BAR: shared by all top-level screens except those with a custom one
+// DEFAULT TOP BAR: shared by all top-level screens except those with a custom one.
+// It shows a title, and a profile icon button
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DefaultTopBar(
