@@ -34,6 +34,6 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
 
         // TOP-LEVEL SCREENS: Screens/routes where the BottomNavBar is visible.
             // It can include all mainScreens plus other screens if needed in the future.
-        val topLevelScreens = mainScreens + listOf<AppScreens>(ProfileScreen)
+        val topLevelScreens = mainScreens + listOf<AppScreens>()
     }
 }

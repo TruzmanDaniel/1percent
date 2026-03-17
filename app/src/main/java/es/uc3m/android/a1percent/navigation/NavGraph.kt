@@ -49,20 +49,22 @@ fun NavGraph(
         // TOP NAVIGATION BAR
             // Will be shown in top-level screens (except in profile screen)
         topBar = {
-            if (currentBaseRoute in topLevelRoutes) {
+
                 // Top Nav Bar for Profile Screen:
                 if (currentBaseRoute == AppScreens.ProfileScreen.route) {
                     ProfileTopBar(onBack = { navController.popBackStack() })
-                } else {
-                    DefaultTopBar(
-                        title = currentScreenTitle,
-                        onProfileClick = {
-                            navController.navigate(AppScreens.ProfileScreen.route + "/placeholder")
-                        }
-                    )
-                }
-            }
-        },
+                } else if(currentBaseRoute in topLevelRoutes) {
+
+                        DefaultTopBar(
+                            title = currentScreenTitle,
+                            onProfileClick = {
+                                navController.navigate(AppScreens.ProfileScreen.route + "/placeholder")
+
+                            }
+                                )
+                    }
+                    },
+
 
         // BOTTOM NAVIGATION BAR
         // Will only be shown on top-level routes
