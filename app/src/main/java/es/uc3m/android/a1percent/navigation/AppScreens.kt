@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 // DESTINATIONS
 sealed class AppScreens(val route: String, val label: String = "", val icon: ImageVector? = null) {
 
+    object LoginScreen   : AppScreens("login",    "Login")
     object HomeScreen    : AppScreens("home",     "Home",     Icons.Default.Home)
     object ProfileScreen : AppScreens("profile", "Profile")  // Top-level but not a main nav item
 

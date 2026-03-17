@@ -8,6 +8,7 @@ data class UserProfile(
     val id: String,
     val name: String,
     val email: String,
+    val password: String = "", // Added for local logic, usually handled by Firebase Auth
     val level: Int = 1,
     val currentXp: Int = 0,
     val xpToNextLevel: Int = 100,
