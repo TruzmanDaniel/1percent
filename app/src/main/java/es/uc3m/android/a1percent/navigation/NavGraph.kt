@@ -16,6 +16,7 @@ import androidx.navigation.navArgument
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
 import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
+import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
@@ -87,9 +88,13 @@ fun NavGraph(
     ) { innerPadding ->
         NavHost( // Container for the routes. The Map
             navController = navController,
-            startDestination = AppScreens.HomeScreen.route,
+            startDestination = AppScreens.LoginScreen.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+
+            composable(route = AppScreens.LoginScreen.route) {
+                LoginScreen(navController)
+            }
 
             composable(route = AppScreens.HomeScreen.route) {
                 HomeScreen(navController)
@@ -116,13 +121,6 @@ fun NavGraph(
             composable(route = AppScreens.ProgressScreen.route) {
                 ProgressScreen(navController)
             }
-
-//        composable("login") {
-//            LoginScreen(navController)
-//        }
-//        composable("createGoal") {
-//            CreateGoalScreen(navController)
-//        }
         }
     }
 }

@@ -1,13 +1,14 @@
 package es.uc3m.android.a1percent.ui.screens.profile
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.navigation.AppScreens
 
@@ -19,18 +20,41 @@ fun ProfileScreen(navController: NavController, text: String?) {
 @Composable
 fun ProfileBodyContent(navController: NavController, text: String?) {
     Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Top,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("This is your Profile")
+        Text(
+            text = "Your Profile",
+            style = MaterialTheme.typography.headlineMedium
+        )
 
-        text?.let { // if text exists (it is optional parameter)
-            Text(it)
+        text?.let {
+            Text(
+                text = "User: $it",
+                style = MaterialTheme.typography.bodyLarge
+            )
         }
 
-        Button(onClick = { navController.navigate(AppScreens.HomeScreen.route) }) {
-            Text("Home")
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = {
+                // Logout logic: navigate to login and clear the backstack
+                navController.navigate(AppScreens.LoginScreen.route) {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer
+            )
+        ) {
+            Text("Logout")
         }
     }
 }

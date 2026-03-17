@@ -15,7 +15,8 @@ object MockData {
     val mockUser = UserProfile(
         id = "user-1",
         name = "Charlie Kirk",
-        email = "charlie.kirk@example.com",
+        email = "charlie@kirk.com",
+        password = "password123",
         level = 8,
         currentXp = 340,
         xpToNextLevel = 500,
@@ -23,6 +24,47 @@ object MockData {
         streakDays = 12,
         totalTasksCompleted = 47
     )
+
+    val mockUser2 = UserProfile(
+        id = "user-2",
+        name = "Jane Doe",
+        email = "jane@doe.com",
+        password = "securepass456",
+        level = 12,
+        currentXp = 150,
+        xpToNextLevel = 1000,
+        avatarUrl = null,
+        streakDays = 30,
+        totalTasksCompleted = 120
+    )
+
+    val mockUser3 = UserProfile(
+        id = "user-3",
+        name = "Admin User",
+        email = "admin@1percent.com",
+        password = "admin",
+        level = 99,
+        currentXp = 0,
+        xpToNextLevel = 1,
+        avatarUrl = null,
+        streakDays = 365,
+        totalTasksCompleted = 10000
+    )
+
+    val quickUser = UserProfile(
+        id = "user-quick",
+        name = "Quick Tester",
+        email = "",
+        password = "",
+        level = 1,
+        currentXp = 0,
+        xpToNextLevel = 100,
+        avatarUrl = null,
+        streakDays = 0,
+        totalTasksCompleted = 0
+    )
+
+    val allMockUsers = listOf(mockUser, mockUser2, mockUser3, quickUser)
 
     val mockGoal = Goal(
         id = "goal-1",
