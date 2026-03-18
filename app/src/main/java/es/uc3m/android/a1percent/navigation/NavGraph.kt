@@ -26,6 +26,7 @@ import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
 import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
 import es.uc3m.android.a1percent.ui.navigation.ExpandableFabMenu
+import es.uc3m.android.a1percent.ui.screens.creategoal.CreateGoalScreen
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
 import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
@@ -33,6 +34,7 @@ import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
 import es.uc3m.android.a1percent.ui.screens.targets.TargetsScreen
+import es.uc3m.android.a1percent.ui.screens.tasks.CreateTaskScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,7 +60,6 @@ fun NavGraph() {
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            // Aplicamos el desenfoque a todo el Scaffold
             modifier = Modifier.blur(blurRadius),
             topBar = {
                 if (currentBaseRoute == AppScreens.ProfileScreen.route) {
@@ -76,6 +77,7 @@ fun NavGraph() {
                 }
             },
             bottomBar = {
+                // Solo se muestra en las pantallas de nivel superior
                 if (currentBaseRoute in topLevelRoutes) {
                     BottomNavBar(
                         currentRoute = currentRoute,
@@ -111,15 +113,31 @@ fun NavGraph() {
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
+                
+                // Nuevas rutas para creación (No Top-Level)
+                composable(route = AppScreens.CreateTaskScreen.route) { 
+                    CreateTaskScreen(navController) 
+                }
+                composable(route = AppScreens.CreateGoalScreen.route) { 
+                    CreateGoalScreen(navController) 
+                }
             }
         }
 
-        // Overlay y menú (estos NO se difuminan porque están fuera del Scaffold)
-        ExpandableFabMenu(
-            isExpanded = isFabExpanded,
-            onClose = { isFabExpanded = false },
-            onAddTask = { /* Acción Task */ },
-            onAddGoal = { /* Acción Goal */ }
-        )
+        // Overlay y menú (Solo visible si el FAB está expandido y estamos en una pantalla Top-Level)
+        if (currentBaseRoute in topLevelRoutes) {
+            ExpandableFabMenu(
+                isExpanded = isFabExpanded,
+                onClose = { isFabExpanded = false },
+                onAddTask = { 
+                    isFabExpanded = false
+                    navController.navigate(AppScreens.CreateTaskScreen.route) 
+                },
+                onAddGoal = { 
+                    isFabExpanded = false
+                    navController.navigate(AppScreens.CreateGoalScreen.route) 
+                }
+            )
+        }
     }
 }
