@@ -20,6 +20,9 @@ object SocialRepository {
         listOf(
             // Initial mock relationships
             UserRelationship("user-1", "user-2", RelationshipStatus.FRIENDS),
+            UserRelationship("user-quick", "user-2", RelationshipStatus.FRIENDS),
+            UserRelationship("user-quick", "user-3", RelationshipStatus.FRIENDS),
+            UserRelationship("user-quick", "user-1", RelationshipStatus.FRIENDS),
             UserRelationship("user-1", "user-3", RelationshipStatus.PENDING)
         )
     )
