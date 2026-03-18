@@ -2,7 +2,7 @@ package es.uc3m.android.a1percent.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import es.uc3m.android.a1percent.data.UserRepository
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.MockData
 import kotlinx.coroutines.flow.*
 
@@ -11,22 +11,19 @@ import kotlinx.coroutines.flow.*
  */
 class HomeViewModel : ViewModel() {
 
-    // The UI State is now derived from the UserRepository's current user
-    // We combine the user flow with static mock data for now (tasks and goals)
+    // The UI State is now derived from the SessionRepository's current user
     private val _uiState = MutableStateFlow(
         HomeUiState(
-            user = UserRepository.currentUser.value ?: MockData.mockUser, // session user
+            user = SessionRepository.currentUser.value ?: MockData.mockUser, // session user
             tasks = MockData.mockTasks,
             goal = MockData.mockGoal
         )
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // MutableStateFlow means an state that can change, while StateFlow is read-only
-
     init {
-        // Observe changes in the current user from the Repository
-        UserRepository.currentUser
+        // Observe changes in the current user from the SessionRepository
+        SessionRepository.currentUser
             .onEach { user ->
                 if (user != null) {
                     _uiState.update { currentState ->
@@ -39,6 +36,6 @@ class HomeViewModel : ViewModel() {
 
     // Function that returns a parameter to be passed (it is an example)
     fun onProfileClicked(): String {
-        return UserRepository.currentUser.value?.name ?: "Unknown User"
+        return SessionRepository.currentUser.value?.name ?: "Unknown User"
     }
 }

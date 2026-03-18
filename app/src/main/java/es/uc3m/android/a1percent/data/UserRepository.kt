@@ -7,32 +7,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Singleton repository to manage user session and data.
- * This is the bridge before implementing Firebase.
+ * Singleton repository to manage user database and social relationships.
+ * Responsible for finding other users, public profiles, and community interactions.
  */
 object UserRepository {
-    // Shared state of the current user across the app
-    private val _currentUser = MutableStateFlow<UserProfile?>(null)
-    val currentUser: StateFlow<UserProfile?> = _currentUser.asStateFlow()
+    // List of all known users (Mock database)
+    private val allUsers = MockData.allMockUsers
 
     /**
-     * Attempts to login by searching in MockData.
-     * Returns true if successful, false otherwise.
+     * Finds a public profile by its unique ID.
      */
-    fun login(email: String, pass: String): Boolean {
-        val user = MockData.allMockUsers.find { it.email == email && it.password == pass }
-        return if (user != null) {
-            _currentUser.value = user
-            true
-        } else {
-            false
-        }
+    fun findUserById(userId: String): UserProfile? {
+        return allUsers.find { it.id == userId }
     }
 
     /**
-     * Clears the current session.
+     * Search for users by name (for social feature).
      */
-    fun logout() {
-        _currentUser.value = null
+    fun searchUsers(query: String): List<UserProfile> {
+        return allUsers.filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    /**
+     * Get suggestions based on user interests or random.
+     */
+    fun getSuggestedUsers(): List<UserProfile> {
+        return allUsers.take(5)
     }
 }

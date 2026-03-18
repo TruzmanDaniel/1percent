@@ -3,14 +3,9 @@ package es.uc3m.android.a1percent.ui.screens.profile
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,12 +18,19 @@ import es.uc3m.android.a1percent.navigation.AppScreens
 @Composable
 fun ProfileScreen(navController: NavController, text: String?, viewModel: ProfileViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // Trigger user loading when the screen is shown or 'text' (userId) changes
+    LaunchedEffect(text) {
+        viewModel.loadUser(text)
+    }
+
     ProfileBodyContent(navController, uiState)
 }
 
 @Composable
 fun ProfileBodyContent(navController: NavController, uiState: ProfileUiState) {
     val user = uiState.user
+    val isOwn = uiState.isOwnProfile
     
     Column(
         modifier = Modifier
@@ -53,6 +55,14 @@ fun ProfileBodyContent(navController: NavController, uiState: ProfileUiState) {
                 text = user.name,
                 style = MaterialTheme.typography.headlineMedium
             )
+            
+            if (!isOwn) {
+                Text(
+                    text = "Viewing Public Profile",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
         }
 
         HorizontalDivider()
@@ -76,25 +86,34 @@ fun ProfileBodyContent(navController: NavController, uiState: ProfileUiState) {
 
         HorizontalDivider()
 
-        // SECTION 3: ACTIONS (Spacer to push button to bottom)
         Spacer(modifier = Modifier.weight(1f))
 
-        // LOGOUT BUTTON
-        Button(
-            onClick = {
-                // navigate to login and clear the backStack
-                navController.navigate(AppScreens.LoginScreen.route) {
-                    popUpTo(0) { inclusive = true }
-                    launchSingleTop = true
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer
-            )
-        ) {
-            Text("Logout")
+        // ACTIONS BASED ON PROFILE OWNERSHIP
+        if (isOwn) {
+            // LOGOUT BUTTON (Only for own profile)
+            Button(
+                onClick = {
+                    navController.navigate(AppScreens.LoginScreen.route) {
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            ) {
+                Text("Logout")
+            }
+        } else {
+            // BACK BUTTON (For other profiles)
+            Button(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Back to Community")
+            }
         }
     }
 }
@@ -118,4 +137,3 @@ private fun StatRow(label: String, value: String) {
         )
     }
 }
-

@@ -15,7 +15,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import es.uc3m.android.a1percent.data.UserRepository
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 
 @Composable
@@ -90,7 +90,8 @@ fun LoginScreen(navController: NavController) {
 
         Button(
             onClick = {
-                val success = UserRepository.login(email, password)
+                // Changed to SessionRepository
+                val success = SessionRepository.login(email, password)
                 if (success) {
                     navController.navigate(AppScreens.HomeScreen.route) {
                         popUpTo(AppScreens.LoginScreen.route) { inclusive = true }

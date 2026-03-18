@@ -22,7 +22,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import es.uc3m.android.a1percent.data.UserRepository
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
 import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
 import es.uc3m.android.a1percent.ui.navigation.ExpandableFabMenu
@@ -44,15 +44,15 @@ fun NavGraph() {
     val currentRoute = navBackStackEntry?.destination?.route
     val currentBaseRoute = currentRoute?.substringBefore("/")
 
-    val currentUser by UserRepository.currentUser.collectAsStateWithLifecycle()
+    // Observer changed to SessionRepository for the current authenticated user
+    val currentUser by SessionRepository.currentUser.collectAsStateWithLifecycle()
+    
     val topLevelRoutes = AppScreens.topLevelScreens.map { it.route }.toSet()
     val currentScreenTitle = AppScreens.topLevelScreens
         .firstOrNull { it.route == currentRoute }?.label ?: ""
 
-    // Estado del FAB
     var isFabExpanded by remember { mutableStateOf(false) }
 
-    // Animación suave del radio de desenfoque
     val blurRadius by animateDpAsState(
         targetValue = if (isFabExpanded) 10.dp else 0.dp,
         label = "BlurAnimation"
@@ -77,7 +77,6 @@ fun NavGraph() {
                 }
             },
             bottomBar = {
-                // Solo se muestra en las pantallas de nivel superior
                 if (currentBaseRoute in topLevelRoutes) {
                     BottomNavBar(
                         currentRoute = currentRoute,
@@ -113,18 +112,11 @@ fun NavGraph() {
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
-                
-                // Nuevas rutas para creación (No Top-Level)
-                composable(route = AppScreens.CreateTaskScreen.route) { 
-                    CreateTaskScreen(navController) 
-                }
-                composable(route = AppScreens.CreateGoalScreen.route) { 
-                    CreateGoalScreen(navController) 
-                }
+                composable(route = AppScreens.CreateTaskScreen.route) { CreateTaskScreen(navController) }
+                composable(route = AppScreens.CreateGoalScreen.route) { CreateGoalScreen(navController) }
             }
         }
 
-        // Overlay y menú (Solo visible si el FAB está expandido y estamos en una pantalla Top-Level)
         if (currentBaseRoute in topLevelRoutes) {
             ExpandableFabMenu(
                 isExpanded = isFabExpanded,
