@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileTopBar(
-    username: String = "username_placeholder", // Create a ProfileUiState then take uiState.user
+    username: String = "username_default",
     onBack: () -> Unit // Function that returns to previous screen (popBackStack)
 ) {
     TopAppBar(

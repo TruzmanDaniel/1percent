@@ -23,7 +23,7 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
 
     object LoginScreen   : AppScreens("login",    "Login")
     object HomeScreen    : AppScreens("home",     "Home",     Icons.Default.Home)
-    object ProfileScreen : AppScreens("profile", "Profile")  // Top-level but not a main nav item
+    object ProfileScreen : AppScreens("profile", "Profile")
 
     object TargetsScreen : AppScreens("targets",  "Targets",  Icons.Default.Flag)
     object SocialScreen  : AppScreens("social",   "Social",   Icons.Default.Group)

@@ -19,7 +19,7 @@ data class Task(
     val energyCost: Int,
     val deadline: Long? = null,
     val status: TaskStatus = TaskStatus.PENDING,
-    val goalId: String? = null,
+    val goalId: String? = null, // If it has a value, this task is a Mission derived from a Goal
     val isAiGenerated: Boolean = false,
     val order: Int? = null,
     val microfeedback: MissionFeedback? = null,

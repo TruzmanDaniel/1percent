@@ -5,7 +5,9 @@ import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.UserProfile
 
 /**
- * Data class to represent the screen state (DATA to be displayed by the UI)
+ * Data class to represent the screen state (DATA to be displayed by the UI).
+ *  We use it to define an immutable class so UI always receives coherent data, and we know what data the UI needs
+ *  Being separate from the ViewModel allows reusability and testing (creating an object of this class directly in the screen)
  */
 
 data class HomeUiState(

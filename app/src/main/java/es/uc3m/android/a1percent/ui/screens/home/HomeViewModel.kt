@@ -15,12 +15,14 @@ class HomeViewModel : ViewModel() {
     // We combine the user flow with static mock data for now (tasks and goals)
     private val _uiState = MutableStateFlow(
         HomeUiState(
-            user = UserRepository.currentUser.value ?: MockData.mockUser,
+            user = UserRepository.currentUser.value ?: MockData.mockUser, // session user
             tasks = MockData.mockTasks,
             goal = MockData.mockGoal
         )
     )
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    // MutableStateFlow means an state that can change, while StateFlow is read-only
 
     init {
         // Observe changes in the current user from the Repository

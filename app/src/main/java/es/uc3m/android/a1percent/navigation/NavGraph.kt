@@ -6,6 +6,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
 import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
@@ -37,6 +39,8 @@ fun NavGraph(
     val currentRoute = navBackStackEntry?.destination?.route
     val currentBaseRoute = currentRoute?.substringBefore("/")  // so base_route/param counts as base_route
 
+    // Observe the current user for ProfileTopBar
+    val currentUser by UserRepository.currentUser.collectAsStateWithLifecycle()
 
     // Routes/Screens where the BottomNavBar must be visible
     val topLevelRoutes = AppScreens.topLevelScreens.map { it.route }.toSet()
@@ -52,7 +56,10 @@ fun NavGraph(
 
                 // Top Nav Bar for Profile Screen:
                 if (currentBaseRoute == AppScreens.ProfileScreen.route) {
-                    ProfileTopBar(onBack = { navController.popBackStack() })
+                    ProfileTopBar(
+                        username = currentUser?.name ?: "Profile",
+                        onBack = { navController.popBackStack() }
+                    )
                 // Default Top Nav Bar (shows profile pic and current Screen title)
                 } else if(currentBaseRoute in topLevelRoutes) {
                         DefaultTopBar(
