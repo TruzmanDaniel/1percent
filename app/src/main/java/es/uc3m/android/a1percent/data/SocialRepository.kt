@@ -1,8 +1,8 @@
 package es.uc3m.android.a1percent.data
 
-import es.uc3m.android.a1percent.data.model.RelationshipStatus
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.UserRelationship
+import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

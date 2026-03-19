@@ -1,13 +1,6 @@
 package es.uc3m.android.a1percent.data.model
 
-/**
- * Status of the friendship between two users.
- */
-enum class RelationshipStatus {
-    PENDING, // Request sent but not accepted
-    FRIENDS, // Mutual friendship
-    BLOCKED  // Relationship restricted
-}
+import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 
 /**
  * Represents a row in the "Friendship Table".
@@ -16,6 +9,6 @@ enum class RelationshipStatus {
 data class UserRelationship(
     val userAId: String,
     val userBId: String,
-    val status: RelationshipStatus = RelationshipStatus.PENDING,
+    val status: RelationshipStatus = RelationshipStatus.PENDING, // Default value for now
     val createdAt: Long = System.currentTimeMillis()
 )

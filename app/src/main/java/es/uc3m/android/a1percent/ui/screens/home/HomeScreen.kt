@@ -15,13 +15,20 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -31,8 +38,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
-import es.uc3m.android.a1percent.navigation.AppScreens
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
@@ -46,6 +56,19 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
 fun HomeBodyContent(
     uiState: HomeUiState
 ) {
+    var isFocusMode by rememberSaveable { mutableStateOf(false) }
+
+    // FILTERS AND SORTING: BASIC IMPLEMENTATION
+        // TODO: extract functionality (we will create more filters) into a modular approach.
+        //  home/HomeFIlters.kt with functionalities, save HomeFilterState in HomeViewModel,
+        //     create reusable components (FilterBar, SortMenu...)...
+
+    var showOnlyMissions by rememberSaveable { mutableStateOf(false) }
+    var sortByDate by rememberSaveable { mutableStateOf(false) }
+    val visibleTasks = uiState.tasks
+        .let { tasks -> if (showOnlyMissions) tasks.filter { task -> task.goalId != null } else tasks }
+        .let { tasks -> if (sortByDate) tasks.sortedBy { task -> task.deadline.toSortKey() } else tasks }
+
     // Scrollable Column containing the elements
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -53,28 +76,98 @@ fun HomeBodyContent(
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
         // 1. HEADER SECTION
-        item {
-            HeaderSection(uiState = uiState)
+            // FocusMode hides this section
+        if (!isFocusMode) {
+            item {
+                HeaderSection(uiState = uiState)
+            }
+        }
+        else {
+            item {
+                Text(
+                    text = "Focus mode enabled",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         // 2. TASKS SECTION
+
+        // TODO: Add task filters and special quick-action buttons
+
+
         item {
-            Text(
-                text = "Today's missions",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Today's missions",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                IconButton(onClick = { isFocusMode = !isFocusMode }) {
+                    Icon(
+                        imageVector = if (isFocusMode) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = if (isFocusMode) "Show overview" else "Enable focus mode"
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxWidth())
         }
+
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(onClick = { showOnlyMissions = !showOnlyMissions }) {
+                    Text("Missions")
+                }
+                Button(onClick = { sortByDate = !sortByDate }) {
+                    Text("Sort by Date")
+                }
+            }
+        }
+
+        if (visibleTasks.isEmpty()) {
+            item {
+                Text(
+                    text = "No tasks for today",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
             // CAMBIAR uiState, ahora solo maneja un GOAL!!!!!! - - -  - - -  TODO
-        items(uiState.tasks) { task ->
-            val goalTitle = if (task.goalId != null) uiState.goal.title else null
-            TaskItem(task = task, goalTitle = goalTitle)
+            items(visibleTasks) { task ->
+                val goalTitle = if (task.goalId != null) uiState.goal.title else null
+                TaskItem(task = task, goalTitle = goalTitle)
+            }
         }
 
         // 3. PROGRESS SECTION
-        item {
-            ProgressSection()
+            // FocusMode hides this section
+        if (!isFocusMode) {
+            item {
+                ProgressSection()
+            }
         }
+    }
+}
+
+// Format for SORTING
+private fun TaskDeadline?.toSortKey(): Long {
+    return when (this) {
+        null -> Long.MAX_VALUE
+        TaskDeadline.ThisWeek -> -1L
+        is TaskDeadline.OnDate -> epochDay
     }
 }
 
@@ -148,6 +241,14 @@ fun TaskItem(task: Task, goalTitle: String?) {
                     MaterialTheme.typography.bodyLarge
             )
 
+            task.deadline?.let { deadline ->
+                Text(
+                    text = "Due: ${deadline.toUiLabel()}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             if (goalTitle != null) {
                 Text(
                     text = "⚡ Mission · $goalTitle",
@@ -166,6 +267,18 @@ fun TaskItem(task: Task, goalTitle: String?) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+private fun TaskDeadline.toUiLabel(): String {
+    return when (this) {
+        TaskDeadline.ThisWeek -> "This Week"
+        // Format Date when it is an specific date
+        is TaskDeadline.OnDate -> {
+            val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
+            val millisAtUtcMidnight = epochDay * 24L * 60L * 60L * 1000L
+            formatter.format(Date(millisAtUtcMidnight))
+        }
     }
 }
 
