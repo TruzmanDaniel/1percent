@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Singleton repository to manage the active user session.
- * Responsible for authentication and identity.
+ * Responsible for AUTHENTICATION and IDENTIFICATION.
  */
 object SessionRepository {
     // Shared state of the CURRENT authenticated user

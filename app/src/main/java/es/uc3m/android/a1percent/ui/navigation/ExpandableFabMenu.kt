@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
 
+
+// FAB: Floating Action Button --> '+'
 @Composable
 fun ExpandableFabMenu(
     isExpanded: Boolean,
@@ -35,7 +37,7 @@ fun ExpandableFabMenu(
     val offsetY = (radius.value * cos(angleRad)).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Overlay semitransparente
+        // Overlay semitransparent, clicking it calls onClose()
         AnimatedVisibility(
             visible = isExpanded,
             enter = fadeIn(),

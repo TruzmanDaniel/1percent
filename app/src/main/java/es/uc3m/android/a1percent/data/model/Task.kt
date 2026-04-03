@@ -22,9 +22,9 @@ data class Task(
     val deadline: TaskDeadline? = null,  // null or TaskDeadLine (ThisWeek or OnDate)
     val status: TaskStatus = TaskStatus.PENDING,
 
-    // AUTOMATIC means the app will infer the best predefined category in a future iteration.
+    // AUTOMATIC: the app will infer the best predefined category in a future iteration.
     val category: Category = Category.AUTOMATIC,
-    val customCategoryName: String? = null, // If not null, this task uses a user-created custom category
+    val customCategoryName: String? = null, // If not null, this task uses a user-custom category
 
     val goalId: String? = null, // If it has a value, this task is a Mission derived from a Goal
     val isAiGenerated: Boolean = false,

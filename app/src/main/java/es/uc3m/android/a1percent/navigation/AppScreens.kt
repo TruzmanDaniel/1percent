@@ -22,7 +22,11 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
     object CreateGoalScreen : AppScreens("create_goal", "Create Goal")
 
     companion object {
+
+        // MAIN SCREENS: the ones that appear in the Bottom Nav Bar
         val mainScreens = listOf(HomeScreen, TargetsScreen, SocialScreen, ProgressScreen)
+
+        // TOP-LEVEL SCREENS: show TopNavBar (able to navigate to profile page) and BottomNavBar
         val topLevelScreens = mainScreens + listOf<AppScreens>()
     }
 }

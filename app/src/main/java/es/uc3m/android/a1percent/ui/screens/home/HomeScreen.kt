@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
@@ -58,16 +59,17 @@ fun HomeBodyContent(
 ) {
     var isFocusMode by rememberSaveable { mutableStateOf(false) }
 
-    // FILTERS AND SORTING: BASIC IMPLEMENTATION
+    // FILTERS & SORTING: BASIC IMPLEMENTATION
         // TODO: extract functionality (we will create more filters) into a modular approach.
-        //  home/HomeFIlters.kt with functionalities, save HomeFilterState in HomeViewModel,
+        //  home/HomeFilters.kt with functionalities, save HomeFilterState in HomeViewModel,
         //     create reusable components (FilterBar, SortMenu...)...
 
     var showOnlyMissions by rememberSaveable { mutableStateOf(false) }
     var sortByDate by rememberSaveable { mutableStateOf(false) }
+        // Control which tasks are shown (filtered)
     val visibleTasks = uiState.tasks
         .let { tasks -> if (showOnlyMissions) tasks.filter { task -> task.goalId != null } else tasks }
-        .let { tasks -> if (sortByDate) tasks.sortedBy { task -> task.deadline.toSortKey() } else tasks }
+        .let { tasks -> if (sortByDate) tasks.sortedBy { task -> TaskDeadlineResolver.toSortKey(task.deadline) } else tasks }
 
     // Scrollable Column containing the elements
     LazyColumn(
@@ -75,8 +77,10 @@ fun HomeBodyContent(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-        // 1. HEADER SECTION
-            // FocusMode hides this section
+
+    // 1. HEADER SECTION
+
+            // FocusMode hides Header Section
         if (!isFocusMode) {
             item {
                 HeaderSection(uiState = uiState)
@@ -92,7 +96,7 @@ fun HomeBodyContent(
             }
         }
 
-        // 2. TASKS SECTION
+    // 2. TASKS SECTION
 
         // TODO: Add task filters and special quick-action buttons
 
@@ -112,14 +116,13 @@ fun HomeBodyContent(
                 IconButton(onClick = { isFocusMode = !isFocusMode }) {
                     Icon(
                         imageVector = if (isFocusMode) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (isFocusMode) "Show overview" else "Enable focus mode"
+                        contentDescription = if (isFocusMode) "Disable focus mode" else "Enable focus mode"
                     )
                 }
             }
-
-            Box(modifier = Modifier.fillMaxWidth())
         }
 
+        // FILTERS
         item {
             Row(
                 modifier = Modifier
@@ -145,14 +148,14 @@ fun HomeBodyContent(
                 )
             }
         } else {
-            // CAMBIAR uiState, ahora solo maneja un GOAL!!!!!! - - -  - - -  TODO
+            // TODO: CAMBIAR uiState, ahora solo maneja un GOAL! + logica de extraer goal title del task.goalId
             items(visibleTasks) { task ->
                 val goalTitle = if (task.goalId != null) uiState.goal.title else null
                 TaskItem(task = task, goalTitle = goalTitle)
             }
         }
 
-        // 3. PROGRESS SECTION
+    // 3. PROGRESS SECTION
             // FocusMode hides this section
         if (!isFocusMode) {
             item {
@@ -162,18 +165,20 @@ fun HomeBodyContent(
     }
 }
 
-// Format for SORTING
-private fun TaskDeadline?.toSortKey(): Long {
+private fun TaskDeadline.toUiLabel(): String {
     return when (this) {
-        null -> Long.MAX_VALUE
-        TaskDeadline.ThisWeek -> -1L
-        is TaskDeadline.OnDate -> epochDay
+        TaskDeadline.ThisWeek -> "This Week"
+        // Format Date when it is an specific date
+        is TaskDeadline.OnDate -> {
+            val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
+            val millisAtUtcMidnight = epochDay * 24L * 60L * 60L * 1000L
+            formatter.format(Date(millisAtUtcMidnight))
+        }
     }
 }
 
 
-// Private composables
-
+// Private composables (SECTIONS, ITEMS)
 @Composable
 private fun HeaderSection(uiState: HomeUiState) {
     val user = uiState.user
@@ -226,7 +231,7 @@ fun TaskItem(task: Task, goalTitle: String?) {
     ) {
         Checkbox(
             checked = isCompleted,
-            onCheckedChange = null   // non-interactive for now
+            onCheckedChange = null   // non-interactive for now TODO: check complete tasks
         )
 
         Column(
@@ -267,18 +272,6 @@ fun TaskItem(task: Task, goalTitle: String?) {
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
         )
-    }
-}
-
-private fun TaskDeadline.toUiLabel(): String {
-    return when (this) {
-        TaskDeadline.ThisWeek -> "This Week"
-        // Format Date when it is an specific date
-        is TaskDeadline.OnDate -> {
-            val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
-            val millisAtUtcMidnight = epochDay * 24L * 60L * 60L * 1000L
-            formatter.format(Date(millisAtUtcMidnight))
-        }
     }
 }
 

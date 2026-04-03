@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
 @Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES, showSystemUi = true)
 @Preview(showBackground = true)
 @Composable

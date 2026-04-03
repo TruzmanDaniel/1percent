@@ -55,92 +55,22 @@ private enum class DeadlineOption {
 fun CreateTaskScreen(navController: NavController) {
     var taskName by remember { mutableStateOf("") }
     var taskDescription by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(Category.AUTOMATIC) }
+
+    var selectedCategory by remember { mutableStateOf(Category.AUTOMATIC) } // Default is automatic
     var selectedCustomCategoryName by remember { mutableStateOf<String?>(null) }
     var categoryExpanded by remember { mutableStateOf(false) }
     var showCreateCategoryDialog by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
-    var hasDeadline by rememberSaveable { mutableStateOf(false) }
-    var deadlineOption by rememberSaveable { mutableStateOf(DeadlineOption.THIS_WEEK) }
-    var selectedEpochDay by rememberSaveable { mutableStateOf<Long?>(null) }
-    var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
 
     val customCategories by TaskCategoryRepository.customCategories.collectAsState()
     val predefinedCategories = remember { TaskCategoryRepository.predefinedCategories }
     val selectedCategoryLabel = selectedCustomCategoryName ?: selectedCategory.displayName
 
-    if (showDatePickerDialog) {
-        val millisPerDay = 86_400_000L
-        val initialMillis = (selectedEpochDay ?: (System.currentTimeMillis() / millisPerDay)) * millisPerDay
-        val datePickerState = androidx.compose.material3.rememberDatePickerState(
-            initialSelectedDateMillis = initialMillis
-        )
+    var selectedEpochDay by rememberSaveable { mutableStateOf<Long?>(null) } // Default is no deadline
+    var hasDeadline by rememberSaveable { mutableStateOf(false) } // Default is no deadline
+    var deadlineOption by rememberSaveable { mutableStateOf(DeadlineOption.THIS_WEEK) }
+    var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
 
-        DatePickerDialog(
-            onDismissRequest = { showDatePickerDialog = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val selectedMillis = datePickerState.selectedDateMillis
-                        if (selectedMillis != null) {
-                            selectedEpochDay = selectedMillis / millisPerDay
-                        }
-                        showDatePickerDialog = false
-                    }
-                ) {
-                    Text("Confirm")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePickerDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
-
-    if (showCreateCategoryDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showCreateCategoryDialog = false
-                newCategoryName = ""
-            },
-            title = { Text("Create a Category") },
-            text = {
-                OutlinedTextField(
-                    value = newCategoryName,
-                    onValueChange = { newCategoryName = it },
-                    label = { Text("Category name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val savedName = TaskCategoryRepository.addCustomCategory(newCategoryName)
-                        if (savedName != null) {
-                            selectedCustomCategoryName = savedName
-                            selectedCategory = Category.AUTOMATIC
-                        }
-                        showCreateCategoryDialog = false
-                        newCategoryName = ""
-                    },
-                    enabled = newCategoryName.trim().isNotEmpty()
-                ) { Text("Create") }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showCreateCategoryDialog = false
-                        newCategoryName = ""
-                    }
-                ) { Text("Cancel") }
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -164,6 +94,7 @@ fun CreateTaskScreen(navController: NavController) {
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
             OutlinedTextField(
                 value = taskName,
                 onValueChange = { taskName = it },
@@ -179,7 +110,7 @@ fun CreateTaskScreen(navController: NavController) {
                 minLines = 3
             )
 
-            // Category dropdown
+        // CATEGORY DROPDOWN
             ExposedDropdownMenuBox(
                 expanded = categoryExpanded,
                 onExpandedChange = { categoryExpanded = !categoryExpanded }
@@ -199,6 +130,7 @@ fun CreateTaskScreen(navController: NavController) {
                     expanded = categoryExpanded,
                     onDismissRequest = { categoryExpanded = false }
                 ) {
+                    // AUTOMATIC
                     DropdownMenuItem(
                         text = { Text(Category.AUTOMATIC.displayName) },
                         onClick = {
@@ -210,6 +142,7 @@ fun CreateTaskScreen(navController: NavController) {
 
                     HorizontalDivider()
 
+                    // PREDEFINED
                     predefinedCategories.forEach { category ->
                         DropdownMenuItem(
                             text = { Text(category.displayName) },
@@ -221,8 +154,10 @@ fun CreateTaskScreen(navController: NavController) {
                         )
                     }
 
+                    // CUSTOM
                     if (customCategories.isNotEmpty()) {
                         HorizontalDivider()
+
                         customCategories.forEach { customCategory ->
                             DropdownMenuItem(
                                 text = { Text(customCategory) },
@@ -237,6 +172,7 @@ fun CreateTaskScreen(navController: NavController) {
 
                     HorizontalDivider()
 
+                    // CREATE A CUSTOM
                     DropdownMenuItem(
                         text = { Text("Create a Category") },
                         onClick = {
@@ -247,6 +183,8 @@ fun CreateTaskScreen(navController: NavController) {
                 }
             }
 
+
+        // DEADLINE SELECTION
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -319,8 +257,10 @@ fun CreateTaskScreen(navController: NavController) {
                 else -> selectedEpochDay?.let { TaskDeadline.OnDate(it) }
             }
 
+            // avoid creating tasks with unselected but intended deadline
             val canCreateTask = !hasDeadline || selectedDeadline != null
 
+            // CREATE TASK BUTTON
             Button(
                 onClick = {
                     // TODO: if selectedCategory == AUTOMATIC and no custom category is selected:
@@ -336,4 +276,81 @@ fun CreateTaskScreen(navController: NavController) {
             }
         }
     }
+
+    // Dialog to select a date in the calendar
+    if (showDatePickerDialog) {
+        val millisPerDay = 86_400_000L
+        val initialMillis = (selectedEpochDay ?: (System.currentTimeMillis() / millisPerDay)) * millisPerDay
+        val datePickerState = androidx.compose.material3.rememberDatePickerState(
+            initialSelectedDateMillis = initialMillis
+        )
+
+        DatePickerDialog(
+            onDismissRequest = { showDatePickerDialog = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            selectedEpochDay = selectedMillis / millisPerDay
+                        }
+                        showDatePickerDialog = false
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Dialog to create a custom category
+    if (showCreateCategoryDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showCreateCategoryDialog = false
+                newCategoryName = ""
+            },
+            title = { Text("Create a Category") },
+            text = {
+                OutlinedTextField(
+                    value = newCategoryName,
+                    onValueChange = { newCategoryName = it },
+                    label = { Text("Category name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val savedName = TaskCategoryRepository.addCustomCategory(newCategoryName)
+                        if (savedName != null) {
+                            selectedCustomCategoryName = savedName
+                            selectedCategory = Category.AUTOMATIC
+                        }
+                        showCreateCategoryDialog = false
+                        newCategoryName = ""
+                    },
+                    enabled = newCategoryName.trim().isNotEmpty()
+                ) { Text("Create") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showCreateCategoryDialog = false
+                        newCategoryName = ""
+                    }
+                ) { Text("Cancel") }
+            }
+        )
+    }
+
 }
+

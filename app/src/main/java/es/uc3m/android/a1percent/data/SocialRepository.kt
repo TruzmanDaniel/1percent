@@ -3,9 +3,11 @@ package es.uc3m.android.a1percent.data
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.UserRelationship
 import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 /**
@@ -18,7 +20,7 @@ object SocialRepository {
     // In a real database, this would be a separate collection/table.
     private val _friendshipTable = MutableStateFlow<List<UserRelationship>>(
         listOf(
-            // Initial mock relationships
+            // Initial MOCK relationships
             UserRelationship("user-1", "user-2", RelationshipStatus.FRIENDS),
             UserRelationship("user-quick", "user-2", RelationshipStatus.FRIENDS),
             UserRelationship("user-quick", "user-3", RelationshipStatus.FRIENDS),
@@ -28,12 +30,21 @@ object SocialRepository {
     )
     val friendshipTable: StateFlow<List<UserRelationship>> = _friendshipTable.asStateFlow()
 
-    /**
-     * Finds all friends of a specific user by querying the friendship table.
-     * Checks if the user is in either userAId or userBId column.
-     */
-    fun getFriendsOfUser(userId: String): List<UserProfile> {
-        val friendIds = _friendshipTable.value
+
+    // Reactive list of friends for a specific user (sync with friendship table)
+
+    fun observeFriends(userId: String): Flow<List<UserProfile>> {
+        return friendshipTable.map { relations ->
+            relationListToFriendProfiles(relations, userId)
+        }
+    }
+
+
+    private fun relationListToFriendProfiles(
+        relations: List<UserRelationship>,
+        userId: String
+    ): List<UserProfile> {
+        val friendIds = relations
             .filter { rel ->
                 rel.status == RelationshipStatus.FRIENDS && 
                 (rel.userAId == userId || rel.userBId == userId)

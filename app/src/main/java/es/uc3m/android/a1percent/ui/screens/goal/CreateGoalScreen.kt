@@ -1,4 +1,4 @@
-package es.uc3m.android.a1percent.ui.screens.creategoal
+package es.uc3m.android.a1percent.ui.screens.goal
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

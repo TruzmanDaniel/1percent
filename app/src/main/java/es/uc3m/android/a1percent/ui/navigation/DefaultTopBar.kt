@@ -22,7 +22,7 @@ fun DefaultTopBar(
         actions = {
             IconButton(onClick = onProfileClick) {
                 Icon(
-                    imageVector = Icons.Default.AccountCircle, // Profile pic
+                    imageVector = Icons.Default.AccountCircle, // TODO: Profile pic
                     contentDescription = "Profile"
                 )
             }

@@ -25,8 +25,10 @@ import androidx.navigation.navArgument
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.ui.navigation.BottomNavBar
 import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
+
+
 import es.uc3m.android.a1percent.ui.navigation.ExpandableFabMenu
-import es.uc3m.android.a1percent.ui.screens.creategoal.CreateGoalScreen
+import es.uc3m.android.a1percent.ui.screens.goal.CreateGoalScreen
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
 import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
@@ -42,7 +44,7 @@ fun NavGraph() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val currentBaseRoute = currentRoute?.substringBefore("/")
+    val currentBaseRoute = currentRoute?.substringBefore("/") // Also current route but with no arguments --> Baseroute
 
     // Observer changed to SessionRepository for the current authenticated user
     val currentUser by SessionRepository.currentUser.collectAsStateWithLifecycle()
@@ -58,9 +60,11 @@ fun NavGraph() {
         label = "BlurAnimation"
     )
 
+    // Box over Scaffold so we can Overlay elements
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
-            modifier = Modifier.blur(blurRadius),
+            modifier = Modifier.blur(blurRadius), // When fab expanded (overlay) scaffold is blur (as a blurry background)
             topBar = {
                 if (currentBaseRoute == AppScreens.ProfileScreen.route) {
                     ProfileTopBar(
@@ -81,7 +85,7 @@ fun NavGraph() {
                     BottomNavBar(
                         currentRoute = currentRoute,
                         isFabExpanded = isFabExpanded,
-                        onAddClick = { isFabExpanded = !isFabExpanded },
+                        onAddClick = { isFabExpanded = !isFabExpanded }, // Toggle (logic is controlled in ExpandableFabMenu.kt)
                         onNavigate = { route ->
                             isFabExpanded = false
                             navController.navigate(route) {
@@ -98,7 +102,8 @@ fun NavGraph() {
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = AppScreens.LoginScreen.route,
+                startDestination = AppScreens.LoginScreen.route,  // TODO: if user already auth, go to HomeScreen
+                // startDestination = AppScreens.HomeScreen.route,
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(route = AppScreens.LoginScreen.route) { LoginScreen(navController) }
@@ -107,7 +112,7 @@ fun NavGraph() {
                     route = AppScreens.ProfileScreen.route + "/{param}",
                     arguments = listOf(navArgument(name = "param") { type = NavType.StringType })
                 ) {
-                    ProfileScreen(navController, it.arguments?.getString("param"))
+                    ProfileScreen(navController, it.arguments?.getString("param")) // Pass something (as userId as an argument)
                 }
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
@@ -117,13 +122,14 @@ fun NavGraph() {
             }
         }
 
+        // FAB Menu not blurred as it is outside the Scaffold
         if (currentBaseRoute in topLevelRoutes) {
             ExpandableFabMenu(
                 isExpanded = isFabExpanded,
                 onClose = { isFabExpanded = false },
                 onAddTask = { 
                     isFabExpanded = false
-                    navController.navigate(AppScreens.CreateTaskScreen.route) 
+                    navController.navigate(AppScreens.CreateTaskScreen.route) // TODO: change to overlay card
                 },
                 onAddGoal = { 
                     isFabExpanded = false

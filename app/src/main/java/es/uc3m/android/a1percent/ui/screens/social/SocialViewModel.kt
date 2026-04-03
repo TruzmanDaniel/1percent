@@ -5,16 +5,12 @@ import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.UserRepository
-import es.uc3m.android.a1percent.data.model.UserProfile
-import kotlinx.coroutines.flow.*
-
-data class SocialUiState(
-    val currentUser: UserProfile? = null,
-    val friends: List<UserProfile> = emptyList(),
-    val searchResults: List<UserProfile> = emptyList(),
-    val searchQuery: String = "",
-    val isLoading: Boolean = false
-)
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 
 class SocialViewModel : ViewModel() {
 
@@ -23,21 +19,17 @@ class SocialViewModel : ViewModel() {
 
     init {
         // Load initial data
-        val current = SessionRepository.currentUser.value
-        _uiState.update { it.copy(currentUser = current) }
-        
-        loadFriends()
-        
-        // Listen to changes in the friendship table
-        SocialRepository.friendshipTable
-            .onEach { loadFriends() }
-            .launchIn(viewModelScope)
-    }
+        val currentUser = SessionRepository.currentUser.value
+        _uiState.update { it.copy(currentUser = currentUser) }
 
-    private fun loadFriends() {
-        val currentId = SessionRepository.currentUser.value?.id ?: return
-        val friendsList = SocialRepository.getFriendsOfUser(currentId)
-        _uiState.update { it.copy(friends = friendsList) }
+        val currentId = currentUser?.id
+        if (currentId != null) {
+            SocialRepository.observeFriends(currentId)
+                .onEach { friends ->
+                    _uiState.update { it.copy(friends = friends) }
+                }
+                .launchIn(viewModelScope)
+        }
     }
 
     fun onSearchQueryChange(newQuery: String) {

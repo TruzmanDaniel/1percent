@@ -7,7 +7,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * Memory source for user-created (custom) categories.
+ * Memory source for user-created (CUSTOM) categories.
+ * For the moment data is not persistent, it is reset when the app is restarted
  */
 object TaskCategoryRepository {
 
@@ -17,15 +18,17 @@ object TaskCategoryRepository {
     val predefinedCategories: List<Category> =
         Category.entries.filter { it != Category.AUTOMATIC }
 
-    // Automatic categorization must only evaluate predefined categories.
+    // Automatic categorization must only evaluate predefined categories (except 'AUTOMATIC')
     val inferenceCandidates: List<Category> = predefinedCategories
 
     fun addCustomCategory(rawName: String): String? {
         val normalized = rawName.trim()
-        if (normalized.isEmpty()) return null
+        if (normalized.isEmpty())
+            return null
 
         val existing = _customCategories.value.firstOrNull { it.equals(normalized, ignoreCase = true) }
-        if (existing != null) return existing
+        if (existing != null)
+            return existing
 
         _customCategories.update { it + normalized }
         return normalized

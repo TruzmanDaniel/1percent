@@ -24,7 +24,7 @@ fun BottomNavBar(
     currentRoute: String?,
     isFabExpanded: Boolean,
     onNavigate: (String) -> Unit,
-    onAddClick: () -> Unit
+    onAddClick: () -> Unit  // Function when + is clicked
 ) {
     NavigationBar {
         // DYNAMICALLY Build items only for the main screens shown inside the BottomNavBar
