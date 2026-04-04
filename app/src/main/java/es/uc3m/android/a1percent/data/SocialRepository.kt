@@ -33,7 +33,7 @@ object SocialRepository {
 
 
     // Reactive list of friends for a specific user (sync with friendship table)
-
+            // We use it in SocialViewModel, and can be reutilizable for other purposes
     fun observeFriends(userId: String): Flow<List<UserProfile>> {
         return friendshipTable.map { relations ->
             relationListToFriendProfiles(relations, userId)
@@ -51,10 +51,10 @@ object SocialRepository {
                 (rel.userAId == userId || rel.userBId == userId)
             }
             .map { rel ->
-                if (rel.userAId == userId) rel.userBId else rel.userAId
+                if (rel.userAId == userId) rel.userBId else rel.userAId // transforms relationship into the user ID of the other friend
             }
 
-        return friendIds.mapNotNull { UserRepository.findUserById(it) }
+        return friendIds.mapNotNull { UserRepository.findUserById(it) } // so we can use here that user ID an get the User objects
     }
 
     // Check if two users are currently friends
