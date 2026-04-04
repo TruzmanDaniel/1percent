@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
  * Singleton repository acting as the "Friendship Table" for the application.
  * Manages relations between user IDs only, following the decoupling principle.
  */
+
 object SocialRepository {
 
     // Internal "Table" of friendships. 
@@ -56,9 +57,7 @@ object SocialRepository {
         return friendIds.mapNotNull { UserRepository.findUserById(it) }
     }
 
-    /**
-     * Returns true if two users are currently friends.
-     */
+    // Check if two users are currently friends
     fun areFriends(user1Id: String, user2Id: String): Boolean {
         return _friendshipTable.value.any { rel ->
             rel.status == RelationshipStatus.FRIENDS &&
@@ -67,18 +66,27 @@ object SocialRepository {
         }
     }
 
-    /**
-     * Creates a new "row" in the friendship table as PENDING.
-     */
+    // Check if pending request exists between two users
+    private fun hasPendingRequest(user1Id: String, user2Id: String): Boolean {
+        return _friendshipTable.value.any { rel ->
+            rel.status == RelationshipStatus.PENDING &&
+            ((rel.userAId == user1Id && rel.userBId == user2Id) ||
+             (rel.userAId == user2Id && rel.userBId == user1Id))
+        }
+    }
+
+
+    // Creates a new row in the friendship table as PENDING.
     fun sendFriendRequest(fromId: String, toId: String) {
+        if (fromId == toId) return
         if (areFriends(fromId, toId)) return
-        
+        if (hasPendingRequest(fromId, toId)) return
+         
         _friendshipTable.update { it + UserRelationship(fromId, toId, RelationshipStatus.PENDING) }
     }
 
-    /**
-     * Updates the status of an existing relationship to FRIENDS.
-     */
+
+    // Updates the status of an existing relationship to FRIENDS.
     fun acceptFriendRequest(userA: String, userB: String) {
         _friendshipTable.update { list ->
             list.map { rel ->
