@@ -35,10 +35,9 @@ class SocialViewModel : ViewModel() {
 
                 friendsObserverJob?.cancel() // cancelled when user changes (avoids mixing friends lists)
                 if (user != null) {
-                    friendsObserverJob = SocialRepository.observeFriends(user.id) // this is the job we launch
+                    friendsObserverJob = SocialRepository.observeFriends(user.id)    // this is the job we launch
                         .onEach { friends ->
-                            _uiState.update { it.copy(friends = friends) }
-                            // .onEach because each time someone is added, or removed to/from the list, a new emission of the list is received
+                            _uiState.update { it.copy(friends = friends) }     // .onEach because each time someone is added, or removed to/from the list, a new emission of the list is received
                         }
                         .launchIn(viewModelScope)
                 }
