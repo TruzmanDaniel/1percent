@@ -28,48 +28,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import es.uc3m.android.a1percent.data.TaskCategoryRepository
-import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.Category
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private enum class DeadlineOption {
-    THIS_WEEK,
-    EXACT_DATE
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateTaskScreen(navController: NavController) {
-    var taskName by remember { mutableStateOf("") }
-    var taskDescription by remember { mutableStateOf("") }
-
-    var selectedCategory by remember { mutableStateOf(Category.AUTOMATIC) } // Default is automatic
-    var selectedCustomCategoryName by remember { mutableStateOf<String?>(null) }
-    var categoryExpanded by remember { mutableStateOf(false) }
-    var showCreateCategoryDialog by remember { mutableStateOf(false) }
-    var newCategoryName by remember { mutableStateOf("") }
-
-    val customCategories by TaskCategoryRepository.customCategories.collectAsState()
-    val predefinedCategories = remember { TaskCategoryRepository.predefinedCategories }
-    val selectedCategoryLabel = selectedCustomCategoryName ?: selectedCategory.displayName
-
-    var selectedEpochDay by rememberSaveable { mutableStateOf<Long?>(null) } // Default is no deadline
-    var hasDeadline by rememberSaveable { mutableStateOf(false) } // Default is no deadline
-    var deadlineOption by rememberSaveable { mutableStateOf(DeadlineOption.THIS_WEEK) }
-    var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
+fun CreateTaskScreen(
+    navController: NavController,
+    viewModel: CreateTaskViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
 
     Scaffold(
@@ -96,15 +73,15 @@ fun CreateTaskScreen(navController: NavController) {
         ) {
 
             OutlinedTextField(
-                value = taskName,
-                onValueChange = { taskName = it },
+                value = uiState.taskName,
+                onValueChange = viewModel::onTaskNameChange,
                 label = { Text("Task Name") },
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
-                value = taskDescription,
-                onValueChange = { taskDescription = it },
+                value = uiState.taskDescription,
+                onValueChange = viewModel::onTaskDescriptionChange,
                 label = { Text("Description") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
@@ -112,60 +89,48 @@ fun CreateTaskScreen(navController: NavController) {
 
         // CATEGORY DROPDOWN
             ExposedDropdownMenuBox(
-                expanded = categoryExpanded,
-                onExpandedChange = { categoryExpanded = !categoryExpanded }
+                expanded = uiState.isCategoryDropdownExpanded,
+                onExpandedChange = viewModel::onCategoryDropdownExpandedChange
             ) {
                 OutlinedTextField(
-                    value = selectedCategoryLabel,
+                    value = uiState.selectedCategoryLabel,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Category") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = uiState.isCategoryDropdownExpanded) },
                     modifier = Modifier
                         .menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
                         .fillMaxWidth()
                 )
 
                 ExposedDropdownMenu(
-                    expanded = categoryExpanded,
-                    onDismissRequest = { categoryExpanded = false }
+                    expanded = uiState.isCategoryDropdownExpanded,
+                    onDismissRequest = { viewModel.onCategoryDropdownExpandedChange(false) }
                 ) {
                     // AUTOMATIC
                     DropdownMenuItem(
                         text = { Text(Category.AUTOMATIC.displayName) },
-                        onClick = {
-                            selectedCategory = Category.AUTOMATIC
-                            selectedCustomCategoryName = null
-                            categoryExpanded = false
-                        }
+                        onClick = { viewModel.onCategorySelected(Category.AUTOMATIC) }
                     )
 
                     HorizontalDivider()
 
                     // PREDEFINED
-                    predefinedCategories.forEach { category ->
+                    uiState.predefinedCategories.forEach { category ->
                         DropdownMenuItem(
                             text = { Text(category.displayName) },
-                            onClick = {
-                                selectedCategory = category
-                                selectedCustomCategoryName = null
-                                categoryExpanded = false
-                            }
+                            onClick = { viewModel.onCategorySelected(category) }
                         )
                     }
 
                     // CUSTOM
-                    if (customCategories.isNotEmpty()) {
+                    if (uiState.customCategories.isNotEmpty()) {
                         HorizontalDivider()
 
-                        customCategories.forEach { customCategory ->
+                        uiState.customCategories.forEach { customCategory ->
                             DropdownMenuItem(
                                 text = { Text(customCategory) },
-                                onClick = {
-                                    selectedCustomCategoryName = customCategory
-                                    selectedCategory = Category.AUTOMATIC
-                                    categoryExpanded = false
-                                }
+                                onClick = { viewModel.onCustomCategorySelected(customCategory) }
                             )
                         }
                     }
@@ -175,10 +140,7 @@ fun CreateTaskScreen(navController: NavController) {
                     // CREATE A CUSTOM
                     DropdownMenuItem(
                         text = { Text("Create a Category") },
-                        onClick = {
-                            categoryExpanded = false
-                            showCreateCategoryDialog = true
-                        }
+                        onClick = viewModel::onCreateCategoryClicked
                     )
                 }
             }
@@ -193,25 +155,20 @@ fun CreateTaskScreen(navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Checkbox(
-                        checked = hasDeadline,
-                        onCheckedChange = { checked ->
-                            hasDeadline = checked
-                            if (!checked) {
-                                selectedEpochDay = null
-                            }
-                        }
+                        checked = uiState.hasDeadline,
+                        onCheckedChange = viewModel::onDeadlineEnabledChange
                     )
                     Text("Set deadline")
                 }
 
-                if (hasDeadline) {
+                if (uiState.hasDeadline) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = deadlineOption == DeadlineOption.THIS_WEEK,
-                            onClick = { deadlineOption = DeadlineOption.THIS_WEEK }
+                            selected = uiState.deadlineOption == DeadlineOption.THIS_WEEK,
+                            onClick = { viewModel.onDeadlineOptionSelected(DeadlineOption.THIS_WEEK) }
                         )
                         Text("This Week")
                     }
@@ -221,17 +178,16 @@ fun CreateTaskScreen(navController: NavController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = deadlineOption == DeadlineOption.EXACT_DATE,
+                            selected = uiState.deadlineOption == DeadlineOption.EXACT_DATE,
                             onClick = {
-                                deadlineOption = DeadlineOption.EXACT_DATE
-                                showDatePickerDialog = true
+                                viewModel.onDeadlineOptionSelected(DeadlineOption.EXACT_DATE)
                             }
                         )
                         Text("Specific date")
                     }
 
-                    if (deadlineOption == DeadlineOption.EXACT_DATE) {
-                        val formattedDate = selectedEpochDay?.let { epochDay ->
+                    if (uiState.deadlineOption == DeadlineOption.EXACT_DATE) {
+                        val formattedDate = uiState.selectedEpochDay?.let { epochDay ->
                             val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
                             formatter.format(Date(epochDay * 86_400_000L))
                         } ?: "No date selected"
@@ -244,21 +200,13 @@ fun CreateTaskScreen(navController: NavController) {
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        TextButton(onClick = { showDatePickerDialog = true }) {
-                            Text(if (selectedEpochDay == null) "Select date" else "Change date")
+                        TextButton(onClick = { viewModel.onDeadlineOptionSelected(DeadlineOption.EXACT_DATE) }) {
+                            Text(if (uiState.selectedEpochDay == null) "Select date" else "Change date")
                         }
                     }
                 }
             }
 
-            val selectedDeadline: TaskDeadline? = when {
-                !hasDeadline -> null
-                deadlineOption == DeadlineOption.THIS_WEEK -> TaskDeadline.ThisWeek
-                else -> selectedEpochDay?.let { TaskDeadline.OnDate(it) }
-            }
-
-            // avoid creating tasks with unselected but intended deadline
-            val canCreateTask = !hasDeadline || selectedDeadline != null
 
             // CREATE TASK BUTTON
             Button(
@@ -269,7 +217,7 @@ fun CreateTaskScreen(navController: NavController) {
                     // TODO: persist task with selectedCategory, selectedCustomCategoryName and selectedDeadline.
                     navController.popBackStack()
                 },
-                enabled = canCreateTask,
+                enabled = uiState.canCreateTask,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Create Task")
@@ -277,31 +225,30 @@ fun CreateTaskScreen(navController: NavController) {
         }
     }
 
-    // Dialog to select a date in the calendar
-    if (showDatePickerDialog) {
+        // Dialog to select a date in the calendar
+    if (uiState.isDatePickerVisible) {
         val millisPerDay = 86_400_000L
-        val initialMillis = (selectedEpochDay ?: (System.currentTimeMillis() / millisPerDay)) * millisPerDay
+        val initialMillis = (uiState.selectedEpochDay ?: (System.currentTimeMillis() / millisPerDay)) * millisPerDay
         val datePickerState = androidx.compose.material3.rememberDatePickerState(
             initialSelectedDateMillis = initialMillis
         )
 
         DatePickerDialog(
-            onDismissRequest = { showDatePickerDialog = false },
+            onDismissRequest = viewModel::onDatePickerDismissed,
             confirmButton = {
                 TextButton(
                     onClick = {
                         val selectedMillis = datePickerState.selectedDateMillis
                         if (selectedMillis != null) {
-                            selectedEpochDay = selectedMillis / millisPerDay
+                            viewModel.onDateSelected(selectedMillis / millisPerDay)
                         }
-                        showDatePickerDialog = false
                     }
                 ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePickerDialog = false }) {
+                TextButton(onClick = viewModel::onDatePickerDismissed) {
                     Text("Cancel")
                 }
             }
@@ -311,17 +258,16 @@ fun CreateTaskScreen(navController: NavController) {
     }
 
     // Dialog to create a custom category
-    if (showCreateCategoryDialog) {
+    if (uiState.isCreateCategoryDialogVisible) {
         AlertDialog(
             onDismissRequest = {
-                showCreateCategoryDialog = false
-                newCategoryName = ""
+                viewModel.onCreateCategoryDismissed()
             },
             title = { Text("Create a Category") },
             text = {
                 OutlinedTextField(
-                    value = newCategoryName,
-                    onValueChange = { newCategoryName = it },
+                    value = uiState.newCategoryName,
+                    onValueChange = viewModel::onNewCategoryNameChange,
                     label = { Text("Category name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
@@ -330,22 +276,15 @@ fun CreateTaskScreen(navController: NavController) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val savedName = TaskCategoryRepository.addCustomCategory(newCategoryName)
-                        if (savedName != null) {
-                            selectedCustomCategoryName = savedName
-                            selectedCategory = Category.AUTOMATIC
-                        }
-                        showCreateCategoryDialog = false
-                        newCategoryName = ""
+                        viewModel.onCreateCategoryConfirmed()
                     },
-                    enabled = newCategoryName.trim().isNotEmpty()
+                    enabled = uiState.newCategoryName.trim().isNotEmpty()
                 ) { Text("Create") }
             },
             dismissButton = {
                 TextButton(
                     onClick = {
-                        showCreateCategoryDialog = false
-                        newCategoryName = ""
+                        viewModel.onCreateCategoryDismissed()
                     }
                 ) { Text("Cancel") }
             }
