@@ -30,7 +30,7 @@ data class CreateTaskUiState(
     val isDatePickerVisible: Boolean = false
 ) {
     val selectedCategoryLabel: String
-        get() = selectedCustomCategoryName ?: selectedCategory.displayName
+        get() = selectedCustomCategoryName ?: selectedCategory.displayName  // If custom selected, display it (it is directly a string)
 
     val selectedDeadline: TaskDeadline?
         get() = when {

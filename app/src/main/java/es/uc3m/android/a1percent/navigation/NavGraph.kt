@@ -4,6 +4,9 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -13,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -36,7 +40,7 @@ import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
 import es.uc3m.android.a1percent.ui.screens.targets.TargetsScreen
-import es.uc3m.android.a1percent.ui.screens.tasks.CreateTaskScreen
+import es.uc3m.android.a1percent.ui.screens.tasks.CreateTaskCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,9 +58,10 @@ fun NavGraph() {
         .firstOrNull { it.route == currentRoute }?.label ?: ""
 
     var isFabExpanded by remember { mutableStateOf(false) }
+    var isTaskCardVisible by remember { mutableStateOf(false) }
 
     val blurRadius by animateDpAsState(
-        targetValue = if (isFabExpanded) 10.dp else 0.dp,
+        targetValue = if (isFabExpanded || isTaskCardVisible) 10.dp else 0.dp,
         label = "BlurAnimation"
     )
 
@@ -117,8 +122,7 @@ fun NavGraph() {
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
-                composable(route = AppScreens.CreateTaskScreen.route) { CreateTaskScreen(navController) }
-                composable(route = AppScreens.CreateGoalScreen.route) { CreateGoalScreen(navController) }
+                composable(route = AppScreens.CreateGoalScreen.route) { CreateGoalScreen(navController) } // TODO eliminar ya no es screen con ruta
             }
         }
 
@@ -129,13 +133,28 @@ fun NavGraph() {
                 onClose = { isFabExpanded = false },
                 onAddTask = { 
                     isFabExpanded = false
-                    navController.navigate(AppScreens.CreateTaskScreen.route) // TODO: change to overlay card
+                    isTaskCardVisible = true
                 },
                 onAddGoal = { 
                     isFabExpanded = false
                     navController.navigate(AppScreens.CreateGoalScreen.route) 
                 }
             )
+        }
+
+        if (isTaskCardVisible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { isTaskCardVisible = false }
+            )
+
+            // Over the box, we render the card
+            CreateTaskCard(onDismiss = { isTaskCardVisible = false })
         }
     }
 }

@@ -18,8 +18,7 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
     object ProgressScreen: AppScreens("progress", "Progress", Icons.Default.BarChart)
 
     // Nuevas pantallas (No Top-Level)
-    object CreateTaskScreen : AppScreens("create_task", "Create Task")
-    object CreateGoalScreen : AppScreens("create_goal", "Create Goal")
+    object CreateGoalScreen : AppScreens("create_goal", "Create Goal") // TODO eliminar porque ay no es screen con ruta
 
     companion object {
 

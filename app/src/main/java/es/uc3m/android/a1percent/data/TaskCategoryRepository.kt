@@ -26,6 +26,7 @@ object TaskCategoryRepository {
         if (normalized.isEmpty())
             return null
 
+        // Check already existing
         val existing = _customCategories.value.firstOrNull { it.equals(normalized, ignoreCase = true) }
         if (existing != null)
             return existing

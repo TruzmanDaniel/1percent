@@ -41,7 +41,7 @@ class CreateTaskViewModel : ViewModel() {
         _uiState.update { it.copy(taskDescription = newValue) }
     }
 
-    fun onCategoryDropdownExpandedChange(expanded: Boolean) {
+    fun onCategoryDropdownExpandedChange(expanded: Boolean) {  // 'expanded' is the new state of the dropdown (compose logic when calling 'onExpandedChange')
         _uiState.update { it.copy(isCategoryDropdownExpanded = expanded) }
     }
 
@@ -58,7 +58,7 @@ class CreateTaskViewModel : ViewModel() {
     fun onCustomCategorySelected(customCategory: String) {
         _uiState.update {
             it.copy(
-                selectedCategory = Category.AUTOMATIC,
+                selectedCategory = Category.AUTOMATIC,   // placeholder, useless (selectedCategory is from Category enum and not nullable)
                 selectedCustomCategoryName = customCategory,
                 isCategoryDropdownExpanded = false
             )
@@ -87,7 +87,7 @@ class CreateTaskViewModel : ViewModel() {
             _uiState.update {
                 it.copy(
                     selectedCategory = Category.AUTOMATIC,
-                    selectedCustomCategoryName = savedName,
+                    selectedCustomCategoryName = savedName,  // Select this new created category
                     isCreateCategoryDialogVisible = false,
                     newCategoryName = ""
                 )
