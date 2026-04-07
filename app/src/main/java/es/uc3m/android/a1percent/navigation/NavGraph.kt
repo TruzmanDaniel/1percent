@@ -32,13 +32,14 @@ import es.uc3m.android.a1percent.ui.navigation.DefaultTopBar
 
 
 import es.uc3m.android.a1percent.ui.navigation.ExpandableFabMenu
-import es.uc3m.android.a1percent.ui.screens.goal.CreateGoalScreen
+import es.uc3m.android.a1percent.ui.screens.goal.CreateGoalCard
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
 import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
+import es.uc3m.android.a1percent.ui.screens.splash.SplashScreen
 import es.uc3m.android.a1percent.ui.screens.targets.TargetsScreen
 import es.uc3m.android.a1percent.ui.screens.tasks.CreateTaskCard
 
@@ -59,9 +60,10 @@ fun NavGraph() {
 
     var isFabExpanded by remember { mutableStateOf(false) }
     var isTaskCardVisible by remember { mutableStateOf(false) }
+    var isGoalCardVisible by remember { mutableStateOf(false) }
 
     val blurRadius by animateDpAsState(
-        targetValue = if (isFabExpanded || isTaskCardVisible) 10.dp else 0.dp,
+        targetValue = if (isFabExpanded || isTaskCardVisible || isGoalCardVisible) 10.dp else 0.dp,
         label = "BlurAnimation"
     )
 
@@ -107,10 +109,21 @@ fun NavGraph() {
         ) { innerPadding ->
             NavHost(
                 navController = navController,
-                startDestination = AppScreens.LoginScreen.route,  // TODO: if user already auth, go to HomeScreen
-                // startDestination = AppScreens.HomeScreen.route,
+                startDestination = AppScreens.SplashScreen.route, // TODO: if user already auth, go to HomeScreen
                 modifier = Modifier.padding(innerPadding)
             ) {
+                composable(route = AppScreens.SplashScreen.route) {
+                    SplashScreen(
+                        onSplashFinished = {
+                            // Go to real start destination
+                            navController.navigate(AppScreens.LoginScreen.route) {
+                                popUpTo(AppScreens.SplashScreen.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
                 composable(route = AppScreens.LoginScreen.route) { LoginScreen(navController) }
                 composable(route = AppScreens.HomeScreen.route) { HomeScreen(navController) }
                 composable(
@@ -122,7 +135,6 @@ fun NavGraph() {
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
-                composable(route = AppScreens.CreateGoalScreen.route) { CreateGoalScreen(navController) } // TODO eliminar ya no es screen con ruta
             }
         }
 
@@ -137,7 +149,7 @@ fun NavGraph() {
                 },
                 onAddGoal = { 
                     isFabExpanded = false
-                    navController.navigate(AppScreens.CreateGoalScreen.route) 
+                    isGoalCardVisible = true
                 }
             )
         }
@@ -155,6 +167,21 @@ fun NavGraph() {
 
             // Over the box, we render the card
             CreateTaskCard(onDismiss = { isTaskCardVisible = false })
+        }
+
+        if (isGoalCardVisible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { isGoalCardVisible = false }
+            )
+
+            // Over the box, we render the goal card
+            CreateGoalCard(onDismiss = { isGoalCardVisible = false })
         }
     }
 }

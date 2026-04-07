@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class AppScreens(val route: String, val label: String = "", val icon: ImageVector? = null) {
 
+    object SplashScreen  : AppScreens("splash")
     object LoginScreen   : AppScreens("login",    "Login")
     object HomeScreen    : AppScreens("home",     "Home",     Icons.Default.Home)
     object ProfileScreen : AppScreens("profile", "Profile")
@@ -16,9 +17,6 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
     object TargetsScreen : AppScreens("targets",  "Targets",  Icons.Default.Flag)
     object SocialScreen  : AppScreens("social",   "Social",   Icons.Default.Group)
     object ProgressScreen: AppScreens("progress", "Progress", Icons.Default.BarChart)
-
-    // Nuevas pantallas (No Top-Level)
-    object CreateGoalScreen : AppScreens("create_goal", "Create Goal") // TODO eliminar porque ay no es screen con ruta
 
     companion object {
 
