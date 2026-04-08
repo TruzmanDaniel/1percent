@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_PARAMETER")
+
 package es.uc3m.android.a1percent.ui.screens.progress
 
 import androidx.compose.foundation.background
@@ -25,25 +27,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-
-@Composable
-fun ProgressScreen(navController: NavController) {
-    ProgressBodyContent(navController)
-}
+import androidx.compose.runtime.getValue
 
 @Composable
 @Suppress("UNUSED_PARAMETER")
-private fun ProgressBodyContent(navController: NavController) {
-    val sections = listOf(
-        "1% Curve",
-        "Completed Tasks (Total & This Month)",
-        "Task Category Heatmap",
-        "XP Gained Over the Month",
-        "Average Difficulty of Completed Tasks",
-        "Level Evolution and Progress to Next Level",
-        "Cumulative XP Chart (Exponential Progress)"
-    )
+fun ProgressScreen(
+    navController: NavController,
+    viewModel: ProgressViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    ProgressBodyContent(uiState = uiState)
+}
+
+@Composable
+private fun ProgressBodyContent(uiState: ProgressUiState) {
+    val sections = uiState.sectionTitles
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -52,14 +54,14 @@ private fun ProgressBodyContent(navController: NavController) {
     ) {
         item {
             Text(
-                text = "Progress Dashboard",
+                text = uiState.title,
                 style = MaterialTheme.typography.headlineSmall
             )
         }
 
         item {
             Text(
-                text = "Preview mode: these blocks are placeholders and will be replaced with real charts once data integration is ready.",
+                text = uiState.intro,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -154,7 +156,7 @@ private fun ProgressBodyContent(navController: NavController) {
         item {
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Note: mock values for visual prototyping.",
+                text = uiState.footerNote,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

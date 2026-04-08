@@ -40,6 +40,7 @@ import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
 import es.uc3m.android.a1percent.ui.screens.splash.SplashScreen
+import es.uc3m.android.a1percent.ui.screens.targets.GoalDetailScreen
 import es.uc3m.android.a1percent.ui.screens.targets.TargetsScreen
 import es.uc3m.android.a1percent.ui.screens.tasks.CreateTaskCard
 
@@ -133,6 +134,19 @@ fun NavGraph() {
                     ProfileScreen(navController, it.arguments?.getString("param")) // Pass something (as userId as an argument)
                 }
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
+                composable(
+                    route = AppScreens.TargetsScreen.route + "/goal/{goalId}",
+                    arguments = listOf(navArgument(name = "goalId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val goalId = backStackEntry.arguments?.getString("goalId") ?: return@composable
+                    val viewModel: es.uc3m.android.a1percent.ui.screens.targets.GoalDetailViewModel = 
+                        androidx.lifecycle.viewmodel.compose.viewModel()
+                    // Load the goal when the screen is first composed
+                    androidx.compose.runtime.LaunchedEffect(goalId) {
+                        viewModel.loadGoal(goalId)
+                    }
+                    GoalDetailScreen(navController, goalId, viewModel)
+                }
                 composable(route = AppScreens.SocialScreen.route) { SocialScreen(navController) }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
             }
