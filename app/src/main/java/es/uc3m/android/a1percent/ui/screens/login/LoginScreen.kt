@@ -109,7 +109,9 @@ fun LoginScreen(navController: NavController) {
         }
 
         TextButton(
-            onClick = { /* Navegar a registro */ },
+            onClick = {
+                navController.navigate(AppScreens.RegisterScreen.route)
+            },
             modifier = Modifier.padding(top = 16.dp)
         ) {
             Text("Don't have an account? Sign Up")

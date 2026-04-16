@@ -11,6 +11,7 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
 
     object SplashScreen  : AppScreens("splash")
     object LoginScreen   : AppScreens("login",    "Login")
+    object RegisterScreen : AppScreens("register", "Register")
     object HomeScreen    : AppScreens("home",     "Home",     Icons.Default.Home)
     object ProfileScreen : AppScreens("profile", "Profile")
 

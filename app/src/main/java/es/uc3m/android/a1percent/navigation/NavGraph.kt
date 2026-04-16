@@ -35,6 +35,7 @@ import es.uc3m.android.a1percent.ui.navigation.ExpandableFabMenu
 import es.uc3m.android.a1percent.ui.screens.goal.CreateGoalCard
 import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
 import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
+import es.uc3m.android.a1percent.ui.screens.login.RegisterScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
@@ -126,6 +127,7 @@ fun NavGraph() {
                 }
 
                 composable(route = AppScreens.LoginScreen.route) { LoginScreen(navController) }
+                composable(route = AppScreens.RegisterScreen.route) { RegisterScreen(navController) }
                 composable(route = AppScreens.HomeScreen.route) { HomeScreen(navController) }
                 composable(
                     route = AppScreens.ProfileScreen.route + "/{param}",
