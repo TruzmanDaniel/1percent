@@ -6,11 +6,12 @@ package es.uc3m.android.a1percent.ui.screens.goal
  */
 data class CreateGoalUiState(
     val goalName: String = "",
-    val difficulty: Float = 3f
+    val difficulty: Float = 3f,
+    val isLoading: Boolean = false
 ) {
     // Ready for future properties when goal definition is expanded
     // e.g., category, deadline, description, etc.
 
     val canCreateGoal: Boolean
-        get() = goalName.isNotBlank()
+        get() = goalName.isNotBlank() && !isLoading
 }

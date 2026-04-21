@@ -112,7 +112,10 @@ fun CreateTaskCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Create Task", style = MaterialTheme.typography.titleLarge)
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = {
+                        viewModel.resetState() // Clear form state when closing
+                        onDismiss()
+                    }) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
                 }
@@ -330,19 +333,20 @@ fun CreateTaskCard(
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.16f))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    // Fixed action area at the bottom of the card
                     Button(
                         onClick = {
-                            // TODO: if selectedCategory == AUTOMATIC and no custom category is selected:
-                            // infer/predict the best predefined enum category in a future iteration.
-                            // Custom categories are only for manual selection of category
-                            // TODO: persist task with selectedCategory, selectedCustomCategoryName and selectedDeadline.
-                            onDismiss() // Create task and exit the card
+                            viewModel.createTask(
+                                onSuccess = {
+                                    viewModel.resetState()
+                                    onDismiss()
+                                },
+                                onError = { /* Ignore */ }
+                            )
                         },
                         enabled = uiState.canCreateTask,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Create Task")
+                        Text(if (uiState.isLoading) "Creating..." else "Create Task")
                     }
                 }
             }

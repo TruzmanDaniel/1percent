@@ -66,6 +66,56 @@ app.post("/register", async (req, res) => {
   }
 });
 
+/**
+//Login Users (Debug)
+app.post("/login", async (req, res) => {
+  try {
+    console.log("LOGIN BODY:", req.body);
+
+    const { email, password } = req.body;
+
+    console.log("EMAIL:", email);
+    console.log("PASSWORD:", password);
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Missing email or password" });
+    }
+
+    const snapshot = await db.collection("users")
+      .where("email", "==", email)
+      .limit(1)
+      .get();
+
+    console.log("MATCHING USERS:", snapshot.size);
+
+    if (snapshot.empty) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const userDoc = snapshot.docs[0];
+    const user = userDoc.data();
+
+    console.log("USER IN DB:", user);
+
+    if (user.password !== password) {
+      console.log("PASSWORD DOES NOT MATCH");
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    return res.status(200).json({
+      id: userDoc.id,
+      email: user.email,
+      username: user.username
+    });
+
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+*/
+
+
 // Obtener todos los usuarios (DEBUG)
 app.get("/users", async (req, res) => {
   try {

@@ -4,6 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import es.uc3m.android.a1percent.data.model.enums.Category
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.data.model.enums.TaskType
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,6 +153,47 @@ class CreateTaskViewModel : ViewModel() {
             )
         }
     }
+
+    fun createTask(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val userId = SessionRepository.currentUser.value?.id
+        if (userId == null) {
+            onError("No user logged in")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val state = _uiState.value
+            val task = Task(
+                title = state.taskName,
+                description = state.taskDescription,
+                type = TaskType.ONE_TIME,
+                difficulty = 1,
+                xp = 10,
+                energyCost = null,
+                deadline = state.selectedDeadline,
+                status = TaskStatus.PENDING,
+                category = state.selectedCategory,
+                customCategoryName = state.selectedCustomCategoryName
+            )
+
+            val result = TaskRespository.saveTask(userId, task)
+
+            result.onSuccess { onSuccess() }
+            result.onFailure { onError(it.message ?: "Error creating task") }
+
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun resetState() {
+        _uiState.value = CreateTaskUiState(
+            predefinedCategories = TaskCategoryRepository.predefinedCategories,
+            customCategories = TaskCategoryRepository.customCategories.value
+        )
+    }
+
 }
 
 

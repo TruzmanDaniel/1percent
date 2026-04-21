@@ -9,10 +9,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import es.uc3m.android.a1percent.navigation.NavGraph
 import es.uc3m.android.a1percent.ui.theme._1percentTheme
+import androidx.activity.compose.setContent
+import com.google.firebase.FirebaseApp
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        FirebaseApp.initializeApp(this)
+
+        // Connect emulators
+        FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+        FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
 
         setContent { // Compose Entry Point
             _1percentTheme { // Apply our custom theme defined in ui/theme/theme.kt

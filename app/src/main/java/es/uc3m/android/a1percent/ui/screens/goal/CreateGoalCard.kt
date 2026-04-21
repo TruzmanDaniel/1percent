@@ -87,7 +87,10 @@ fun CreateGoalCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Create Goal", style = MaterialTheme.typography.titleLarge)
-                    IconButton(onClick = onDismiss) {
+                    IconButton(onClick = {
+                        viewModel.resetState()
+                        onDismiss()
+                    }) {
                         Icon(Icons.Default.Close, contentDescription = "Close")
                     }
                 }
@@ -130,7 +133,10 @@ fun CreateGoalCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
-                        onClick = onDismiss,
+                        onClick = {
+                            viewModel.resetState()
+                            onDismiss()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .padding(0.dp),
@@ -144,16 +150,18 @@ fun CreateGoalCard(
 
                     Button(
                         onClick = {
-                            // TODO: Add goal creation logic here
-                            // For now, just dismiss (will be connected to data persistence later)
-                            onDismiss()
+                            viewModel.createGoal(
+                                onSuccess = {
+                                    viewModel.resetState()
+                                    onDismiss()
+                                },
+                                onError = { /* Ignore error by now */ }
+                            )
                         },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(0.dp),
+                        modifier = Modifier.weight(1f).padding(0.dp),
                         enabled = uiState.canCreateGoal
                     ) {
-                        Text("Create Goal")
+                        Text(if (uiState.isLoading) "Creating..." else "Create Goal")
                     }
                 }
             }

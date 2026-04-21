@@ -1,15 +1,17 @@
 package es.uc3m.android.a1percent.ui.screens.goal
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.uc3m.android.a1percent.data.GoalRepository
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.model.Goal
+import es.uc3m.android.a1percent.data.model.enums.Category
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-/**
- * Holds the state and form logic for goal creation.
- * Minimal implementation for now, ready for future expansion.
- */
 class CreateGoalViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateGoalUiState())
@@ -23,9 +25,34 @@ class CreateGoalViewModel : ViewModel() {
         _uiState.update { it.copy(difficulty = newValue) }
     }
 
-    // TODO: Add more event handlers when goal definition expands
-    // - onCategoryChange
-    // - onDeadlineChange
-    // - onDescriptionChange
-    // - etc.
+    fun createGoal(onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val userId = SessionRepository.currentUser.value?.id
+        println("DEBUG userId: $userId")
+        if (userId == null) {
+            onError("No user logged in")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val goal = Goal(
+                title = _uiState.value.goalName,
+                category = Category.AUTOMATIC,
+                difficulty = _uiState.value.difficulty.toInt(),
+                xp = _uiState.value.difficulty.toInt() * 50
+            )
+
+            val result = GoalRepository.saveGoal(userId, goal)
+
+            result.onSuccess { onSuccess() }
+            result.onFailure { onError(it.message ?: "Error creating goal") }
+
+            _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    fun resetState() {
+        _uiState.value = CreateGoalUiState()
+    }
 }

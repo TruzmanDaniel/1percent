@@ -15,6 +15,7 @@ enum class DeadlineOption {
 data class CreateTaskUiState(
     val taskName: String = "",
     val taskDescription: String = "",
+    val isLoading: Boolean = false,
 
     val selectedCategory: Category = Category.AUTOMATIC, // Default is AUTOMATIC
     val selectedCustomCategoryName: String? = null,
@@ -41,6 +42,6 @@ data class CreateTaskUiState(
 
     // avoid creating tasks with unselected but intended deadline
     val canCreateTask: Boolean
-        get() = !hasDeadline || selectedDeadline != null
+        get() = taskName.isNotBlank() && !isLoading && (!hasDeadline || selectedDeadline != null)
 }
 

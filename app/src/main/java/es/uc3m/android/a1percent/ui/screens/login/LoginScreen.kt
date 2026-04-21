@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.ui.screens.login
 
+import android.se.omapi.Session
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -24,6 +26,10 @@ fun LoginScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
 
     Column(
         modifier = Modifier
@@ -79,7 +85,7 @@ fun LoginScreen(navController: NavController) {
 
         if (showError) {
             Text(
-                text = "Invalid email or password",
+                text = errorMessage ?: "Invalid email or password",
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp).align(Alignment.Start)
@@ -90,22 +96,69 @@ fun LoginScreen(navController: NavController) {
 
         Button(
             onClick = {
-                // Changed to SessionRepository
-                val success = SessionRepository.login(email, password)
-                if (success) {
-                    navController.navigate(AppScreens.HomeScreen.route) {
-                        popUpTo(AppScreens.LoginScreen.route) { inclusive = true }
-                    }
-                } else {
+                ///**
+                if (email.isBlank() || password.isBlank()) {
                     showError = true
+                    errorMessage = "Please fill in all fields"
+                    return@Button
                 }
+                isLoading = true
+                showError = false
+                errorMessage = null
+
+                SessionRepository.loginWithFirebase(
+                    email = email.trim(),
+                    password = password
+                ) { success, error ->
+                    isLoading = false
+                    if (success) {
+                        navController.navigate(AppScreens.HomeScreen.route) {
+                            popUpTo(AppScreens.LoginScreen.route){ inclusive = true}
+                        }
+                    } else {
+                        showError = true
+                        errorMessage = error ?: "Invalid email or password"
+                    }
+                }
+                //*/
+
+                /**
+                if (email.isBlank() || password.isBlank()) {
+                    showError = true
+                    errorMessage = "Please fill in all fields"
+                    return@Button
+                }
+
+                scope.launch {
+                    isLoading = true
+                    showError = false
+                    errorMessage = null
+
+                    val result = SessionRepository.loginWithApi(
+                        email = email.trim(),
+                        password = password
+                    )
+
+                    result.onSuccess {
+                        navController.navigate(AppScreens.HomeScreen.route) {
+                            popUpTo(AppScreens.LoginScreen.route){ inclusive = true}
+                        }
+                    }.onFailure { error ->
+                        showError = true
+                        errorMessage = error.message ?: "Invalid email or password"
+                        println("LOGIN ERROR: ${error.message}")
+                    }
+
+                    isLoading = false
+                }
+                */
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Text("Login", fontSize = 18.sp)
+            Text(if (isLoading) "Logging in..." else "Login", fontSize = 18.sp)
         }
 
         TextButton(
