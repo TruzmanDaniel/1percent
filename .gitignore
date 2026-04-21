@@ -22,3 +22,7 @@ secrets.properties
 # Temporal Logs
 *.log
 
+# API keys
+app/google-services.json
+google-services.json
+
