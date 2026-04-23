@@ -16,7 +16,6 @@ enum class TargetsTab {
 
 // TASK FITLERS
 enum class TaskQuickFilter(val label: String) {
-    TASKS("Tasks"), // TODO creo que sobra porque como tal las missions si que son tasks, y estamos ya en el tab de "tasks"
     MISSIONS("Missions"),
     SHARED("Shared")
 }
@@ -26,7 +25,9 @@ data class TargetsUiState(
     val tasks: List<Task> = emptyList(),
     val goals: List<Goal> = emptyList(),
 
-    val selectedTaskFilters: Set<TaskQuickFilter> = setOf(TaskQuickFilter.TASKS),
+    // Empty means "show all tasks" by default.
+    val selectedTaskFilters: Set<TaskQuickFilter> = emptySet(),
+
     val goalTitleById: Map<String, String> = emptyMap(),
     val categoryFilterLabel: String = "Category",
     val taskSortLabel: String = "Sort",

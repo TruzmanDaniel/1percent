@@ -11,7 +11,7 @@ import es.uc3m.android.a1percent.data.model.UserProfile
  */
 
 data class HomeUiState(
-    val user: UserProfile,
-    val tasks: List<Task>,
-    val goal: Goal
+    val user: UserProfile? = null,
+    val tasks: List<Task> = emptyList(),
+    val goal: Goal? = null
 )

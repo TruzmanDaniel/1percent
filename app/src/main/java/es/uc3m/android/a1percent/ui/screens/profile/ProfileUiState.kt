@@ -6,6 +6,6 @@ import es.uc3m.android.a1percent.data.model.UserProfile
  * Data class to represent the Profile screen state (DATA to be displayed by the UI).
  */
 data class ProfileUiState(
-    val user: UserProfile,
+    val user: UserProfile? = null,
     val isOwnProfile: Boolean = true
 )

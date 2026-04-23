@@ -1,15 +1,19 @@
 package es.uc3m.android.a1percent.ui.screens.targets
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.uc3m.android.a1percent.data.GoalRepository
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
-import es.uc3m.android.a1percent.data.model.MockData
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.enums.Category
-import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 data class GoalDetailUiState(
     val goal: Goal? = null,
@@ -22,47 +26,46 @@ data class GoalDetailUiState(
  * TODO: Replace mock data with real repository once backend is integrated.
  */
 class GoalDetailViewModel : ViewModel() {
-
-    // Mock goals and tasks (same as in TargetsViewModel)
-    private val allGoals: List<Goal> = listOf(
-        MockData.mockGoal,
-        Goal(
-            id = "goal-2",
-            title = "Build Consistent Fitness Routine",
-            description = "Train 4 days per week and track recovery.",
-            category = Category.FITNESS,
-            difficulty = 3,
-            xp = 180,
-            deadline = null,
-            status = GoalStatus.ACTIVE,
-            progress = 55,
-            createdAt = 1741737600000
-        ),
-        Goal(
-            id = "goal-3",
-            title = "Improve Personal Finance Basics",
-            description = "Create monthly budget and save emergency funds.",
-            category = Category.FINANCE,
-            difficulty = 2,
-            xp = 140,
-            deadline = null,
-            status = GoalStatus.PAUSED,
-            progress = 20,
-            createdAt = 1741737600000
-        )
-    )
-
-    private val allTasks: List<Task> = MockData.mockTasks
+    private var currentGoalId: String? = null
 
     private val _uiState = MutableStateFlow(GoalDetailUiState())
     val uiState: StateFlow<GoalDetailUiState> = _uiState.asStateFlow()
 
-    fun loadGoal(goalId: String) {
-        val goal = allGoals.find { it.id == goalId }
-        val missions = allTasks.filter { it.goalId == goalId }
+    init {
+        SessionRepository.currentUser
+            .onEach { user ->
+                val goalId = currentGoalId
+                if (user == null || goalId == null) {
+                    _uiState.value = GoalDetailUiState()
+                } else {
+                    loadGoalForUser(user.id, goalId)
+                }
+            }
+            .launchIn(viewModelScope)
+    }
 
-        _uiState.update {
-            it.copy(goal = goal, missions = missions)
+    // Load goal screen by the parameter goalId in the route/url
+    fun loadGoal(goalId: String) {
+        currentGoalId = goalId
+        val userId = SessionRepository.currentUser.value?.id ?: return
+        loadGoalForUser(userId, goalId)
+    }
+
+    private fun loadGoalForUser(userId: String, goalId: String) {
+        viewModelScope.launch {
+            var goal: Goal? = null
+            var missions: List<Task> = emptyList()
+
+            GoalRepository.getGoals(userId).onSuccess { goals ->
+                goal = goals.find { it.id == goalId }
+            }
+            TaskRespository.getTasks(userId).onSuccess { tasks ->
+                missions = tasks.filter { it.goalId == goalId }
+            }
+
+            _uiState.update {
+                it.copy(goal = goal, missions = missions)
+            }
         }
     }
 

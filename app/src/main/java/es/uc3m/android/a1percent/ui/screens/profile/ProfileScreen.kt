@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 
 @Composable
@@ -31,6 +32,16 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
 fun ProfileBodyContent(navController: NavController, uiState: ProfileUiState) {
     val user = uiState.user
     val isOwn = uiState.isOwnProfile
+
+    if (user == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Profile not available")
+        }
+        return
+    }
     
     Column(
         modifier = Modifier
@@ -93,6 +104,7 @@ fun ProfileBodyContent(navController: NavController, uiState: ProfileUiState) {
             // LOGOUT BUTTON (Only for own profile)
             Button(
                 onClick = {
+                    SessionRepository.logout()
                     navController.navigate(AppScreens.LoginScreen.route) {
                         popUpTo(0) { inclusive = true }
                         launchSingleTop = true

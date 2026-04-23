@@ -20,14 +20,7 @@ object SocialRepository {
     // Internal "Table" of friendships. 
     // In a real database, this would be a separate collection/table.
     private val _friendshipTable = MutableStateFlow<List<UserRelationship>>(
-        listOf(
-            // Initial MOCK relationships
-            UserRelationship("user-1", "user-2", RelationshipStatus.FRIENDS),
-            UserRelationship("user-quick", "user-2", RelationshipStatus.FRIENDS),
-            UserRelationship("user-quick", "user-3", RelationshipStatus.FRIENDS),
-            UserRelationship("user-quick", "user-1", RelationshipStatus.FRIENDS),
-            UserRelationship("user-1", "user-3", RelationshipStatus.PENDING)
-        )
+        emptyList()
     )
     val friendshipTable: StateFlow<List<UserRelationship>> = _friendshipTable.asStateFlow()
 

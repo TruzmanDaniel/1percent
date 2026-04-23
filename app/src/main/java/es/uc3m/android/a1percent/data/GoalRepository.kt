@@ -6,6 +6,7 @@ import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import kotlinx.coroutines.tasks.await
 
+
 object GoalRepository {
 
     private val db by lazy { FirebaseFirestore.getInstance() }
@@ -22,6 +23,7 @@ object GoalRepository {
                 "category" to goal.category.name,
                 "difficulty" to goal.difficulty,
                 "xp" to goal.xp,
+                "deadline" to goal.deadline,
                 "status" to goal.status.name,
                 "progress" to goal.progress,
                 "createdAt" to goal.createdAt
@@ -45,6 +47,7 @@ object GoalRepository {
                         category = Category.valueOf(doc.getString("category") ?: "AUTOMATIC"),
                         difficulty = doc.getLong("difficulty")?.toInt() ?: 1,
                         xp = doc.getLong("xp")?.toInt() ?: 0,
+                        deadline = doc.getLong("deadline"),
                         status = GoalStatus.valueOf(doc.getString("status") ?: "ACTIVE"),
                         progress = doc.getLong("progress")?.toInt() ?: 0,
                         createdAt = doc.getLong("createdAt") ?: 0L

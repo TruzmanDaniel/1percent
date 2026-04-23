@@ -1,15 +1,19 @@
 ﻿package es.uc3m.android.a1percent.ui.screens.targets
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import es.uc3m.android.a1percent.data.GoalRepository
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
-import es.uc3m.android.a1percent.data.model.MockData
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.enums.Category
-import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 /**
  * ViewModel for Targets browsing.
@@ -17,54 +21,64 @@ import kotlinx.coroutines.flow.update
  */
 class TargetsViewModel : ViewModel() {
 
-     private val allGoals: List<Goal> = listOf(
+    private var allGoals: List<Goal> = emptyList()
+    private var allTasks: List<Task> = emptyList()
 
-         // Mock data  TODO remove mock data
-        MockData.mockGoal,
-        Goal(
-            id = "goal-2",
-            title = "Build Consistent Fitness Routine",
-            description = "Train 4 days per week and track recovery.",
-            category = Category.FITNESS,
-            difficulty = 3,
-            xp = 180,
-            deadline = null,
-            status = GoalStatus.ACTIVE,
-            progress = 55,
-            createdAt = 1741737600000
-        ),
-        Goal(
-            id = "goal-3",
-            title = "Improve Personal Finance Basics",
-            description = "Create monthly budget and save emergency funds.",
-            category = Category.FINANCE,
-            difficulty = 2,
-            xp = 140,
-            deadline = null,
-            status = GoalStatus.PAUSED,
-            progress = 20,
-            createdAt = 1741737600000
-        )
-    )
-    private val allTasks: List<Task> = MockData.mockTasks
-
-
-
-    private val _uiState = MutableStateFlow(
-        TargetsUiState(
-            tasks = allTasks,
-            // tasks = allTasks {it.goal == null},
-            goals = allGoals,
-            goalTitleById = allGoals.associate { it.id to it.title },
-            selectedTaskFilters = emptySet()
-        )
-    )
+    private val _uiState = MutableStateFlow(TargetsUiState())
     val uiState: StateFlow<TargetsUiState> = _uiState.asStateFlow()
 
+    init {
+        SessionRepository.currentUser
+            .onEach { user ->
+                if (user == null) {
+                    allGoals = emptyList()
+                    allTasks = emptyList()
+                    _uiState.value = TargetsUiState()
+                } else {
+                    loadTargetsData(user.id)
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun loadTargetsData(userId: String) {
+        viewModelScope.launch {
+            TaskRespository.getTasks(userId).onSuccess { tasks ->
+                allTasks = tasks
+            }
+            GoalRepository.getGoals(userId).onSuccess { goals ->
+                allGoals = goals
+            }
+
+            _uiState.update { current ->
+                current.copy(
+                    tasks = applyTaskFilters(current.selectedTaskFilters),
+                    goals = allGoals,
+                    goalTitleById = allGoals.associate { it.id to it.title }
+                )
+            }
+        }
+    }
+
+    private fun applyTaskFilters(filters: Set<TaskQuickFilter>): List<Task> {
+        if (filters.isEmpty()) return allTasks
+
+        return allTasks.filter { task ->
+            filters.all { filter ->
+                when (filter) {
+                    TaskQuickFilter.MISSIONS -> task.goalId != null
+                    TaskQuickFilter.SHARED -> true // TODO: replace with real shared/collaboration source
+                }
+            }
+        }
+    }
+
+    // TAB VIEW
     fun onTabSelected(tab: TargetsTab) {
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
+    // FILTERING
     fun onTaskFilterSelected(filter: TaskQuickFilter) {
         _uiState.update { current ->
             // Toggle: if filter is already selected, remove it; otherwise, add it
@@ -74,25 +88,9 @@ class TargetsViewModel : ViewModel() {
                 current.selectedTaskFilters + filter
             }
 
-            // Filter tasks based on selected filters
-            // If no filters selected, show all tasks
-            val filteredTasks = if (newSelectedFilters.isEmpty()) {
-                allTasks
-            } else {
-                allTasks.filter { task ->
-                    newSelectedFilters.all { filter ->
-                        when (filter) {
-                            TaskQuickFilter.TASKS -> task.goalId == null
-                            TaskQuickFilter.MISSIONS -> task.goalId != null
-                            TaskQuickFilter.SHARED -> true // TODO: replace with real collaboration/shared query
-                        }
-                    }
-                }
-            }
-
             current.copy(
                 selectedTaskFilters = newSelectedFilters,
-                tasks = filteredTasks
+                tasks = applyTaskFilters(newSelectedFilters)
             )
         }
     }
@@ -109,6 +107,8 @@ class TargetsViewModel : ViewModel() {
         // TODO: open sorting options for goals (progress, deadline, createdAt, etc.).
     }
 
+    // DETAIL VIEW
+
     @Suppress("UNUSED_PARAMETER")
     fun onGoalClicked(goalId: String) {
         // TODO: navigate to goal detail when detail flow is implemented.
@@ -122,6 +122,8 @@ class TargetsViewModel : ViewModel() {
         _uiState.update { it.copy(selectedTask = null) }
     }
 
+    // ACTIONS
+
     // TODO: Implement actual task action logic (currently just logs)
     fun onTaskComplete(taskId: String) {
         // TODO: Update task status to COMPLETED in repository
@@ -134,9 +136,13 @@ class TargetsViewModel : ViewModel() {
     }
 
     fun onTaskDelete(taskId: String) {
-        // TODO: Delete task from repository
+        // TODO: Persist deletion in repository and refresh
+        allTasks = allTasks.filter { it.id != taskId }
         _uiState.update { current ->
-            current.copy(tasks = current.tasks.filter { it.id != taskId })
+            current.copy(
+                tasks = applyTaskFilters(current.selectedTaskFilters),
+                selectedTask = current.selectedTask?.takeIf { it.id != taskId }
+            )
         }
     }
 }

@@ -6,7 +6,6 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import kotlinx.coroutines.launch
-import es.uc3m.android.a1percent.data.model.MockData
 import kotlinx.coroutines.flow.*
 
 /**
@@ -14,14 +13,8 @@ import kotlinx.coroutines.flow.*
  */
 class HomeViewModel : ViewModel() {
 
-    // The UI State is now derived from the SessionRepository's current user
-    private val _uiState = MutableStateFlow(
-        HomeUiState(
-            user = SessionRepository.currentUser.value ?: MockData.mockUser, // session user
-            tasks = emptyList(),
-            goal = MockData.mockGoal
-        )
-    )
+    // The UI state is remote-backed: session user + Firestore tasks/goals.
+    private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
@@ -31,6 +24,8 @@ class HomeViewModel : ViewModel() {
                 if (user != null) {
                     _uiState.update { it.copy(user = user) }
                     loadUserData(user.id)
+                } else {
+                    _uiState.value = HomeUiState()
                 }
             }
             .launchIn(viewModelScope)

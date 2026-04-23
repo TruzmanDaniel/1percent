@@ -150,7 +150,7 @@ fun HomeBodyContent(
         } else {
             // TODO: CAMBIAR uiState, ahora solo maneja un GOAL! + logica de extraer goal title del task.goalId
             items(visibleTasks) { task ->
-                val goalTitle = if (task.goalId != null) uiState.goal.title else null
+                val goalTitle = if (task.goalId != null) uiState.goal?.title else null
                 TaskItem(task = task, goalTitle = goalTitle)
             }
         }
@@ -181,7 +181,7 @@ private fun TaskDeadline.toUiLabel(): String {
 // Private composables (SECTIONS, ITEMS)
 @Composable
 private fun HeaderSection(uiState: HomeUiState) {
-    val user = uiState.user
+    val user = uiState.user ?: return
     val xpProgress = user.currentXp / user.xpToNextLevel.toFloat()
 
     Column(

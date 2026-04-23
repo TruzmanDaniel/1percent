@@ -48,7 +48,9 @@ object TaskRespository {
 
     suspend fun getTasks(userId: String): Result<List<Task>> {
         return try {
-            val snapshot = userTasksCollection(userId).get().await()
+                // Snapshot: copy in memory of the query result
+            val snapshot = userTasksCollection(userId).get().await()    //await: suspends execution until async operation ends, doesnt block main flow
+
             val tasks = snapshot.documents.mapNotNull { doc ->
                 try {
                     val deadlineType = doc.getString("deadlineType")

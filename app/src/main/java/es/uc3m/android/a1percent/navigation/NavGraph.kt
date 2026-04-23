@@ -137,6 +137,7 @@ fun NavGraph() {
                 }
                 composable(route = AppScreens.TargetsScreen.route) { TargetsScreen(navController) }
                 composable(
+                    // Goals have detailed screen (to see its components, missions...), tasks detailed view is modal (overlay)
                     route = AppScreens.TargetsScreen.route + "/goal/{goalId}",
                     arguments = listOf(navArgument(name = "goalId") { type = NavType.StringType })
                 ) { backStackEntry ->
