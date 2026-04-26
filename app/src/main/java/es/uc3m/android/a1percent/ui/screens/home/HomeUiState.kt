@@ -13,5 +13,8 @@ import es.uc3m.android.a1percent.data.model.UserProfile
 data class HomeUiState(
     val user: UserProfile? = null,
     val tasks: List<Task> = emptyList(),
+    val visibleTasks: List<Task> = emptyList(),
+    val filters: HomeFilters = HomeFilters(),
+    val filterItems: List<HomeFilterUiItem> = buildHomeFilterUiItems(HomeFilters()),
     val goal: Goal? = null
 )

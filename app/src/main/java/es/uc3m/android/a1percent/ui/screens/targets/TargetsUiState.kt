@@ -14,24 +14,18 @@ enum class TargetsTab {
     GOALS
 }
 
-// TASK FITLERS
-enum class TaskQuickFilter(val label: String) {
-    MISSIONS("Missions"),
-    SHARED("Shared")
-}
-
 data class TargetsUiState(
     val selectedTab: TargetsTab = TargetsTab.TASKS,
     val tasks: List<Task> = emptyList(),
     val goals: List<Goal> = emptyList(),
 
-    // Empty means "show all tasks" by default.
-    val selectedTaskFilters: Set<TaskQuickFilter> = emptySet(),
+    // Filtering state for each tab
+    val taskFilters: TaskFilters = TaskFilters(),
+    val goalFilters: GoalFilters = GoalFilters(),
+    val taskFilterItems: List<TaskFilterUiItem> = buildTaskFilterUiItems(TaskFilters()),
+    val goalFilterItems: List<GoalFilterUiItem> = buildGoalFilterUiItems(GoalFilters()),
 
     val goalTitleById: Map<String, String> = emptyMap(),
-    val categoryFilterLabel: String = "Category",
-    val taskSortLabel: String = "Sort",
-    val goalSortLabel: String = "Sort",
     
     // Task detail modal state
     val selectedTask: Task? = null

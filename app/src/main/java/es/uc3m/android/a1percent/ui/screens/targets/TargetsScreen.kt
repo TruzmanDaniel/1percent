@@ -48,10 +48,8 @@ fun TargetsScreen(
         uiState = uiState,
         navController = navController,
         onTabSelected = viewModel::onTabSelected,
-        onTaskFilterSelected = viewModel::onTaskFilterSelected,
-        onTaskCategoryClick = viewModel::onTaskCategoryClick,
-        onTaskSortClick = viewModel::onTaskSortClick,
-        onGoalSortClick = viewModel::onGoalSortClick,
+        onTaskFilterClicked = viewModel::onTaskFilterClicked,
+        onGoalFilterClicked = viewModel::onGoalFilterClicked,
         onGoalClicked = { goalId ->
             navController.navigate("targets/goal/$goalId")
         },
@@ -69,10 +67,8 @@ private fun TargetsBodyContent(
     uiState: TargetsUiState,
     navController: NavController,
     onTabSelected: (TargetsTab) -> Unit,
-    onTaskFilterSelected: (TaskQuickFilter) -> Unit,
-    onTaskCategoryClick: () -> Unit,
-    onTaskSortClick: () -> Unit,
-    onGoalSortClick: () -> Unit,
+    onTaskFilterClicked: (TaskFilterKey) -> Unit,
+    onGoalFilterClicked: (GoalFilterKey) -> Unit,
     onGoalClicked: (String) -> Unit,
     onTaskClicked: (Task) -> Unit,
     onCloseTaskDetail: () -> Unit,
@@ -100,9 +96,7 @@ private fun TargetsBodyContent(
         when (uiState.selectedTab) {
             TargetsTab.TASKS -> TasksTabContent(
                 uiState = uiState,
-                onTaskFilterSelected = onTaskFilterSelected,
-                onTaskCategoryClick = onTaskCategoryClick,
-                onTaskSortClick = onTaskSortClick,
+                onTaskFilterClicked = onTaskFilterClicked,
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
                 onTaskPostpone = onTaskPostpone,
@@ -111,7 +105,7 @@ private fun TargetsBodyContent(
 
             TargetsTab.GOALS -> GoalsTabContent(
                 uiState = uiState,
-                onGoalSortClick = onGoalSortClick,
+                onGoalFilterClicked = onGoalFilterClicked,
                 onGoalClicked = onGoalClicked
             )
         }
@@ -130,9 +124,7 @@ private fun TargetsBodyContent(
 @Composable
 private fun TasksTabContent(
     uiState: TargetsUiState,
-    onTaskFilterSelected: (TaskQuickFilter) -> Unit,
-    onTaskCategoryClick: () -> Unit,
-    onTaskSortClick: () -> Unit,
+    onTaskFilterClicked: (TaskFilterKey) -> Unit,
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
@@ -154,23 +146,25 @@ private fun TasksTabContent(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // TODO: Placeholder filter controls. Replace with advanced filter sheet/dropdowns.
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TaskQuickFilter.entries.forEach { filter ->
+                    uiState.taskFilterItems.forEach { filter ->
                         FilterChip(
-                            onClick = { onTaskFilterSelected(filter) },
+                            onClick = { onTaskFilterClicked(filter.key) },
                             label = { Text(filter.label) },
-                            selected = uiState.selectedTaskFilters.contains(filter)
+                            selected = filter.isSelected
                         )
                     }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AssistChip(
-                        onClick = onTaskCategoryClick,
-                        label = { Text(uiState.categoryFilterLabel) }
+                    FilterChip(
+                        onClick = { onTaskFilterClicked(TaskFilterKey.CATEGORY) },
+                        label = { Text(uiState.taskFilters.categoryLabel) },
+                        selected = false
                     )
-                    AssistChip(
-                        onClick = onTaskSortClick,
-                        label = { Text(uiState.taskSortLabel) }
+                    FilterChip(
+                        onClick = { onTaskFilterClicked(TaskFilterKey.SORT) },
+                        label = { Text(uiState.taskFilters.sort.label) },
+                        selected = uiState.taskFilters.sort != TaskSort.NONE
                     )
                 }
             }
@@ -192,7 +186,7 @@ private fun TasksTabContent(
 @Composable
 private fun GoalsTabContent(
     uiState: TargetsUiState,
-    onGoalSortClick: () -> Unit,
+    onGoalFilterClicked: (GoalFilterKey) -> Unit,
     onGoalClicked: (String) -> Unit
 ) {
     LazyColumn(
@@ -209,10 +203,13 @@ private fun GoalsTabContent(
 
         item {
             // TODO: Placeholder for future goal sorting/filtering controls.
-            AssistChip(
-                onClick = onGoalSortClick,
-                label = { Text(uiState.goalSortLabel) }
-            )
+            uiState.goalFilterItems.forEach { filter ->
+                FilterChip(
+                    onClick = { onGoalFilterClicked(filter.key) },
+                    label = { Text(filter.label) },
+                    selected = filter.isSelected
+                )
+            }
         }
 
         items(items = uiState.goals, key = { it.id }) { goal ->

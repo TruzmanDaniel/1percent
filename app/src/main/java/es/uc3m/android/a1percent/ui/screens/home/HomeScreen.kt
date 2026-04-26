@@ -12,13 +12,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -31,13 +33,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
@@ -50,26 +52,20 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     // Observing the screen state (DATA) to update the UI when it changes
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    HomeBodyContent(uiState = uiState)
+    HomeBodyContent(
+        uiState = uiState,
+        onFilterClick = viewModel::onFilterClicked
+    )
 }
 
 @Composable
 fun HomeBodyContent(
-    uiState: HomeUiState
+    uiState: HomeUiState,
+    onFilterClick: (HomeFilterKey) -> Unit
 ) {
     var isFocusMode by rememberSaveable { mutableStateOf(false) }
 
     // FILTERS & SORTING: BASIC IMPLEMENTATION
-        // TODO: extract functionality (we will create more filters) into a modular approach.
-        //  home/HomeFilters.kt with functionalities, save HomeFilterState in HomeViewModel,
-        //     create reusable components (FilterBar, SortMenu...)...
-
-    var showOnlyMissions by rememberSaveable { mutableStateOf(false) }
-    var sortByDate by rememberSaveable { mutableStateOf(false) }
-        // Control which tasks are shown (filtered)
-    val visibleTasks = uiState.tasks
-        .let { tasks -> if (showOnlyMissions) tasks.filter { task -> task.goalId != null } else tasks }
-        .let { tasks -> if (sortByDate) tasks.sortedBy { task -> TaskDeadlineResolver.toSortKey(task.deadline) } else tasks }
 
     // Scrollable Column containing the elements
     LazyColumn(
@@ -85,8 +81,7 @@ fun HomeBodyContent(
             item {
                 HeaderSection(uiState = uiState)
             }
-        }
-        else {
+        } else {
             item {
                 Text(
                     text = "Focus mode enabled",
@@ -97,9 +92,6 @@ fun HomeBodyContent(
         }
 
     // 2. TASKS SECTION
-
-        // TODO: Add task filters and special quick-action buttons
-
 
         item {
             Row(
@@ -124,22 +116,33 @@ fun HomeBodyContent(
 
         // FILTERS
         item {
-            Row(
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Button(onClick = { showOnlyMissions = !showOnlyMissions }) {
-                    Text("Missions")
-                }
-                Button(onClick = { sortByDate = !sortByDate }) {
-                    Text("Sort by Date")
+                items(uiState.filterItems, key = { it.key }) { filter ->
+                    FilterChip(
+                        selected = filter.isSelected,
+                        onClick = { onFilterClick(filter.key) },
+                        label = {
+                            Text(
+                                text = filter.label,
+                                fontWeight = if (filter.isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.primary,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
                 }
             }
         }
 
-        if (visibleTasks.isEmpty()) {
+        if (uiState.visibleTasks.isEmpty()) {
             item {
                 Text(
                     text = "No tasks for today",
@@ -149,7 +152,7 @@ fun HomeBodyContent(
             }
         } else {
             // TODO: CAMBIAR uiState, ahora solo maneja un GOAL! + logica de extraer goal title del task.goalId
-            items(visibleTasks) { task ->
+            items(uiState.visibleTasks) { task ->
                 val goalTitle = if (task.goalId != null) uiState.goal?.title else null
                 TaskItem(task = task, goalTitle = goalTitle)
             }
@@ -205,7 +208,7 @@ private fun HeaderSection(uiState: HomeUiState) {
             )
             Text(
                 text = "Level ${user.level}  ·  ${user.currentXp} / ${user.xpToNextLevel} XP",
-                style = MaterialTheme.typography.bodyMedium 
+                style = MaterialTheme.typography.bodyMedium
             )
         }
 

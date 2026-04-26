@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
@@ -51,25 +52,38 @@ class TargetsViewModel : ViewModel() {
             }
 
             _uiState.update { current ->
-                current.copy(
-                    tasks = applyTaskFilters(current.selectedTaskFilters),
-                    goals = allGoals,
-                    goalTitleById = allGoals.associate { it.id to it.title }
-                )
+                reduceTargetsState(current)
             }
         }
     }
 
-    private fun applyTaskFilters(filters: Set<TaskQuickFilter>): List<Task> {
-        if (filters.isEmpty()) return allTasks
-
-        return allTasks.filter { task ->
-            filters.all { filter ->
-                when (filter) {
-                    TaskQuickFilter.MISSIONS -> task.goalId != null
-                    TaskQuickFilter.SHARED -> true // TODO: replace with real shared/collaboration source
+    private fun applyTaskFiltersAndSort(filters: TaskFilters): List<Task> {
+        val filtered = if (filters.quickFilters.isEmpty()) {
+            allTasks
+        } else {
+            allTasks.filter { task ->
+                filters.quickFilters.all { filter ->
+                    when (filter) {
+                        TaskQuickFilter.MISSIONS -> task.goalId != null
+                        TaskQuickFilter.SHARED -> true // TODO: replace with real shared/collaboration source
+                    }
                 }
             }
+        }
+
+        return when (filters.sort) {
+            TaskSort.NONE -> filtered
+            TaskSort.DEADLINE_ASC -> filtered.sortedBy { task ->
+                TaskDeadlineResolver.toSortKey(task.deadline)
+            }
+            TaskSort.XP_DESC -> filtered.sortedByDescending { it.xp }
+        }
+    }
+
+    private fun applyGoalFiltersAndSort(filters: GoalFilters): List<Goal> {
+        return when (filters.sort) {
+            GoalSort.NONE -> allGoals
+            GoalSort.PROGRESS_DESC -> allGoals.sortedByDescending { it.progress }
         }
     }
 
@@ -79,19 +93,15 @@ class TargetsViewModel : ViewModel() {
     }
 
     // FILTERING
-    fun onTaskFilterSelected(filter: TaskQuickFilter) {
+    fun onTaskFilterClicked(filterKey: TaskFilterKey) {
         _uiState.update { current ->
-            // Toggle: if filter is already selected, remove it; otherwise, add it
-            val newSelectedFilters = if (current.selectedTaskFilters.contains(filter)) {
-                current.selectedTaskFilters - filter
-            } else {
-                current.selectedTaskFilters + filter
+            val updatedTaskFilters = when (filterKey) {
+                TaskFilterKey.MISSIONS -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.MISSIONS)
+                TaskFilterKey.SHARED -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.SHARED)
+                TaskFilterKey.CATEGORY -> current.taskFilters
+                TaskFilterKey.SORT -> current.taskFilters.copy(sort = nextTaskSort(current.taskFilters.sort))
             }
-
-            current.copy(
-                selectedTaskFilters = newSelectedFilters,
-                tasks = applyTaskFilters(newSelectedFilters)
-            )
+            reduceTargetsState(current.copy(taskFilters = updatedTaskFilters))
         }
     }
 
@@ -99,12 +109,12 @@ class TargetsViewModel : ViewModel() {
         // TODO: open category selector and apply advanced category filter.
     }
 
-    fun onTaskSortClick() {
-        // TODO: open sorting options (deadline, creation date, difficulty, etc.).
-    }
-
-    fun onGoalSortClick() {
-        // TODO: open sorting options for goals (progress, deadline, createdAt, etc.).
+    fun onGoalFilterClicked(filterKey: GoalFilterKey) {
+        if (filterKey != GoalFilterKey.SORT) return
+        _uiState.update { current ->
+            val updatedGoalFilters = current.goalFilters.copy(sort = nextGoalSort(current.goalFilters.sort))
+            reduceTargetsState(current.copy(goalFilters = updatedGoalFilters))
+        }
     }
 
     // DETAIL VIEW
@@ -139,10 +149,43 @@ class TargetsViewModel : ViewModel() {
         // TODO: Persist deletion in repository and refresh
         allTasks = allTasks.filter { it.id != taskId }
         _uiState.update { current ->
-            current.copy(
-                tasks = applyTaskFilters(current.selectedTaskFilters),
-                selectedTask = current.selectedTask?.takeIf { it.id != taskId }
+            reduceTargetsState(
+                current.copy(selectedTask = current.selectedTask?.takeIf { it.id != taskId })
             )
+        }
+    }
+
+    private fun reduceTargetsState(base: TargetsUiState): TargetsUiState {
+        return base.copy(
+            tasks = applyTaskFiltersAndSort(base.taskFilters),
+            goals = applyGoalFiltersAndSort(base.goalFilters),
+            goalTitleById = allGoals.associate { it.id to it.title },
+            taskFilterItems = buildTaskFilterUiItems(base.taskFilters),
+            goalFilterItems = buildGoalFilterUiItems(base.goalFilters)
+        )
+    }
+
+    private fun toggleQuickFilter(filters: TaskFilters, filter: TaskQuickFilter): TaskFilters {
+        val updated = if (filters.quickFilters.contains(filter)) {
+            filters.quickFilters - filter
+        } else {
+            filters.quickFilters + filter
+        }
+        return filters.copy(quickFilters = updated)
+    }
+
+    private fun nextTaskSort(current: TaskSort): TaskSort {
+        return when (current) {
+            TaskSort.NONE -> TaskSort.DEADLINE_ASC
+            TaskSort.DEADLINE_ASC -> TaskSort.XP_DESC
+            TaskSort.XP_DESC -> TaskSort.NONE
+        }
+    }
+
+    private fun nextGoalSort(current: GoalSort): GoalSort {
+        return when (current) {
+            GoalSort.NONE -> GoalSort.PROGRESS_DESC
+            GoalSort.PROGRESS_DESC -> GoalSort.NONE
         }
     }
 }

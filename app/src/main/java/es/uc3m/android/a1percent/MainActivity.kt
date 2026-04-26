@@ -21,9 +21,9 @@ class MainActivity : ComponentActivity() {
         // Initialize Firebase connection
         FirebaseApp.initializeApp(this)
 
-        // Connect emulators
-        FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
-        FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
+        // Connect emulators. 10.0.2.2 for Android Emulator, not real device.
+        // FirebaseAuth.getInstance().useEmulator("10.0.2.2", 9099)
+        // FirebaseFirestore.getInstance().useEmulator("10.0.2.2", 8080)
 
         setContent { // Compose Entry Point
             _1percentTheme { // Apply our custom theme defined in ui/theme/theme.kt
