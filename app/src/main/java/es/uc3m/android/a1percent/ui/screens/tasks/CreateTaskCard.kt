@@ -13,7 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -40,12 +39,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -69,6 +70,7 @@ fun CreateTaskCard(
     viewModel: CreateTaskViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var createErrorMessage by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -333,20 +335,31 @@ fun CreateTaskCard(
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.16f))
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            viewModel.createTask(
-                                onSuccess = {
-                                    viewModel.resetState()
-                                    onDismiss()
-                                },
-                                onError = { /* Ignore */ }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        createErrorMessage?.let { message ->
+                            Text(
+                                text = message,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
                             )
-                        },
-                        enabled = uiState.canCreateTask,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(if (uiState.isLoading) "Creating..." else "Create Task")
+                        }
+
+                        Button(
+                            onClick = {
+                                createErrorMessage = null
+                                viewModel.createTask(
+                                    onSuccess = {
+                                        viewModel.resetState()
+                                        onDismiss()
+                                    },
+                                    onError = { error -> createErrorMessage = error }
+                                )
+                            },
+                            enabled = uiState.canCreateTask,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if (uiState.isLoading) "Creating..." else "Create Task")
+                        }
                     }
                 }
             }

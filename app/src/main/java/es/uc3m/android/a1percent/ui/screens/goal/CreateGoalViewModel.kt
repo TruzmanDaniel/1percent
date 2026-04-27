@@ -35,20 +35,23 @@ class CreateGoalViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            try {
+                val goal = Goal(
+                    title = _uiState.value.goalName,
+                    category = Category.AUTOMATIC,
+                    difficulty = _uiState.value.difficulty.toInt(),
+                    xp = _uiState.value.difficulty.toInt() * 50
+                )
 
-            val goal = Goal(
-                title = _uiState.value.goalName,
-                category = Category.AUTOMATIC,
-                difficulty = _uiState.value.difficulty.toInt(),
-                xp = _uiState.value.difficulty.toInt() * 50
-            )
+                val result = GoalRepository.saveGoal(userId, goal)
 
-            val result = GoalRepository.saveGoal(userId, goal)
-
-            result.onSuccess { onSuccess() }
-            result.onFailure { onError(it.message ?: "Error creating goal") }
-
-            _uiState.update { it.copy(isLoading = false) }
+                result.onSuccess { onSuccess() }
+                result.onFailure { onError(it.message ?: "Error creating goal") }
+            } catch (e: Exception) {
+                onError(e.message ?: "Error creating goal")
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
         }
     }
 

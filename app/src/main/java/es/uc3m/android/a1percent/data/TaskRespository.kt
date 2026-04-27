@@ -3,7 +3,7 @@ package es.uc3m.android.a1percent.data
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
-import es.uc3m.android.a1percent.data.model.enums.Category
+import es.uc3m.android.a1percent.data.model.enums.MissionFeedback
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskType
 import kotlinx.coroutines.tasks.await
@@ -17,28 +17,34 @@ object TaskRespository {
 
     suspend fun saveTask(userId: String, task: Task): Result<Unit> {
         return try {
-            val data = mapOf(
-                "id" to task.id,
-                "title" to task.title,
-                "description" to task.description,
-                "type" to task.type.name,
-                "difficulty" to task.difficulty,
-                "xp" to task.xp,
-                "energyCost" to task.energyCost,
-                "status" to task.status.name,
-                "goalId" to task.goalId,
-                "isAiGenerated" to task.isAiGenerated,
-                "createdAt" to task.createdAt,
-                "deadlineType" to when (task.deadline) {
-                    null -> null
-                    TaskDeadline.ThisWeek -> "THIS_WEEK"
-                    is TaskDeadline.OnDate -> "ON_DATE"
-                },
-                "deadlineEpochDay" to when (val d = task.deadline) {
-                    is TaskDeadline.OnDate -> d.epochDay
-                    else -> null
+            val data = buildMap<String, Any?> {
+                put("id", task.id)
+                put("title", task.title)
+                put("description", task.description)
+                put("type", task.type.name)
+                put("difficulty", task.difficulty)
+                put("xp", task.xp)
+                put("energyCost", task.energyCost)
+                put("status", task.status.name)
+                put("goalId", task.goalId)
+                put("isAiGenerated", task.isAiGenerated)
+                put("order", task.order)
+                put("microfeedback", task.microfeedback?.name)
+                put("createdAt", task.createdAt)
+                put("category", task.category.name)
+                put("customCategoryName", task.customCategoryName)
+
+                when (val deadline = task.deadline) {
+                    null -> Unit
+                    TaskDeadline.ThisWeek -> {
+                        put("deadlineType", "THIS_WEEK")
+                    }
+                    is TaskDeadline.OnDate -> {
+                        put("deadlineType", "ON_DATE")
+                        put("deadlineEpochDay", deadline.epochDay)
+                    }
                 }
-            )
+            }
             userTasksCollection(userId).document(task.id).set(data).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -70,10 +76,18 @@ object TaskRespository {
                         status = TaskStatus.valueOf(doc.getString("status") ?: "PENDING"),
                         goalId = doc.getString("goalId"),
                         isAiGenerated = doc.getBoolean("isAiGenerated") ?: false,
+                        order = doc.getLong("order")?.toInt(),
+                        microfeedback = doc.getString("microfeedback")?.let {
+                            runCatching { MissionFeedback.valueOf(it) }.getOrNull()
+                        },
                         createdAt = doc.getLong("createdAt") ?: 0L,
-                        deadline = deadline
+                        deadline = deadline,
+                        category = doc.getString("category")?.let {
+                            runCatching { es.uc3m.android.a1percent.data.model.enums.Category.valueOf(it) }.getOrNull()
+                        } ?: es.uc3m.android.a1percent.data.model.enums.Category.AUTOMATIC,
+                        customCategoryName = doc.getString("customCategoryName")
                     )
-                } catch (e: Exception) { null }
+                } catch (_: Exception) { null }
             }
             Result.success(tasks)
         } catch (e: Exception) {

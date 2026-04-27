@@ -2,6 +2,7 @@ package es.uc3m.android.a1percent.ui.screens.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.SessionRepository
@@ -155,7 +156,8 @@ class CreateTaskViewModel : ViewModel() {
     }
 
     fun createTask(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val userId = SessionRepository.currentUser.value?.id
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: SessionRepository.currentUser.value?.id
         if (userId == null) {
             onError("No user logged in")
             return
@@ -163,27 +165,30 @@ class CreateTaskViewModel : ViewModel() {
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            try {
+                val state = _uiState.value
+                val task = Task(
+                    title = state.taskName,
+                    description = state.taskDescription,
+                    type = TaskType.ONE_TIME,
+                    difficulty = 1,
+                    xp = 10,
+                    energyCost = null,
+                    deadline = state.selectedDeadline,
+                    status = TaskStatus.PENDING,
+                    category = state.selectedCategory,
+                    customCategoryName = state.selectedCustomCategoryName
+                )
 
-            val state = _uiState.value
-            val task = Task(
-                title = state.taskName,
-                description = state.taskDescription,
-                type = TaskType.ONE_TIME,
-                difficulty = 1,
-                xp = 10,
-                energyCost = null,
-                deadline = state.selectedDeadline,
-                status = TaskStatus.PENDING,
-                category = state.selectedCategory,
-                customCategoryName = state.selectedCustomCategoryName
-            )
+                val result = TaskRespository.saveTask(userId, task)
 
-            val result = TaskRespository.saveTask(userId, task)
-
-            result.onSuccess { onSuccess() }
-            result.onFailure { onError(it.message ?: "Error creating task") }
-
-            _uiState.update { it.copy(isLoading = false) }
+                result.onSuccess { onSuccess() }
+                result.onFailure { onError(it.message ?: "Error creating task") }
+            } catch (e: Exception) {
+                onError(e.message ?: "Error creating task")
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
         }
     }
 
