@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -28,7 +30,6 @@ import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.navigation.AppScreens
 
 private enum class SocialSection(val label: String) {
-    // Secciones de Social por el momento, podemos cambiarlas a futuro
     COMMUNITY("Community"),
     FRIENDS("Friends"),
     GROUPS("Groups")
@@ -40,7 +41,7 @@ fun SocialScreen(
     viewModel: SocialViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedSection by rememberSaveable { mutableStateOf(SocialSection.COMMUNITY) } // Debería estar en ViewModel?
+    var selectedSection by rememberSaveable { mutableStateOf(SocialSection.COMMUNITY) }
 
     Column(
         modifier = Modifier
@@ -49,17 +50,19 @@ fun SocialScreen(
     ) {
         SectionSelector(
             selected = selectedSection,
-            onSelect = { selectedSection = it }, // function: update value of selectedSection with passed value it
+            onSelect = { selectedSection = it },
             modifier = Modifier.padding(top = 12.dp, bottom = 16.dp)
         )
 
         when (selectedSection) {
-
             SocialSection.FRIENDS -> FriendsSection(
                 friends = uiState.friends,
+                pendingRequests = uiState.pendingRequests,
                 onProfileClick = { friendId ->
                     navController.navigate(AppScreens.ProfileScreen.route + "/$friendId")
-                }
+                },
+                onAcceptRequest = viewModel::acceptRequest,
+                onRejectRequest = viewModel::rejectRequest
             )
 
             SocialSection.COMMUNITY -> CommunitySection(
@@ -71,8 +74,7 @@ fun SocialScreen(
                 onSendFriendRequest = viewModel::sendFriendRequest
             )
 
-            SocialSection.GROUPS -> GroupsSection(
-            )
+            SocialSection.GROUPS -> GroupsSection()
         }
     }
 }
@@ -80,18 +82,17 @@ fun SocialScreen(
 @Composable
 private fun SectionSelector(
     selected: SocialSection,
-    onSelect: (SocialSection) -> Unit, // funcion que recibe SocialSection (ese valor recibido es 'it' al llamarla)
+    onSelect: (SocialSection) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Create a Chip for each SocialSection (automatically creates chips depending on the created enum)
         SocialSection.entries.forEach { section ->
             FilterChip(
                 selected = selected == section,
-                onClick = { onSelect(section) }, // passed value is clicked 'section'
+                onClick = { onSelect(section) },
                 label = { Text(section.label) }
             )
         }
@@ -101,32 +102,66 @@ private fun SectionSelector(
 @Composable
 private fun FriendsSection(
     friends: List<UserProfile>,
-    onProfileClick: (String) -> Unit
+    pendingRequests: List<UserProfile>,
+    onProfileClick: (String) -> Unit,
+    onAcceptRequest: (String) -> Unit,
+    onRejectRequest: (String) -> Unit
 ) {
-    Text(
-        text = "My Friends",
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(bottom = 12.dp)
-    )
-
-    if (friends.isEmpty()) {
-        Text(
-            text = "You don't have friends yet. Go to Community to discover people.",
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = 24.dp)
-        )
-        return
-    }
-
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
-        items(friends) { friend ->
-            UserListItem(
-                user = friend,
-                onProfileClick = { onProfileClick(friend.id) }
+        if (pendingRequests.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Friend Requests (${pendingRequests.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                )
+            }
+            items(pendingRequests) { requester ->
+                UserListItem(
+                    user = requester,
+                    onProfileClick = { onProfileClick(requester.id) },
+                    trailingIcon = {
+                        Row {
+                            IconButton(onClick = { onAcceptRequest(requester.id) }) {
+                                Icon(Icons.Default.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
+                            }
+                            IconButton(onClick = { onRejectRequest(requester.id) }) {
+                                Icon(Icons.Default.Close, contentDescription = "Reject", tint = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                )
+            }
+            item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
+        }
+
+        item {
+            Text(
+                text = "My Friends",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(bottom = 4.dp)
             )
+        }
+
+        if (friends.isEmpty() && pendingRequests.isEmpty()) {
+            item {
+                Text(
+                    text = "You don't have friends yet. Go to Community to discover people.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 24.dp)
+                )
+            }
+        } else {
+            items(friends) { friend ->
+                UserListItem(
+                    user = friend,
+                    onProfileClick = { onProfileClick(friend.id) }
+                )
+            }
         }
     }
 }
@@ -184,7 +219,6 @@ private fun CommunitySection(
             UserListItem(
                 user = user,
                 onProfileClick = { onProfileClick(user.id) },
-                // TODO: request button only if its not a friend, if its a friend icon of already friends
                 trailingIcon = {
                     IconButton(onClick = { onSendFriendRequest(user.id) }) {
                         Icon(
@@ -201,7 +235,6 @@ private fun CommunitySection(
 
 @Composable
 private fun GroupsSection() {
-    // ACTUALLY HARD-CODED / MOCK --> we have to create a class object of groups (Future task)
     Text(
         text = "Groups",
         style = MaterialTheme.typography.titleLarge,
@@ -234,7 +267,6 @@ private fun GroupsSection() {
     }
 }
 
-// DISPLAY of USERS PREVIEW
 @Composable
 fun UserListItem(
     user: UserProfile,
@@ -256,8 +288,6 @@ fun UserListItem(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-
-                // Avatar Circle & Username
                 Surface(
                     modifier = Modifier.size(40.dp),
                     shape = CircleShape,
@@ -273,7 +303,6 @@ fun UserListItem(
                     }
                 }
 
-                // User info/stats
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
@@ -294,7 +323,6 @@ fun UserListItem(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Progress Bar for Level
             Column(modifier = Modifier.fillMaxWidth()) {
                 LinearProgressIndicator(
                     progress = { progress },

@@ -24,7 +24,6 @@ object SocialRepository {
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val relationshipsCollection = db.collection("relationships")
 
-    // Internal "Table" of friendships synced with Firestore
     private val _friendshipTable = MutableStateFlow<List<UserRelationship>>(emptyList())
     val friendshipTable: StateFlow<List<UserRelationship>> = _friendshipTable.asStateFlow()
 
@@ -41,30 +40,33 @@ object SocialRepository {
         }
     }
 
-    // Reactive list of friends for a specific user
+    // List of CONFIRMED friends
     fun observeFriends(userId: String): Flow<List<UserProfile>> {
         return friendshipTable.map { relations ->
-            relationListToFriendProfiles(relations, userId)
+            val friendIds = relations
+                .filter { rel ->
+                    rel.status == RelationshipStatus.FRIENDS && 
+                    (rel.userAId == userId || rel.userBId == userId)
+                }
+                .map { rel ->
+                    if (rel.userAId == userId) rel.userBId else rel.userAId
+                }
+            friendIds.mapNotNull { UserRepository.findUserById(it) }
         }
     }
 
-    private fun relationListToFriendProfiles(
-        relations: List<UserRelationship>,
-        userId: String
-    ): List<UserProfile> {
-        val friendIds = relations
-            .filter { rel ->
-                rel.status == RelationshipStatus.FRIENDS && 
-                (rel.userAId == userId || rel.userBId == userId)
-            }
-            .map { rel ->
-                if (rel.userAId == userId) rel.userBId else rel.userAId // get the friend's ID from the IDs pair
-            }
-
-        return friendIds.mapNotNull { UserRepository.findUserById(it) }
+    // List of RECEIVED pending requests (user is userBId)
+    fun observePendingRequests(userId: String): Flow<List<UserProfile>> {
+        return friendshipTable.map { relations ->
+            val requesterIds = relations
+                .filter { rel ->
+                    rel.status == RelationshipStatus.PENDING && rel.userBId == userId
+                }
+                .map { it.userAId }
+            requesterIds.mapNotNull { UserRepository.findUserById(it) }
+        }
     }
 
-    // Check if two users are currently friends
     fun areFriends(user1Id: String, user2Id: String): Boolean {
         return _friendshipTable.value.any { rel ->
             rel.status == RelationshipStatus.FRIENDS &&
@@ -73,7 +75,6 @@ object SocialRepository {
         }
     }
 
-    // Check if pending request exists between two users
     private fun hasPendingRequest(user1Id: String, user2Id: String): Boolean {
         return _friendshipTable.value.any { rel ->
             rel.status == RelationshipStatus.PENDING &&
@@ -82,7 +83,6 @@ object SocialRepository {
         }
     }
 
-    // Creates a new row in the friendship table as PENDING.
     suspend fun sendFriendRequest(fromId: String, toId: String) {
         if (fromId == toId) return
         if (areFriends(fromId, toId)) return
@@ -98,11 +98,19 @@ object SocialRepository {
         }
     }
 
-    // Updates the status of an existing relationship to FRIENDS.
     suspend fun acceptFriendRequest(userA: String, userB: String) {
         val docId = if (userA < userB) "${userA}_${userB}" else "${userB}_${userA}"
         try {
             relationshipsCollection.document(docId).update("status", RelationshipStatus.FRIENDS.name).await()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun rejectFriendRequest(userA: String, userB: String) {
+        val docId = if (userA < userB) "${userA}_${userB}" else "${userB}_${userA}"
+        try {
+            relationshipsCollection.document(docId).delete().await()
         } catch (e: Exception) {
             e.printStackTrace()
         }

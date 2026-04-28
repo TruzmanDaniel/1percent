@@ -6,51 +6,59 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.UserRepository
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SocialViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(SocialUiState())
     val uiState: StateFlow<SocialUiState> = _uiState.asStateFlow()
-    private var friendsObserverJob: Job? = null // job is a background task (coroutine),doesn't block app cycle
+    
+    private var friendsObserverJob: Job? = null
+    private var requestsObserverJob: Job? = null
 
 
     init {
         observeSession()
     }
 
-
-    // Observes session changes and sync 'friends' list accordingly.
-    // Reacts to login/logout/user changes by updating UI state and managing friends
     private fun observeSession() {
-        // Observamos el StateFlow completo y no .value puntual --> Reactivo a login/logout.
         SessionRepository.currentUser
             .onEach { user ->
-                _uiState.update { it.copy(currentUser = user, friends = emptyList()) } // Update uistate with new user and cleans friends
+                _uiState.update { it.copy(currentUser = user, friends = emptyList(), pendingRequests = emptyList()) }
 
-                friendsObserverJob?.cancel() // cancelled when user changes (avoids mixing friends lists)
+                friendsObserverJob?.cancel()
+                requestsObserverJob?.cancel()
+                
                 if (user != null) {
-                    friendsObserverJob = SocialRepository.observeFriends(user.id)    // the job we launch
+                    // Observe confirmed friends
+                    friendsObserverJob = SocialRepository.observeFriends(user.id)
                         .onEach { friends ->
-                            _uiState.update { it.copy(friends = friends) }     // .onEach: each time someone is added, or removed to/from the list, a new emission of the list is received
+                            _uiState.update { it.copy(friends = friends) }
+                        }
+                        .launchIn(viewModelScope)
+                        
+                    // Observe pending requests received by the user
+                    requestsObserverJob = SocialRepository.observePendingRequests(user.id)
+                        .onEach { requests ->
+                            _uiState.update { it.copy(pendingRequests = requests) }
                         }
                         .launchIn(viewModelScope)
                 }
             }
-            .launchIn(viewModelScope) // esto activa el Flow declarado antes; lo ejecuta mientras el ViewModel está vivo -> ligado al ciclo de vida
+            .launchIn(viewModelScope)
     }
 
     fun onSearchQueryChange(newQuery: String) {
         _uiState.update { it.copy(searchQuery = newQuery) }
         if (newQuery.length >= 2) {
             val results = UserRepository.searchUsers(newQuery)
-                .filter { it.id != SessionRepository.currentUser.value?.id } // Don't show myself
+                .filter { it.id != SessionRepository.currentUser.value?.id } 
             _uiState.update { it.copy(searchResults = results) }
         } else {
             _uiState.update { it.copy(searchResults = emptyList()) }
@@ -61,6 +69,20 @@ class SocialViewModel : ViewModel() {
         val currentId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
             SocialRepository.sendFriendRequest(currentId, toUserId)
+        }
+    }
+    
+    fun acceptRequest(requesterId: String) {
+        val currentId = SessionRepository.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            SocialRepository.acceptFriendRequest(requesterId, currentId)
+        }
+    }
+    
+    fun rejectRequest(requesterId: String) {
+        val currentId = SessionRepository.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            SocialRepository.rejectFriendRequest(requesterId, currentId)
         }
     }
 }
