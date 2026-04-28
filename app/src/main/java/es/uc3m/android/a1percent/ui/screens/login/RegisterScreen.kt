@@ -119,16 +119,11 @@ fun RegisterScreen(navController: NavController){
                 errorMessage = null
                 successMessage = null
 
-                /**
                 scope.launch {
-                    isLoading = true
-                    errorMessage = null
-                    successMessage = null
-
-                    val result = SessionRepository.registerWithApi(
-                        email = email,
+                    val result = SessionRepository.registerWithFirebaseAndApi(
+                        email = email.trim(),
                         password = password,
-                        username = username
+                        username = username.trim()
                     )
 
                     result.onSuccess {
@@ -141,22 +136,6 @@ fun RegisterScreen(navController: NavController){
                     }
 
                     isLoading = false
-                }
-                */
-                SessionRepository.registerWithFirebaseAndApi(
-                    email = email.trim(),
-                    password = password,
-                    username = username.trim()
-                ) { success, error ->
-                    isLoading = false
-                    if (success) {
-                        successMessage = "Account created successfully! Please log in."
-                        navController.navigate(AppScreens.LoginScreen.route) {
-                            popUpTo(AppScreens.RegisterScreen.route) { inclusive = true}
-                        }
-                    } else {
-                        errorMessage = error ?: "Unknown error"
-                    }
                 }
 
             },

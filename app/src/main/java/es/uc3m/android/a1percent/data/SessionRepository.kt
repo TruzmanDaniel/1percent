@@ -40,7 +40,8 @@ object SessionRepository {
                 .get()
                 .await()
 
-            val username = doc.getString("username")
+            val username = doc.getString("name")
+                ?: doc.getString("username")
                 ?: firebaseUser.email?.substringBefore("@")
                 ?: firebaseUser.uid
 
@@ -48,6 +49,7 @@ object SessionRepository {
                 id = firebaseUser.uid,
                 name = username,
                 email = firebaseUser.email ?: "",
+                createdAt = doc.getLong("createdAt"),
                 level = doc.getLong("level")?.toInt() ?: 1,
                 currentXp = doc.getLong("currentXp")?.toInt() ?: 0,
                 xpToNextLevel = doc.getLong("xpToNextLevel")?.toInt() ?: 100,
@@ -59,39 +61,42 @@ object SessionRepository {
             e.printStackTrace()
         }
     }
-    fun registerWithFirebaseAndApi(
+    suspend fun registerWithFirebaseAndApi(
         email: String,
         password: String,
-        username: String,
-        onResult: (Boolean, String?) -> Unit
-    ) {
-        // Create User on Firebase Auth
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { authTask ->
-                if (authTask.isSuccessful) {
-                    val firebaseUser = auth.currentUser!!
-                    val userData = mapOf(
-                        "id" to firebaseUser.uid,
-                        "email" to email,
-                        "username" to username,
-                        "createdAt" to System.currentTimeMillis().toString(),
-                        "level" to 1,
-                        "currentXp" to 0,
-                        "xpToNextLevel" to 100, // TODO Está bien asumir estos default? en que caso se usarian?
-                        "avatarUrl" to null,
-                        "streakDays" to 0,
-                        "totalTasksCompleted" to 0
-                    )
-                    FirebaseFirestore.getInstance()
-                        .collection("users")
-                        .document(firebaseUser.uid)
-                        .set(userData)
-                        .addOnSuccessListener { onResult(true, null) }
-                        .addOnFailureListener { onResult(false, it.message) }
-                } else {
-                    onResult(false, authTask.exception?.message)
-                }
-            }
+        username: String
+    ): Result<Unit> {
+        return try {
+            // 1. Create User on Firebase Auth
+            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = authResult.user ?: throw Exception("Error al crear usuario en FirebaseAuth")
+
+            // 2. Prepare UserProfile object
+            val user = UserProfile(
+                id = firebaseUser.uid,
+                name = username,
+                email = email,
+                password = "",
+                createdAt = System.currentTimeMillis(),
+                level = 1,
+                currentXp = 0,
+                xpToNextLevel = 100,
+                avatarUrl = null,
+                streakDays = 0,
+                totalTasksCompleted = 0
+            )
+
+            // 3. Create the user document using id (serialize data class)
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(firebaseUser.uid)
+                .set(user)
+                .await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     suspend fun loginWithFirebase( //TODO esto se hace aqui o en LoginRequest o algun otro sitio?
