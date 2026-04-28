@@ -15,37 +15,11 @@ object TaskRespository {
     private fun userTasksCollection(userId: String) =
         db.collection("users").document(userId).collection("tasks")
 
+    // CREATE Task in Firestore database
     suspend fun saveTask(userId: String, task: Task): Result<Unit> {
         return try {
-            val data = buildMap<String, Any?> {
-                put("id", task.id)
-                put("title", task.title)
-                put("description", task.description)
-                put("type", task.type.name)
-                put("difficulty", task.difficulty)
-                put("xp", task.xp)
-                put("energyCost", task.energyCost)
-                put("status", task.status.name)
-                put("goalId", task.goalId)
-                put("isAiGenerated", task.isAiGenerated)
-                put("order", task.order)
-                put("microfeedback", task.microfeedback?.name)
-                put("createdAt", task.createdAt)
-                put("category", task.category.name)
-                put("customCategoryName", task.customCategoryName)
-
-                when (val deadline = task.deadline) {
-                    null -> Unit
-                    TaskDeadline.ThisWeek -> {
-                        put("deadlineType", "THIS_WEEK")
-                    }
-                    is TaskDeadline.OnDate -> {
-                        put("deadlineType", "ON_DATE")
-                        put("deadlineEpochDay", deadline.epochDay)
-                    }
-                }
-            }
-            userTasksCollection(userId).document(task.id).set(data).await()
+            val taskRef = userTasksCollection(userId).document()
+            taskRef.set(task.copy(id = taskRef.id)).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -57,6 +31,8 @@ object TaskRespository {
                 // Snapshot: copy in memory of the query result
             val snapshot = userTasksCollection(userId).get().await()    //await: suspends execution until async operation ends, doesnt block main flow
 
+                // Map from firestore document back to data class Task object
+                    // we dont use .toObject<Type>() as Firestore struggles serializing complex types as enums or our sealed class TaskDeadline
             val tasks = snapshot.documents.mapNotNull { doc ->
                 try {
                     val deadlineType = doc.getString("deadlineType")
@@ -90,6 +66,15 @@ object TaskRespository {
                 } catch (_: Exception) { null }
             }
             Result.success(tasks)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteTask(userId: String, taskId: String): Result<Unit> {
+        return try {
+            userTasksCollection(userId).document(taskId).delete().await()
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

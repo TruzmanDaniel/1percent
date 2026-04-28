@@ -105,6 +105,7 @@ class TargetsViewModel : ViewModel() {
         }
     }
 
+    @Suppress("unused")
     fun onTaskCategoryClick() {
         // TODO: open category selector and apply advanced category filter.
     }
@@ -146,13 +147,27 @@ class TargetsViewModel : ViewModel() {
     }
 
     fun onTaskDelete(taskId: String) {
-        // TODO: Persist deletion in repository and refresh
-        allTasks = allTasks.filter { it.id != taskId }
-        _uiState.update { current ->
-            reduceTargetsState(
-                current.copy(selectedTask = current.selectedTask?.takeIf { it.id != taskId })
-            )
+        // TODO: If deleting tasks affects XP/history/statistics, consider saving some log or updating count
+        val userId = SessionRepository.currentUser.value?.id ?: return
+
+        viewModelScope.launch {
+            TaskRespository.deleteTask(userId, taskId).onSuccess {
+                allTasks = allTasks.filter { it.id != taskId }
+                _uiState.update { current ->
+                    reduceTargetsState(
+                        current.copy(selectedTask = current.selectedTask?.takeIf { it.id != taskId })
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update { current ->
+                    current.copy(errorMessage = "Error deleting task: ${error.message ?: "unknown error"}")
+                }
+            }
         }
+    }
+
+    fun clearErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     private fun reduceTargetsState(base: TargetsUiState): TargetsUiState {

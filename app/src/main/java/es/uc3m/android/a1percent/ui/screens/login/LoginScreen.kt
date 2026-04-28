@@ -1,6 +1,5 @@
 package es.uc3m.android.a1percent.ui.screens.login
 
-import android.se.omapi.Session
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -96,33 +95,6 @@ fun LoginScreen(navController: NavController) {
 
         Button(
             onClick = {
-                ///**
-                if (email.isBlank() || password.isBlank()) {
-                    showError = true
-                    errorMessage = "Please fill in all fields"
-                    return@Button
-                }
-                isLoading = true
-                showError = false
-                errorMessage = null
-
-                SessionRepository.loginWithFirebase(
-                    email = email.trim(),
-                    password = password
-                ) { success, error ->
-                    isLoading = false
-                    if (success) {
-                        navController.navigate(AppScreens.HomeScreen.route) {
-                            popUpTo(AppScreens.LoginScreen.route){ inclusive = true}
-                        }
-                    } else {
-                        showError = true
-                        errorMessage = error ?: "Invalid email or password"
-                    }
-                }
-                //*/
-
-                /**
                 if (email.isBlank() || password.isBlank()) {
                     showError = true
                     errorMessage = "Please fill in all fields"
@@ -134,24 +106,22 @@ fun LoginScreen(navController: NavController) {
                     showError = false
                     errorMessage = null
 
-                    val result = SessionRepository.loginWithApi(
+                    val result = SessionRepository.loginWithFirebase(
                         email = email.trim(),
                         password = password
                     )
 
                     result.onSuccess {
                         navController.navigate(AppScreens.HomeScreen.route) {
-                            popUpTo(AppScreens.LoginScreen.route){ inclusive = true}
+                            popUpTo(AppScreens.LoginScreen.route) { inclusive = true }
                         }
                     }.onFailure { error ->
                         showError = true
                         errorMessage = error.message ?: "Invalid email or password"
-                        println("LOGIN ERROR: ${error.message}")
                     }
 
                     isLoading = false
                 }
-                */
             },
             modifier = Modifier
                 .fillMaxWidth()

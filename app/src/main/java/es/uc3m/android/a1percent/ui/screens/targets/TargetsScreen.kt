@@ -2,6 +2,7 @@ package es.uc3m.android.a1percent.ui.screens.targets
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,12 +20,16 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,22 +48,38 @@ fun TargetsScreen(
     viewModel: TargetsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    TargetsBodyContent(
-        uiState = uiState,
-        navController = navController,
-        onTabSelected = viewModel::onTabSelected,
-        onTaskFilterClicked = viewModel::onTaskFilterClicked,
-        onGoalFilterClicked = viewModel::onGoalFilterClicked,
-        onGoalClicked = { goalId ->
-            navController.navigate("targets/goal/$goalId")
-        },
-        onTaskClicked = viewModel::onTaskClicked,
-        onCloseTaskDetail = viewModel::onCloseTaskDetail,
-        onTaskComplete = viewModel::onTaskComplete,
-        onTaskPostpone = viewModel::onTaskPostpone,
-        onTaskDelete = viewModel::onTaskDelete
-    )
+    LaunchedEffect(uiState.errorMessage) {
+        val message = uiState.errorMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearErrorMessage()
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        TargetsBodyContent(
+            uiState = uiState,
+            navController = navController,
+            onTabSelected = viewModel::onTabSelected,
+            onTaskFilterClicked = viewModel::onTaskFilterClicked,
+            onGoalFilterClicked = viewModel::onGoalFilterClicked,
+            onGoalClicked = { goalId ->
+                navController.navigate("targets/goal/$goalId")
+            },
+            onTaskClicked = viewModel::onTaskClicked,
+            onCloseTaskDetail = viewModel::onCloseTaskDetail,
+            onTaskComplete = viewModel::onTaskComplete,
+            onTaskPostpone = viewModel::onTaskPostpone,
+            onTaskDelete = viewModel::onTaskDelete
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
+    }
 }
 
 @Composable

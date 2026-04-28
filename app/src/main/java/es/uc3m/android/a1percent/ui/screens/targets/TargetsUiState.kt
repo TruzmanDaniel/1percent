@@ -28,5 +28,8 @@ data class TargetsUiState(
     val goalTitleById: Map<String, String> = emptyMap(),
     
     // Task detail modal state
-    val selectedTask: Task? = null
+    val selectedTask: Task? = null,
+
+    // UI feedback for transient failures, such as delete errors.
+    val errorMessage: String? = null
 )
