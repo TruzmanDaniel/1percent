@@ -6,6 +6,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.UserRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,6 +59,8 @@ class SocialViewModel : ViewModel() {
 
     fun sendFriendRequest(toUserId: String) {
         val currentId = SessionRepository.currentUser.value?.id ?: return
-        SocialRepository.sendFriendRequest(currentId, toUserId)
+        viewModelScope.launch {
+            SocialRepository.sendFriendRequest(currentId, toUserId)
+        }
     }
 }

@@ -1,15 +1,15 @@
 package es.uc3m.android.a1percent.data
 
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.UserProfile
+import es.uc3m.android.a1percent.data.remote.encodeToMap
+import es.uc3m.android.a1percent.data.remote.toObjectSerializable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withTimeout
-
-// ...existing code... (removed unused remote API imports)
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 
 /**
  * Singleton repository to manage the active user session.
@@ -40,27 +40,15 @@ object SessionRepository {
                 .get()
                 .await()
 
-            val username = doc.getString("name")
-                ?: doc.getString("username")
-                ?: firebaseUser.email?.substringBefore("@")
-                ?: firebaseUser.uid
-
-            _currentUser.value = UserProfile(
-                id = firebaseUser.uid,
-                name = username,
-                email = firebaseUser.email ?: "",
-                createdAt = doc.getLong("createdAt"),
-                level = doc.getLong("level")?.toInt() ?: 1,
-                currentXp = doc.getLong("currentXp")?.toInt() ?: 0,
-                xpToNextLevel = doc.getLong("xpToNextLevel")?.toInt() ?: 100,
-                avatarUrl = doc.getString("avatarUrl"),
-                streakDays = doc.getLong("streakDays")?.toInt() ?: 0,
-                totalTasksCompleted = doc.getLong("totalTasksCompleted")?.toInt() ?: 0
-            )
+            val profile = doc.toObjectSerializable<UserProfile>()
+            if (profile != null) {
+                _currentUser.value = profile
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+
     suspend fun registerWithFirebaseAndApi(
         email: String,
         password: String,
@@ -90,7 +78,7 @@ object SessionRepository {
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(firebaseUser.uid)
-                .set(user)
+                .set(user.encodeToMap()!!)
                 .await()
 
             Result.success(Unit)
@@ -99,7 +87,7 @@ object SessionRepository {
         }
     }
 
-    suspend fun loginWithFirebase( //TODO esto se hace aqui o en LoginRequest o algun otro sitio?
+    suspend fun loginWithFirebase(
         email: String,
         password: String
     ): Result<Unit> {
@@ -109,21 +97,9 @@ object SessionRepository {
                 auth.signInWithEmailAndPassword(email, password).await()
             }
 
-            // Immediately provide a lightweight fallback user so the UI can proceed
             val firebaseUser = auth.currentUser
             if (firebaseUser != null) {
-                _currentUser.value = UserProfile(
-                    id = firebaseUser.uid,
-                    name = firebaseUser.email?.substringBefore("@") ?: firebaseUser.uid,
-                    email = firebaseUser.email ?: ""
-                )
-
-                // Complete profile hydration after auth using the current coroutine (no repo-owned scope).
-                try {
-                    restoreCurrentUserIfAvailable()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                restoreCurrentUserIfAvailable()
             }
 
             Result.success(Unit)
@@ -131,34 +107,6 @@ object SessionRepository {
             Result.failure(e)
         }
     }
-
-    /**
-    suspend fun loginWithApi(
-        email: String,
-        password: String
-    ): Result<UserDto> {
-        return try {
-            val response = ApiClient.apiService.login(
-                LoginRequest(
-                    email = email,
-                    password = password
-                )
-            )
-
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
-            } else {
-                Result.failure(
-                    Exception("Error ${response.code()} ${response.message()}")
-                )
-            }
-        } catch (e: Exception){
-            Result.failure(e)
-        }
-    }
-    */
-
-
 
     /**
      * Clears the current session.

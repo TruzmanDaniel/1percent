@@ -1,16 +1,17 @@
 package es.uc3m.android.a1percent.data.model
 
-import com.google.firebase.firestore.Exclude
 import es.uc3m.android.a1percent.data.model.enums.MissionFeedback
 import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskType
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * Pure model for standalone tasks and goal mission steps.
  * Next step: add repository mapping or Room annotations when persistence is introduced.
  */
+@Serializable
 data class Task(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
@@ -20,7 +21,6 @@ data class Task(
     val xp: Int,
     val energyCost: Int?,
 
-    @get:Exclude
     val deadline: TaskDeadline? = null,  // null or TaskDeadLine (ThisWeek or OnDate)
     val status: TaskStatus = TaskStatus.PENDING,
 
@@ -32,22 +32,10 @@ data class Task(
     val isAiGenerated: Boolean = false,
     val order: Int? = null,
     val microfeedback: MissionFeedback? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val ownerId: String = "",
+    val sharedWith: List<String> = emptyList()
 ) {
-
-    // Firestore-friendly derived fields. They let us save `Task` directly while keeping
-    // `deadline` as the domain-friendly representation used by the UI and sorting logic
-    @Suppress("unused")
-    val deadlineType: String?
-        get() = when (deadline) {
-            null -> null
-            TaskDeadline.ThisWeek -> "THIS_WEEK"
-            is TaskDeadline.OnDate -> "ON_DATE"
-        }
-
-    @Suppress("unused")
-    val deadlineEpochDay: Long?
-        get() = (deadline as? TaskDeadline.OnDate)?.epochDay
 
     init {
         require(difficulty in 1..5) { "Task difficulty must be between 1 and 5" }

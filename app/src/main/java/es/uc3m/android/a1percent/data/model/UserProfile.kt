@@ -1,16 +1,16 @@
 package es.uc3m.android.a1percent.data.model
 
-import com.google.firebase.firestore.Exclude
+import kotlinx.serialization.Serializable
 
 /**
  * Pure user profile model.
  * Next step: connect this model to profile state, repository and remote/local sources.
  */
+@Serializable
 data class UserProfile(
     val id: String,
     val name: String,
     val email: String,
-    @get:Exclude
     val password: String = "", // Added for local logic, usually handled by Firebase Auth
     val createdAt: Long? = null,
     val level: Int = 1,

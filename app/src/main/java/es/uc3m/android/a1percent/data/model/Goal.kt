@@ -2,12 +2,14 @@ package es.uc3m.android.a1percent.data.model
 
 import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
+import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
  * Pure model for user goals.
  * Next step: map this model to persistence/network DTOs when data layer is added.
  */
+@Serializable
 data class Goal(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
@@ -18,7 +20,9 @@ data class Goal(
     val deadline: Long? = null,
     val status: GoalStatus = GoalStatus.ACTIVE,
     val progress: Int = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val ownerId: String = "",
+    val sharedWith: List<String> = emptyList()
 ) {
     init {
         require(difficulty in 1..5) { "Goal difficulty must be between 1 and 5" }

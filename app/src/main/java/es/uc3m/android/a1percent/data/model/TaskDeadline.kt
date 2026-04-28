@@ -13,10 +13,17 @@ package es.uc3m.android.a1percent.data.model
 
 // Interface with 2 possible values
 
-sealed interface TaskDeadline {
-    object ThisWeek : TaskDeadline
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
-    // TODO: add optional time-of-day when the user needs hour precision.
+@Serializable
+sealed interface TaskDeadline {
+    @Serializable
+    @SerialName("this_week")
+    data object ThisWeek : TaskDeadline
+
+    @Serializable
+    @SerialName("on_date")
     data class OnDate(val epochDay: Long) : TaskDeadline
 }
 
