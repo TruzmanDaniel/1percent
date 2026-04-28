@@ -12,6 +12,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -92,6 +96,7 @@ fun GoalDetailScreen(
                             task = mission,
                             onComplete = { viewModel.onTaskComplete(mission.id) },
                             onPostpone = { viewModel.onTaskPostpone(mission.id) },
+                            onSkip = { viewModel.onTaskSkipped(mission.id) },
                             onDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
@@ -225,6 +230,7 @@ private fun TaskRowWithActions(
     task: Task,
     onComplete: () -> Unit,
     onPostpone: () -> Unit,
+    onSkip: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -262,17 +268,22 @@ private fun TaskRowWithActions(
             ) {
                 AssistChip(
                     onClick = onComplete,
-                    label = { Text("Complete") },
+                    label = { Icon(Icons.Default.Check, contentDescription = "Complete") },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onPostpone,
-                    label = { Text("Postpone") },
+                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone") },
+                    modifier = Modifier.weight(1f)
+                )
+                AssistChip(
+                    onClick = onSkip,
+                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skipped") },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onDelete,
-                    label = { Text("Delete") },
+                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete") },
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -29,9 +29,10 @@ object GoalRepository {
         }
     }
 
+        // Keeps listening Firestore changes in real-time
     fun observeGoals(userId: String): Flow<List<Goal>> = callbackFlow {
         val registration = goalsCollection
-            .whereArrayContains("sharedWith", userId)
+            .whereArrayContains("sharedWith", userId) // Observe also goals shared with user
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)

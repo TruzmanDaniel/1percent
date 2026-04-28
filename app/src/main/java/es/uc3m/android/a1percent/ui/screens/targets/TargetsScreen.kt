@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHost
@@ -61,6 +67,7 @@ fun TargetsScreen(
             uiState = uiState,
             navController = navController,
             onTabSelected = viewModel::onTabSelected,
+            onTaskStatusFilterClicked = viewModel::onTaskStatusFilterClicked,
             onTaskFilterClicked = viewModel::onTaskFilterClicked,
             onGoalFilterClicked = viewModel::onGoalFilterClicked,
             onGoalClicked = { goalId ->
@@ -70,6 +77,7 @@ fun TargetsScreen(
             onCloseTaskDetail = viewModel::onCloseTaskDetail,
             onTaskComplete = viewModel::onTaskComplete,
             onTaskPostpone = viewModel::onTaskPostpone,
+            onTaskSkip = viewModel::onTaskSkipped,
             onTaskDelete = viewModel::onTaskDelete
         )
 
@@ -88,6 +96,7 @@ private fun TargetsBodyContent(
     uiState: TargetsUiState,
     navController: NavController,
     onTabSelected: (TargetsTab) -> Unit,
+    onTaskStatusFilterClicked: () -> Unit,
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
     onGoalFilterClicked: (GoalFilterKey) -> Unit,
     onGoalClicked: (String) -> Unit,
@@ -95,6 +104,7 @@ private fun TargetsBodyContent(
     onCloseTaskDetail: () -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
+    onTaskSkip: (String) -> Unit,
     onTaskDelete: (String) -> Unit
 ) {
     Column(
@@ -117,10 +127,12 @@ private fun TargetsBodyContent(
         when (uiState.selectedTab) {
             TargetsTab.TASKS -> TasksTabContent(
                 uiState = uiState,
+                onTaskStatusFilterClicked = onTaskStatusFilterClicked,
                 onTaskFilterClicked = onTaskFilterClicked,
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
                 onTaskPostpone = onTaskPostpone,
+                onTaskSkip = onTaskSkip,
                 onTaskDelete = onTaskDelete
             )
 
@@ -145,10 +157,12 @@ private fun TargetsBodyContent(
 @Composable
 private fun TasksTabContent(
     uiState: TargetsUiState,
+    onTaskStatusFilterClicked: () -> Unit,
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
+    onTaskSkip: (String) -> Unit,
     onTaskDelete: (String) -> Unit
 ) {
     LazyColumn(
@@ -165,6 +179,12 @@ private fun TasksTabContent(
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    onClick = onTaskStatusFilterClicked,
+                    label = { Text(statusFilterLabel(uiState.taskFilters.selectedStatus)) },
+                    selected = uiState.taskFilters.selectedStatus != null
+                )
+
                 // TODO: Placeholder filter controls. Replace with advanced filter sheet/dropdowns.
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     uiState.taskFilterItems.forEach { filter ->
@@ -198,6 +218,7 @@ private fun TasksTabContent(
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
                 onTaskPostpone = { onTaskPostpone(task.id) },
+                onTaskSkip = { onTaskSkip(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) }
             )
         }
@@ -255,6 +276,7 @@ private fun TaskRowWithActions(
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
     onTaskPostpone: () -> Unit,
+    onTaskSkip: () -> Unit,
     onTaskDelete: () -> Unit
 ) {
     Card(
@@ -307,17 +329,22 @@ private fun TaskRowWithActions(
             ) {
                 AssistChip(
                     onClick = onTaskComplete,
-                    label = { Text("Complete") },
+                    label = { Icon(Icons.Default.Check, contentDescription = "Complete") },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onTaskPostpone,
-                    label = { Text("Postpone") },
+                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone") },
+                    modifier = Modifier.weight(1f)
+                )
+                AssistChip(
+                    onClick = onTaskSkip,
+                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skipped") },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onTaskDelete,
-                    label = { Text("Delete") },
+                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete") },
                     modifier = Modifier.weight(1f)
                 )
             }

@@ -58,7 +58,7 @@ object SocialRepository {
                 (rel.userAId == userId || rel.userBId == userId)
             }
             .map { rel ->
-                if (rel.userAId == userId) rel.userBId else rel.userAId
+                if (rel.userAId == userId) rel.userBId else rel.userAId // get the friend's ID from the IDs pair
             }
 
         return friendIds.mapNotNull { UserRepository.findUserById(it) }

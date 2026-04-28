@@ -1,5 +1,7 @@
 package es.uc3m.android.a1percent.ui.screens.targets
 
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+
 /**
  * Filter and sorting definitions for Targets.
  * UI consumes prebuilt filter items from UiState; ViewModel owns behavior.
@@ -27,8 +29,19 @@ enum class TaskSort(val label: String) {
 data class TaskFilters(
     val quickFilters: Set<TaskQuickFilter> = emptySet(),
     val categoryLabel: String = "Category",
+    val selectedStatus: TaskStatus? = TaskStatus.PENDING,
     val sort: TaskSort = TaskSort.NONE
 )
+
+// TASK STATUS FILTER Rotation
+fun statusFilterLabel(selectedStatus: TaskStatus?): String {
+    return when (selectedStatus) {
+        TaskStatus.PENDING -> "Status: Pending"
+        TaskStatus.COMPLETED -> "Status: Completed"
+        TaskStatus.SKIPPED -> "Status: Skipped"
+        else -> "Status: All"
+    }
+}
 
 data class TaskFilterUiItem(
     val key: TaskFilterKey,
@@ -55,6 +68,7 @@ fun buildTaskFilterUiItems(filters: TaskFilters): List<TaskFilterUiItem> {
 
     return items.sortedWith(compareByDescending<TaskFilterUiItem> { it.isSelected }.thenBy { it.order })
 }
+
 
 
 // GOALS

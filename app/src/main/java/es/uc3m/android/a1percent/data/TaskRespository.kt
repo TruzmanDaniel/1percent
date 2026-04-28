@@ -2,7 +2,9 @@ package es.uc3m.android.a1percent.data
 
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.remote.encodeToMap
+import es.uc3m.android.a1percent.data.remote.toObjectSerializable
 import es.uc3m.android.a1percent.data.remote.toObjectsSerializable
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -60,9 +62,23 @@ object TaskRespository {
         }
     }
 
-    suspend fun deleteTask(userId: String, taskId: String): Result<Unit> {
+    suspend fun deleteTask(taskId: String): Result<Unit> {
         return try {
             tasksCollection.document(taskId).delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateTaskStatus(taskId: String, status: TaskStatus): Result<Unit> {
+        return try {
+            val snapshot = tasksCollection.document(taskId).get().await()
+            val currentTask = snapshot.toObjectSerializable<Task>()
+                ?: throw IllegalStateException("Task $taskId not found")
+
+            val updatedTask = currentTask.copy(status = status)
+            tasksCollection.document(taskId).set(updatedTask.encodeToMap()!!).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

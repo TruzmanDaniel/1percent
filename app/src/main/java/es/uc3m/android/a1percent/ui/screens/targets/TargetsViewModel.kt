@@ -8,6 +8,7 @@ import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,14 +69,18 @@ class TargetsViewModel : ViewModel() {
     }
 
     private fun applyTaskFiltersAndSort(filters: TaskFilters): List<Task> {
+        val statusFiltered = filters.selectedStatus?.let { status ->
+            allTasks.filter { it.status == status }
+        } ?: allTasks
+
         val filtered = if (filters.quickFilters.isEmpty()) {
-            allTasks
+            statusFiltered
         } else {
-            allTasks.filter { task ->
+            statusFiltered.filter { task ->
                 filters.quickFilters.all { filter ->
                     when (filter) {
                         TaskQuickFilter.MISSIONS -> task.goalId != null
-                        TaskQuickFilter.SHARED -> true 
+                        TaskQuickFilter.SHARED -> true  // TODO: replace with real shared/collaboration source
                     }
                 }
             }
@@ -97,10 +102,13 @@ class TargetsViewModel : ViewModel() {
         }
     }
 
+
+    // TAB VIEW
     fun onTabSelected(tab: TargetsTab) {
         _uiState.update { it.copy(selectedTab = tab) }
     }
 
+    // FILTERING
     fun onTaskFilterClicked(filterKey: TaskFilterKey) {
         _uiState.update { current ->
             val updatedTaskFilters = when (filterKey) {
@@ -113,12 +121,26 @@ class TargetsViewModel : ViewModel() {
         }
     }
 
+    fun onTaskStatusFilterClicked() {
+        _uiState.update { current ->
+            val updatedTaskFilters = current.taskFilters.copy(
+                selectedStatus = nextTaskStatusFilter(current.taskFilters.selectedStatus)
+            )
+            reduceTargetsState(current.copy(taskFilters = updatedTaskFilters))
+        }
+    }
+
     fun onGoalFilterClicked(filterKey: GoalFilterKey) {
         if (filterKey != GoalFilterKey.SORT) return
         _uiState.update { current ->
             val updatedGoalFilters = current.goalFilters.copy(sort = nextGoalSort(current.goalFilters.sort))
             reduceTargetsState(current.copy(goalFilters = updatedGoalFilters))
         }
+    }
+
+    @Suppress("unused")
+    fun onTaskCategoryClick() {
+        // TODO: open category selector and apply advanced category filter.
     }
 
     fun onTaskClicked(task: Task) {
@@ -129,22 +151,49 @@ class TargetsViewModel : ViewModel() {
         _uiState.update { it.copy(selectedTask = null) }
     }
 
+    // GOAL DETAIL VIEW
+
+    @Suppress("UNUSED_PARAMETER")
+    fun onGoalClicked(goalId: String) {
+        // TODO: navigate to goal detail when detail flow is implemented.
+    }
+
+
     // ACTIONS
 
     fun onTaskComplete(taskId: String) {
-        // TODO: Update task status to COMPLETED in repository
-        println("Task $taskId marked as complete")
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onFailure { error ->
+                _uiState.update { current ->
+                    current.copy(errorMessage = "Error completing task: ${error.message ?: "unknown error"}")
+                }
+            }
+        }
     }
 
     fun onTaskPostpone(taskId: String) {
-        // TODO: Update task deadline (move to next period) in repository
-        println("Task $taskId postponed")
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.POSTPONED).onFailure { error ->
+                _uiState.update { current ->
+                    current.copy(errorMessage = "Error postponing task: ${error.message ?: "unknown error"}")
+                }
+            }
+        }
+    }
+
+    fun onTaskSkipped(taskId: String) {
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.SKIPPED).onFailure { error ->
+                _uiState.update { current ->
+                    current.copy(errorMessage = "Error skipping task: ${error.message ?: "unknown error"}")
+                }
+            }
+        }
     }
 
     fun onTaskDelete(taskId: String) {
-        val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            TaskRespository.deleteTask(userId, taskId).onFailure { error ->
+            TaskRespository.deleteTask(taskId).onFailure { error ->
                 _uiState.update { current ->
                     current.copy(errorMessage = "Error deleting task: ${error.message ?: "unknown error"}")
                 }
@@ -164,6 +213,16 @@ class TargetsViewModel : ViewModel() {
             taskFilterItems = buildTaskFilterUiItems(base.taskFilters),
             goalFilterItems = buildGoalFilterUiItems(base.goalFilters)
         )
+    }
+
+    private fun nextTaskStatusFilter(current: TaskStatus?): TaskStatus? {
+        return when (current) {
+            TaskStatus.PENDING -> TaskStatus.COMPLETED
+            TaskStatus.COMPLETED -> TaskStatus.SKIPPED
+            TaskStatus.SKIPPED -> null
+            null -> TaskStatus.PENDING
+            TaskStatus.POSTPONED -> null
+        }
     }
 
     private fun toggleQuickFilter(filters: TaskFilters, filter: TaskQuickFilter): TaskFilters {
@@ -190,3 +249,5 @@ class TargetsViewModel : ViewModel() {
         }
     }
 }
+
+

@@ -7,6 +7,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,19 +72,43 @@ class GoalDetailViewModel : ViewModel() {
 
     // TODO: Implement actual task update logic (currently just logs action)
     fun onTaskComplete(taskId: String) {
-        // TODO: Update task status to COMPLETED in repository
-        println("Task $taskId marked as complete")
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onSuccess {
+                applyLocalTaskStatus(taskId, TaskStatus.COMPLETED)
+            }
+        }
     }
 
     fun onTaskPostpone(taskId: String) {
-        // TODO: Update task deadline (move to next period) in repository
-        println("Task $taskId postponed")
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.POSTPONED).onSuccess {
+                applyLocalTaskStatus(taskId, TaskStatus.POSTPONED)
+            }
+        }
+    }
+
+    fun onTaskSkipped(taskId: String) {
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, TaskStatus.SKIPPED).onSuccess {
+                applyLocalTaskStatus(taskId, TaskStatus.SKIPPED)
+            }
+        }
     }
 
     fun onTaskDelete(taskId: String) {
         // TODO: Delete task from repository
         _uiState.update { current ->
             current.copy(missions = current.missions.filter { it.id != taskId })
+        }
+    }
+
+    private fun applyLocalTaskStatus(taskId: String, status: TaskStatus) {
+        _uiState.update { current ->
+            current.copy(
+                missions = current.missions.map { mission ->
+                    if (mission.id == taskId) mission.copy(status = status) else mission
+                }
+            )
         }
     }
 }
