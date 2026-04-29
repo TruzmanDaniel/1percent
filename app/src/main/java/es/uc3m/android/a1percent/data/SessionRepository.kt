@@ -120,4 +120,18 @@ object SessionRepository {
      * Helper to check if a user is currently logged in.
      */
     fun isLoggedIn(): Boolean = _currentUser.value != null
+
+    suspend fun updateUserProfile(profile: UserProfile): Result<Unit> {
+        return try {
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(profile.id)
+                .set(profile.encodeToMap()!!)
+                .await()
+            _currentUser.value = profile
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

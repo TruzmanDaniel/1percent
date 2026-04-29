@@ -32,6 +32,8 @@ data class Task(
     val isAiGenerated: Boolean = false,
     val order: Int? = null,
     val microfeedback: MissionFeedback? = null,
+    val dayIndex: Int? = null,
+    val weekNumber: Int? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val ownerId: String = "",
     val sharedWith: List<String> = emptyList()

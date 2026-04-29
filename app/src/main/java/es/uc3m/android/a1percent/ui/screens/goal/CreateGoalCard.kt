@@ -34,11 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
-/**
- * CreateGoalCard renders the goal creation form as a modal overlay with glassmorphism style.
- * State logic lives in the ViewModel to keep the UI simple.
- * Minimal implementation for now, ready for future expansion.
- */
 @Composable
 fun CreateGoalCard(
     onDismiss: () -> Unit,
@@ -52,7 +47,6 @@ fun CreateGoalCard(
             .padding(16.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Glassmorphism styling
         val glassShape = RoundedCornerShape(24.dp)
         val glassGradient = Brush.verticalGradient(
             colors = listOf(
@@ -64,7 +58,7 @@ fun CreateGoalCard(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.75f),
+                .fillMaxHeight(0.85f),
             shape = glassShape,
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             border = BorderStroke(
@@ -78,7 +72,6 @@ fun CreateGoalCard(
                     .fillMaxSize()
                     .background(brush = glassGradient)
             ) {
-                // Header Section - Fixed
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -95,7 +88,6 @@ fun CreateGoalCard(
                     }
                 }
 
-                // Content Section - Scrollable
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -103,65 +95,101 @@ fun CreateGoalCard(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    OutlinedTextField(
-                        value = uiState.goalName,
-                        onValueChange = viewModel::onGoalNameChange,
-                        label = { Text("Goal Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Column {
-                        Text(
-                            text = "Difficulty: ${uiState.difficulty.toInt()}",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Slider(
-                            value = uiState.difficulty,
-                            onValueChange = viewModel::onDifficultyChange,
-                            valueRange = 1f..5f,
-                            steps = 3,
+                    if (uiState.aiState == AiNegotiationState.IDLE) {
+                        OutlinedTextField(
+                            value = uiState.goalName,
+                            onValueChange = viewModel::onGoalNameChange,
+                            label = { Text("Goal Name") },
                             modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Column {
+                            Text(
+                                text = "Difficulty: ${uiState.difficulty.toInt()}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Slider(
+                                value = uiState.difficulty,
+                                onValueChange = viewModel::onDifficultyChange,
+                                valueRange = 1f..5f,
+                                steps = 3,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        if (uiState.availableCredits > 0) {
+                            Text(
+                                text = "AI credits: ${uiState.availableCredits} remaining",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        AiProposalCard(
+                            state = uiState.aiState,
+                            proposedTasks = uiState.proposedTasks,
+                            canNegotiate = uiState.canNegotiate,
+                            errorMessage = uiState.errorMessage,
+                            onEasier = { viewModel.adjustAndRegenerate(isEasier = true) },
+                            onAccept = {
+                                viewModel.acceptProposal(
+                                    onSuccess = {
+                                        viewModel.resetState()
+                                        onDismiss()
+                                    },
+                                    onError = {}
+                                )
+                            },
+                            onHarder = { viewModel.adjustAndRegenerate(isEasier = false) },
+                            onRetry = { viewModel.generateProposal() }
                         )
                     }
                 }
 
-                // Footer Section - Fixed
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Button(
-                        onClick = {
-                            viewModel.resetState()
-                            onDismiss()
-                        },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(0.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    ) {
-                        Text("Cancel")
-                    }
-
-                    Button(
-                        onClick = {
-                            viewModel.createGoal(
-                                onSuccess = {
-                                    viewModel.resetState()
-                                    onDismiss()
-                                },
-                                onError = { /* Ignore error by now */ }
+                    if (uiState.aiState == AiNegotiationState.IDLE) {
+                        Button(
+                            onClick = {
+                                viewModel.resetState()
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        },
-                        modifier = Modifier.weight(1f).padding(0.dp),
-                        enabled = uiState.canCreateGoal
-                    ) {
-                        Text(if (uiState.isLoading) "Creating..." else "Create Goal")
+                        ) {
+                            Text("Cancel")
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.createGoal(
+                                    onSuccess = {
+                                        viewModel.resetState()
+                                        onDismiss()
+                                    },
+                                    onError = {}
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = uiState.canCreateGoal
+                        ) {
+                            Text("Create (No AI)")
+                        }
+
+                        Button(
+                            onClick = { viewModel.generateProposal() },
+                            modifier = Modifier.weight(1f),
+                            enabled = uiState.canGenerateAi
+                        ) {
+                            Text("Create with AI")
+                        }
                     }
                 }
             }

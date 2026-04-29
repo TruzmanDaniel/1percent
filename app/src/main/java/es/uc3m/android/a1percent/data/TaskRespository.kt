@@ -84,4 +84,23 @@ object TaskRespository {
             Result.failure(e)
         }
     }
+
+    suspend fun saveTaskBatch(userId: String, tasks: List<Task>): Result<Unit> {
+        return try {
+            val batch = db.batch()
+            tasks.forEach { task ->
+                val taskRef = tasksCollection.document()
+                val finalTask = task.copy(
+                    id = taskRef.id,
+                    ownerId = userId,
+                    sharedWith = listOf(userId)
+                )
+                batch.set(taskRef, finalTask.encodeToMap()!!)
+            }
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

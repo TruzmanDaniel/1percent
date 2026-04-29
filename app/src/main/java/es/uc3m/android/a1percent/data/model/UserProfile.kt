@@ -18,5 +18,7 @@ data class UserProfile(
     val xpToNextLevel: Int = 100,
     val avatarUrl: String? = null,
     val streakDays: Int = 0,
-    val totalTasksCompleted: Int = 0
+    val totalTasksCompleted: Int = 0,
+    val availableCredits: Int = 5,
+    val creditsResetDate: Long? = null
 )

@@ -2,11 +2,18 @@ package es.uc3m.android.a1percent.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import es.uc3m.android.a1percent.data.CreditManager
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.WeeklySummaryRepository
+import es.uc3m.android.a1percent.data.ai.AICoachService
+import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.WeeklySummary
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,10 +22,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
-/**
- * Data class to manage logic and screen state. It lets the interface observe changes and update
- */
 class HomeViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -27,8 +33,11 @@ class HomeViewModel : ViewModel() {
     private var tasksJob: Job? = null
     private var goalsJob: Job? = null
 
+    companion object {
+        private const val SEVEN_DAYS_MILLIS = 7L * 24 * 60 * 60 * 1000
+    }
+
     init {
-        // Observe changes in the current user from the SessionRepository in case it changes
         SessionRepository.currentUser
             .onEach { user ->
                 if (user != null) {
@@ -56,13 +65,17 @@ class HomeViewModel : ViewModel() {
 
         goalsJob = GoalRepository.observeGoals(userId)
             .onEach { goals ->
-                if (goals.isNotEmpty()) {
-                    _uiState.update { it.copy(goal = goals.first()) }
-                } else {
-                    _uiState.update { it.copy(goal = null) }
-                }
+                _uiState.update { it.copy(
+                    goals = goals,
+                    goal = goals.firstOrNull()
+                ) }
+                checkWeeklyRituals(goals)
             }
             .launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            CreditManager.resetCreditsIfNeeded(userId)
+        }
     }
 
     private fun stopObservingData() {
@@ -70,9 +83,119 @@ class HomeViewModel : ViewModel() {
         goalsJob?.cancel()
     }
 
-    // --- Rest of methods (filters, sort, etc.) ---
+    private fun checkWeeklyRituals(goals: List<Goal>) {
+        val now = System.currentTimeMillis()
 
-    // Toggle missions filters
+        val pendingGoal = goals.firstOrNull { goal ->
+            goal.aiRoadmapStatus == AiRoadmapStatus.READY
+                && goal.nextGenerationDate != null
+                && now >= goal.nextGenerationDate
+        } ?: return
+
+        val isCatchUp = (now - (pendingGoal.nextGenerationDate ?: 0)) > SEVEN_DAYS_MILLIS * 2
+
+        if (isCatchUp) {
+            _uiState.update { it.copy(
+                showCatchUp = true,
+                ritualGoal = pendingGoal
+            ) }
+        } else {
+            val goalTasks = _uiState.value.tasks.filter {
+                it.goalId == pendingGoal.id && it.isAiGenerated
+            }
+            val completed = goalTasks.count { it.status == TaskStatus.COMPLETED }
+            val epicTask = goalTasks.find { it.dayIndex == 7 }
+            val epicPassed = epicTask?.status == TaskStatus.COMPLETED
+            val xpEarned = goalTasks.filter { it.status == TaskStatus.COMPLETED }.sumOf { it.xp }
+
+            _uiState.update { it.copy(
+                showWeeklyRitual = true,
+                ritualGoal = pendingGoal,
+                ritualTasksCompleted = completed,
+                ritualTotalTasks = goalTasks.size,
+                ritualEpicPassed = epicPassed,
+                ritualXpEarned = xpEarned
+            ) }
+        }
+    }
+
+    fun onWeeklyFeedback(feedback: String) {
+        val goal = _uiState.value.ritualGoal ?: return
+        val userId = SessionRepository.currentUser.value?.id ?: return
+        val isCatchUp = _uiState.value.showCatchUp
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(
+                showWeeklyRitual = false,
+                showCatchUp = false,
+                isGeneratingWeek = true
+            ) }
+
+            val latestSummary = WeeklySummaryRepository.getLatestSummary(goal.id).getOrNull()
+            val weekNumber = (latestSummary?.weekNumber ?: 0) + 1
+
+            if (!isCatchUp) {
+                val summary = WeeklySummary(
+                    goalId = goal.id,
+                    userId = userId,
+                    weekNumber = weekNumber - 1,
+                    tasksCompleted = _uiState.value.ritualTasksCompleted,
+                    totalTasks = _uiState.value.ritualTotalTasks,
+                    epicMissionPassed = _uiState.value.ritualEpicPassed,
+                    userFeedback = try { EnergyFeedback.valueOf(feedback) } catch (_: Exception) { null },
+                    intensityUsed = goal.currentIntensity
+                )
+                WeeklySummaryRepository.saveSummary(goal.id, summary)
+            }
+
+            val maxIntensity = goal.difficulty * 2.0f
+            val newIntensity = if (isCatchUp) {
+                AICoachService.calculateCatchUpIntensity(goal.currentIntensity, feedback, maxIntensity)
+            } else {
+                AICoachService.calculateNewIntensity(
+                    goal.currentIntensity, _uiState.value.ritualEpicPassed, feedback, maxIntensity
+                )
+            }
+
+            val updatedGoal = goal.copy(currentIntensity = newIntensity)
+
+            val isWeekend = Calendar.getInstance().let {
+                it.get(Calendar.DAY_OF_WEEK) in listOf(Calendar.SATURDAY, Calendar.SUNDAY)
+            }
+
+            val result = AICoachService.generateWeeklyTasks(
+                goal = updatedGoal,
+                weeklySummary = if (isCatchUp) null else latestSummary,
+                isWeekend = isWeekend,
+                userFeedback = feedback,
+                userId = userId,
+                weekNumber = weekNumber
+            )
+
+            result.onSuccess { tasks ->
+                TaskRespository.saveTaskBatch(userId, tasks.map { it.copy(goalId = goal.id) })
+
+                val finalGoal = updatedGoal.copy(
+                    nextGenerationDate = System.currentTimeMillis() + SEVEN_DAYS_MILLIS
+                )
+                GoalRepository.updateGoal(finalGoal)
+            }
+
+            _uiState.update { it.copy(
+                isGeneratingWeek = false,
+                ritualGoal = null
+            ) }
+        }
+    }
+
+    fun dismissRitual() {
+        _uiState.update { it.copy(
+            showWeeklyRitual = false,
+            showCatchUp = false,
+            ritualGoal = null
+        ) }
+    }
+
     fun onMissionsFilterToggled() {
         _uiState.update { current ->
             val updatedFilters = current.filters.copy(showOnlyMissions = !current.filters.showOnlyMissions)
@@ -99,10 +222,8 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    // Define logic for filtering and sorting
     private fun applyFiltersAndSort(tasks: List<Task>, filters: HomeFilters): List<Task> {
         val pendingTasks = tasks.filter { task ->
-            // Home solo debe mostrar tasks pendientes por defecto
             task.status == TaskStatus.PENDING
         }
 
@@ -120,7 +241,6 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    // State what to show in the UI depending on current filters
     private fun reduceHomeState(base: HomeUiState): HomeUiState {
         val visibleTasks = applyFiltersAndSort(base.tasks, base.filters)
         val filterItems = buildHomeFilterUiItems(base.filters)
@@ -130,7 +250,6 @@ class HomeViewModel : ViewModel() {
         )
     }
 
-    @Suppress("unused")
     fun onProfileClicked(): String {
         return SessionRepository.currentUser.value?.name ?: "Unknown User"
     }

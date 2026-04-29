@@ -6,50 +6,94 @@ Transformar la aplicación en un coach personal que utiliza el SDK de **Vertex A
 ## 2. Experiencia de Usuario Detallada (UX)
 
 ### A. El Onboarding del Goal (Negociación del Plan)
-Cuando el usuario pulsa "Crear Objetivo", el flujo es:
-1.  **Formulario de Intención**: Título, categoría y **Dificultad Percibida** (1-10) por el usuario.
+1.  **Formulario de Intención**: Título, categoría y **Dificultad Percibida** (1-10).
 2.  **Propuesta de la IA**: El móvil llama a Gemini y muestra una previsualización de las primeras 7 misiones.
 3.  **Bucle de Ajuste (Feedback Inmediato)**:
-    - Debajo de la propuesta aparecen tres botones: 🔵 **Demasiado Fácil**, 🟡 **OK, me gusta** y 🔴 **Demasiado Difícil**.
-    - **Reiteración**: Si elige Fácil o Difícil, la app envía una nueva instrucción a la IA (ej: *"Aumenta la carga un 10%"*) y muestra una nueva propuesta al instante.
-4.  **Confirmación**: Solo cuando el usuario pulsa **OK**, el `Goal` se crea en Firestore y las 7 misiones se inyectan en la colección `/tasks`.
+    - Botones: 🔵 **Demasiado Fácil**, 🟡 **OK, me gusta** y 🔴 **Demasiado Difícil**.
+    - La IA ajusta la intensidad base según la elección.
+4.  **Confirmación**: Al pulsar **OK**, se crea el `Goal` y se inyectan las 7 `Task` en Firestore.
 
-### B. El Ritual de Nueva Semana (Transición)
-Se dispara cuando ha pasado una semana y el usuario accede a la app:
-1.  **Pantalla de Cosecha**: Resumen visual del éxito de la semana pasada (ej: "Mejora del 7.2%").
-2.  **Calibración de Energía**: El usuario elige entre 🟢 Sobrado, 🟡 Perfecto o 🔴 Agotado.
-3.  **Generación y Preview**: La app propone los nuevos 7 días. El usuario puede volver a usar el bucle de "Fácil/Difícil" antes de aceptar el nuevo bloque semanal.
-
----
-
-## 3. Arquitectura Técnica (Requisito: Android Studio Direct)
-
-### Componentes en Android
-- **Vertex AI SDK**: Librería `firebase-vertexai` para comunicación directa con Gemini 1.5 Flash.
-- **AIViewModel**: Gestiona el estado de la "negociación" (la lista temporal de misiones antes de ser guardadas).
-- **Prompt Dinámico**: El prompt incluye el historial de ajustes del usuario en esa misma sesión para que la IA no repita errores.
+### B. El Ritual de Nueva Semana (Día de Cosecha)
+1.  **Pantalla de Resumen**: Éxito de la semana anterior y porcentaje de mejora real percibida.
+2.  **Misión Épica (Día 7)**: El último día de la semana es un reto de alta intensidad que otorga un **bonus de XP** (5x) y sirve de "puerta" para subir el nivel de la semana siguiente.
+3.  **Calibración y Generación**: Feedback del usuario y creación de los nuevos 7 días considerando el **Contexto de Vida Real** (misiones más largas en fines de semana).
 
 ---
 
-## 4. Lógica del Algoritmo "1.01"
-- **Punto de Partida**: Definido por la Dificultad Percibida del usuario + el bucle de ajuste inicial.
-- **Crecimiento**: `Nueva_Intensidad = Intensidad_Anterior * (1.01)^7`.
-- **Ajuste Semanal**: El feedback de "Sobrado/Agotado" modifica el multiplicador para la semana siguiente.
+## 3. Arquitectura Técnica y Datos
+
+### Modelo de Datos Único: `Task`
+Para mantener la simplicidad, las misiones generadas por IA usarán el modelo `Task.kt` existente con los siguientes valores:
+- `isAiGenerated = true`
+- `goalId = [ID_DEL_GOAL]`
+- `xp`: Calculado por la IA (Días 1-6: Normal, Día 7: Épico).
+- `dayIndex`: 1 a 7.
+
+### Formato de Respuesta de la IA (JSON)
+```json
+{
+  "tasks": [
+    {
+      "title": "Misión Día 1",
+      "description": "...",
+      "xp": 50,
+      "difficulty": 2,
+      "dayIndex": 1
+    },
+    ...
+    {
+      "title": "EL RETO ÉPICO",
+      "description": "Misión final de semana para validar tu progreso",
+      "xp": 300,
+      "difficulty": 5,
+      "dayIndex": 7
+    }
+  ]
+}
+```
+
+---
+
+## 4. Algoritmo de Inteligencia y Contexto
+
+### Contexto de Vida Real
+El prompt de la IA incluirá:
+- *"Es fin de semana: propón tareas que requieran más tiempo pero menos equipo técnico."*
+- *"Es día laboral: misiones rápidas (<15 min) centradas en la constancia."*
+
+### Algoritmo "1.01"
+- **Nueva_Intensidad = Intensidad_Anterior * (1.01)^7**.
+- Si el usuario falla la Misión Épica, la IA mantiene la intensidad para la semana siguiente (meseta de aprendizaje).
 
 ---
 
 ## 5. Cambios Necesarios en Modelos de Datos
 
 ### `Goal.kt`
-- `initialDifficulty: Int` (El valor 1-10 del usuario).
 - `currentIntensity: Float`, `nextGenerationDate: Long`.
 - `aiRoadmapStatus: Status` (NEGOTIATING, READY).
 
 ### `Task.kt`
 - `isAiGenerated: Boolean`, `difficultyScore: Float`.
 
-### `WeeklySummary.kt` (Memoria de la IA)
-- Almacena el resultado de cada semana para que Gemini sepa si el usuario suele pecar de optimista o de conservador en sus ajustes.
+### `WeeklySummary.kt` (Colección Raíz)
+- Documentos cortos con el resumen del desempeño para servir de "memoria" a la IA sin saturar el contexto de tokens.
+
+## 6. Control de Costes y Cuotas de Uso
+
+### A. Sistema de Créditos (Anti-Spam)
+Para evitar costes excesivos, el sistema implementará:
+- **Cuota Semanal**: Cada usuario tendrá un máximo de 5 generaciones de IA por semana (almacenado en `UserProfile.availableCredits`).
+- **Límite de Negociación**: El bucle "Fácil/Difícil/OK" tendrá un máximo de 3 reiteraciones por sesión.
+- **Validación previa**: El ViewModel bloqueará el botón de "Generar" si el usuario ha agotado sus créditos.
+
+### B. Optimización de Modelo
+- **Uso de Gemini 1.5 Flash**: Modelo optimizado para baja latencia y coste reducido (hasta 10x más barato que 1.5 Pro).
+- **Prompt Engineering Eficiente**: Instrucciones para forzar respuestas JSON puras sin texto decorativo redundante.
+
+### C. Seguridad Financiera
+- **Firebase App Check**: Requisito obligatorio para asegurar que solo la App legítima consume la cuota de la IA.
+- **Límites de Google Cloud**: Configuración de alertas de presupuesto y "Hard Quotas" en la consola de Google para detener el servicio si se excede un presupuesto mensual (ej: 5€).
 
 ---
-*Plan adaptado para ejecución directa desde el cliente Android con bucle de feedback - 28 de Abril de 2026*
+*Plan finalizado para la Fase 2 del Proyecto 1percent - 28 de Abril de 2026*

@@ -65,4 +65,13 @@ object GoalRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun updateGoal(goal: Goal): Result<Unit> {
+        return try {
+            goalsCollection.document(goal.id).set(goal.encodeToMap()!!).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

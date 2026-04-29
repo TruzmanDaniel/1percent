@@ -52,6 +52,26 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
     // Observing the screen state (DATA) to update the UI when it changes
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    if (uiState.showWeeklyRitual && uiState.ritualGoal != null) {
+        WeeklyRitualDialog(
+            goalTitle = uiState.ritualGoal!!.title,
+            tasksCompleted = uiState.ritualTasksCompleted,
+            totalTasks = uiState.ritualTotalTasks,
+            epicPassed = uiState.ritualEpicPassed,
+            xpEarned = uiState.ritualXpEarned,
+            onFeedback = { viewModel.onWeeklyFeedback(it) },
+            onDismiss = { viewModel.dismissRitual() }
+        )
+    }
+
+    if (uiState.showCatchUp && uiState.ritualGoal != null) {
+        CatchUpDialog(
+            goalTitle = uiState.ritualGoal!!.title,
+            onFeedback = { viewModel.onWeeklyFeedback(it) },
+            onDismiss = { viewModel.dismissRitual() }
+        )
+    }
+
     HomeBodyContent(
         uiState = uiState,
         onFilterClick = viewModel::onFilterClicked

@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.data.model
 
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import kotlinx.serialization.Serializable
@@ -22,7 +23,10 @@ data class Goal(
     val progress: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val ownerId: String = "",
-    val sharedWith: List<String> = emptyList()
+    val sharedWith: List<String> = emptyList(),
+    val currentIntensity: Float = difficulty.toFloat(),
+    val nextGenerationDate: Long? = null,
+    val aiRoadmapStatus: AiRoadmapStatus = AiRoadmapStatus.NONE
 ) {
     init {
         require(difficulty in 1..5) { "Goal difficulty must be between 1 and 5" }
