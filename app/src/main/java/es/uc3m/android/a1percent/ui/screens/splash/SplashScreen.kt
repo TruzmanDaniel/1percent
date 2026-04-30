@@ -1,6 +1,9 @@
 package es.uc3m.android.a1percent.ui.screens.splash
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,8 +17,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -31,10 +40,25 @@ fun SplashScreen(
     onSplashFinished: () -> Unit,
     splashDurationMillis: Long = 2200L
 ) {
+    var visible by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
+        visible = true
         delay(splashDurationMillis)
         onSplashFinished()
     }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "SplashAlpha"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (visible) 1f else 0.88f,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "SplashScale"
+    )
 
     val context = LocalContext.current
     val logoResId = context.resources.getIdentifier("splash_logo", "drawable", context.packageName)
@@ -44,7 +68,8 @@ fun SplashScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .graphicsLayer(alpha = alpha, scaleX = scale, scaleY = scale),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -57,7 +82,7 @@ fun SplashScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Earn your 1% \nStay Consistent",
+            text = "Earn your 1%\nStay Consistent",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontFamily = FontFamily.SansSerif,
@@ -67,4 +92,3 @@ fun SplashScreen(
         )
     }
 }
-

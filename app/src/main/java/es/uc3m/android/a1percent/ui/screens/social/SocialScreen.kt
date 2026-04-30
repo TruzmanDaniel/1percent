@@ -38,10 +38,14 @@ private enum class SocialSection(val label: String) {
 @Composable
 fun SocialScreen(
     navController: NavController,
+    initialSection: String = "community",
     viewModel: SocialViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedSection by rememberSaveable { mutableStateOf(SocialSection.COMMUNITY) }
+    val startSection = SocialSection.entries.firstOrNull {
+        it.name.equals(initialSection, ignoreCase = true)
+    } ?: SocialSection.COMMUNITY
+    var selectedSection by rememberSaveable(initialSection) { mutableStateOf(startSection) }
 
     Column(
         modifier = Modifier

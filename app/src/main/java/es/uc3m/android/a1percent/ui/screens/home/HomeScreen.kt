@@ -1,5 +1,9 @@
 package es.uc3m.android.a1percent.ui.screens.home
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,10 +18,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -27,12 +34,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -49,8 +58,17 @@ import java.util.Locale
 
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
-    // Observing the screen state (DATA) to update the UI when it changes
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     if (uiState.showWeeklyRitual && uiState.ritualGoal != null) {
         WeeklyRitualDialog(
@@ -72,10 +90,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         )
     }
 
-    HomeBodyContent(
-        uiState = uiState,
-        onFilterClick = viewModel::onFilterClicked
-    )
+    HomeBodyContent(uiState = uiState, onFilterClick = viewModel::onFilterClicked)
 }
 
 @Composable
@@ -85,33 +100,24 @@ fun HomeBodyContent(
 ) {
     var isFocusMode by rememberSaveable { mutableStateOf(false) }
 
-    // FILTERS & SORTING: BASIC IMPLEMENTATION
-
-    // Scrollable Column containing the elements
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(vertical = 16.dp)
     ) {
-
-    // 1. HEADER SECTION
-
-            // FocusMode hides Header Section
         if (!isFocusMode) {
-            item {
-                HeaderSection(uiState = uiState)
-            }
+            item { HeaderSection(uiState = uiState) }
         } else {
             item {
                 Text(
-                    text = "Focus mode enabled",
+                    text = "Focus mode",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
-
-    // 2. TASKS SECTION
 
         item {
             Row(
@@ -128,13 +134,13 @@ fun HomeBodyContent(
                 IconButton(onClick = { isFocusMode = !isFocusMode }) {
                     Icon(
                         imageVector = if (isFocusMode) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (isFocusMode) "Disable focus mode" else "Enable focus mode"
+                        contentDescription = if (isFocusMode) "Disable focus mode" else "Enable focus mode",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         }
 
-        // FILTERS
         item {
             LazyRow(
                 modifier = Modifier
@@ -149,12 +155,12 @@ fun HomeBodyContent(
                         label = {
                             Text(
                                 text = filter.label,
-                                fontWeight = if (filter.isSelected) FontWeight.Bold else FontWeight.Normal
+                                fontWeight = if (filter.isSelected) FontWeight.SemiBold else FontWeight.Normal
                             )
                         },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary,
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
@@ -171,19 +177,14 @@ fun HomeBodyContent(
                 )
             }
         } else {
-            // TODO: CAMBIAR uiState, ahora solo maneja un GOAL! + logica de extraer goal title del task.goalId
             items(uiState.visibleTasks) { task ->
                 val goalTitle = if (task.goalId != null) uiState.goal?.title else null
                 TaskItem(task = task, goalTitle = goalTitle)
             }
         }
 
-    // 3. PROGRESS SECTION
-            // FocusMode hides this section
         if (!isFocusMode) {
-            item {
-                ProgressSection()
-            }
+            item { ProgressSection() }
         }
     }
 }
@@ -191,7 +192,6 @@ fun HomeBodyContent(
 private fun TaskDeadline.toUiLabel(): String {
     return when (this) {
         TaskDeadline.ThisWeek -> "This Week"
-        // Format Date when it is an specific date
         is TaskDeadline.OnDate -> {
             val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
             val millisAtUtcMidnight = epochDay * 24L * 60L * 60L * 1000L
@@ -200,47 +200,87 @@ private fun TaskDeadline.toUiLabel(): String {
     }
 }
 
-
-// Private composables (SECTIONS, ITEMS)
 @Composable
 private fun HeaderSection(uiState: HomeUiState) {
     val user = uiState.user ?: return
     val xpProgress = user.currentXp / user.xpToNextLevel.toFloat()
 
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Text(
-            text = "Hey ${user.name}!",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = "Level ${user.level}  ·  ${user.currentXp} / ${user.xpToNextLevel} XP",
-                style = MaterialTheme.typography.bodyMedium
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Hey ${user.name}!",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    ),
+                    elevation = CardDefaults.cardElevation(0.dp)
+                ) {
+                    Text(
+                        text = "🔥 ${user.streakDays} days",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "Level ${user.level}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Text(
+                    text = "·",
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
+                )
+                Text(
+                    text = "${user.currentXp} / ${user.xpToNextLevel} XP",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                )
+            }
+
+            LinearProgressIndicator(
+                progress = { xpProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
             )
         }
-
-        LinearProgressIndicator(
-            progress = { xpProgress },
-            modifier = Modifier.fillMaxWidth().height(8.dp)
-        )
-
-        Text(
-            text = "🔥 ${user.streakDays} day streak",
-            style = MaterialTheme.typography.bodySmall
-        )
     }
 }
 
@@ -248,80 +288,112 @@ private fun HeaderSection(uiState: HomeUiState) {
 fun TaskItem(task: Task, goalTitle: String?) {
     val isCompleted = task.status == TaskStatus.COMPLETED
 
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Checkbox(
-            checked = isCompleted,
-            onCheckedChange = null   // non-interactive for now TODO: check complete tasks
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = task.title,
-                style = if (isCompleted)
-                    MaterialTheme.typography.bodyLarge.copy(textDecoration = TextDecoration.LineThrough)
-                else
-                    MaterialTheme.typography.bodyLarge
+            Checkbox(
+                checked = isCompleted,
+                onCheckedChange = null
             )
 
-            task.deadline?.let { deadline ->
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
                 Text(
-                    text = "Due: ${deadline.toUiLabel()}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = task.title,
+                    style = if (isCompleted)
+                        MaterialTheme.typography.bodyLarge.copy(textDecoration = TextDecoration.LineThrough)
+                    else
+                        MaterialTheme.typography.bodyLarge
                 )
+
+                task.deadline?.let { deadline ->
+                    Text(
+                        text = "Due: ${deadline.toUiLabel()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (goalTitle != null) {
+                    Text(
+                        text = "⚡ Mission · $goalTitle",
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .background(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
 
-            if (goalTitle != null) {
-                Text(
-                    text = "⚡ Mission · $goalTitle",
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.background(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            shape = MaterialTheme.shapes.small
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-            }
+            Text(
+                text = "+${task.xp} XP",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.tertiary
+            )
         }
-
-        Text(
-            text = "+${task.xp} XP",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
     }
 }
 
 @Composable
 private fun ProgressSection() {
-    Column(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
-        Text(
-            text = "Your 1% progress",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Box(
-            modifier = Modifier.fillMaxWidth().height(150.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("📈 Progress chart coming soon")
-        }
+            Text(
+                text = "Your 1% progress",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-        Text(
-            text = "1% better every day = 37x better in a year",
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "📈 Progress chart coming soon",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Text(
+                text = "1% better every day = 37x better in a year",
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }

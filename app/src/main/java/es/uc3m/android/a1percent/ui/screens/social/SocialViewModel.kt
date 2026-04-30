@@ -18,10 +18,9 @@ class SocialViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(SocialUiState())
     val uiState: StateFlow<SocialUiState> = _uiState.asStateFlow()
-    
+
     private var friendsObserverJob: Job? = null
     private var requestsObserverJob: Job? = null
-
 
     init {
         observeSession()
@@ -34,16 +33,14 @@ class SocialViewModel : ViewModel() {
 
                 friendsObserverJob?.cancel()
                 requestsObserverJob?.cancel()
-                
+
                 if (user != null) {
-                    // Observe confirmed friends
                     friendsObserverJob = SocialRepository.observeFriends(user.id)
                         .onEach { friends ->
                             _uiState.update { it.copy(friends = friends) }
                         }
                         .launchIn(viewModelScope)
-                        
-                    // Observe pending requests received by the user
+
                     requestsObserverJob = SocialRepository.observePendingRequests(user.id)
                         .onEach { requests ->
                             _uiState.update { it.copy(pendingRequests = requests) }
@@ -58,7 +55,7 @@ class SocialViewModel : ViewModel() {
         _uiState.update { it.copy(searchQuery = newQuery) }
         if (newQuery.length >= 2) {
             val results = UserRepository.searchUsers(newQuery)
-                .filter { it.id != SessionRepository.currentUser.value?.id } 
+                .filter { it.id != SessionRepository.currentUser.value?.id }
             _uiState.update { it.copy(searchResults = results) }
         } else {
             _uiState.update { it.copy(searchResults = emptyList()) }
@@ -71,14 +68,14 @@ class SocialViewModel : ViewModel() {
             SocialRepository.sendFriendRequest(currentId, toUserId)
         }
     }
-    
+
     fun acceptRequest(requesterId: String) {
         val currentId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
             SocialRepository.acceptFriendRequest(requesterId, currentId)
         }
     }
-    
+
     fun rejectRequest(requesterId: String) {
         val currentId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {

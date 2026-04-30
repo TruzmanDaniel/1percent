@@ -13,10 +13,11 @@ import java.util.UUID
 @Serializable
 data class Goal(
     val id: String = UUID.randomUUID().toString(),
-    val title: String,
+    val title: String, // TODO: AI generated from Description
     val description: String = "",
     val category: Category,
     val difficulty: Int,
+    // val intensity: Int, // difficulty means effort, intensity means constance of activity
     val xp: Int,
     val deadline: Long? = null,
     val status: GoalStatus = GoalStatus.ACTIVE,
