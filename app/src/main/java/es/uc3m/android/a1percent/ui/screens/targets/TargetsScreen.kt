@@ -1,51 +1,73 @@
 package es.uc3m.android.a1percent.ui.screens.targets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
-import androidx.compose.ui.unit.dp
 
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -264,13 +286,12 @@ private fun GoalsTabContent(
 }
 
 /**
- * TaskRowWithActions: Task row with visible action buttons for Complete, Postpone, Delete.
  * Reused in both Tasks tab and GoalDetailScreen for consistency.
  * TODO: Replace visible action buttons with swipe-reveal interaction once gesture handling is implemented.
  */
 @Composable
 @Suppress("UNUSED_PARAMETER")
-private fun TaskRowWithActions(
+internal fun TaskRowWithActions(
     task: Task,
     parentGoalTitle: String? = null,
     onTaskDetail: () -> Unit = {},
@@ -289,62 +310,109 @@ private fun TaskRowWithActions(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Task Info Header
+            // Title + XP pill badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-                    val badge = if (parentGoalTitle == null) "Task" else "Mission · $parentGoalTitle"
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
                     Text(
-                        text = badge,
+                        text = "+${task.xp} XP",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
-                Text(text = "+${task.xp} XP", style = MaterialTheme.typography.labelMedium)
+            }
+
+            // Type badge + goal name (missions) + status badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = if (parentGoalTitle != null) "Mission" else "Task",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                if (parentGoalTitle != null) {
+                    Text(
+                        text = "· $parentGoalTitle",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                val statusColor = when (task.status) {
+                    TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
+                    TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                    TaskStatus.SKIPPED   -> MaterialTheme.colorScheme.outline
+                    TaskStatus.POSTPONED -> MaterialTheme.colorScheme.secondary
+                }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = statusColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = task.status.displayName,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
             }
 
             HorizontalDivider()
 
-            Text(
-                text = "Status: ${task.status.displayName}",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (task.status == TaskStatus.COMPLETED) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-
-            // Action Buttons Row
+            // Action buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 AssistChip(
                     onClick = onTaskComplete,
-                    label = { Icon(Icons.Default.Check, contentDescription = "Complete") },
+                    label = { Icon(Icons.Default.Check, contentDescription = "Complete", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onTaskPostpone,
-                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone") },
+                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onTaskSkip,
-                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skipped") },
+                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skip", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
                     onClick = onTaskDelete,
-                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete") },
+                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -386,14 +454,18 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Task Detail Modal — redesigned
+// ─────────────────────────────────────────────────────────────────────────────
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TaskDetailModal(
+internal fun TaskDetailModal(
     task: Task,
     parentGoalTitle: String?,
     onClose: () -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onClose,
@@ -402,239 +474,377 @@ private fun TaskDetailModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(bottom = 32.dp)
         ) {
-            // Header: Title + Type Badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
+
+            // ── HEADER CARD ──────────────────────────────────────────
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
                 )
-                val badge = if (parentGoalTitle == null) "Task" else "Mission"
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Task/Mission badge + Status badge
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+                        ) {
+                            Text(
+                                text = if (parentGoalTitle != null) "Mission" else "Task",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        val statusColor = when (task.status) {
+                            TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
+                            TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                            TaskStatus.SKIPPED   -> MaterialTheme.colorScheme.outline
+                            TaskStatus.POSTPONED -> MaterialTheme.colorScheme.secondary
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = statusColor.copy(alpha = 0.18f)
+                        ) {
+                            Text(
+                                text = task.status.displayName,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = statusColor,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    // Title
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+
+                    // Parent goal row (missions only)
+                    if (parentGoalTitle != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Flag,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = parentGoalTitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.65f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ── STATS ROW ────────────────────────────────────────────
+            // XP | Difficulty (dots) | Energy  OR  Type (if no energy)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(1f),
+                    icon = Icons.Default.EmojiEvents,
+                    label = "XP Reward",
+                    value = "+${task.xp}",
+                    valueColor = MaterialTheme.colorScheme.primary
+                )
+
+                // Difficulty with dot indicators
                 Card(
-                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.weight(1f),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                     )
                 ) {
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(6.dp, 4.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Difficulty",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            repeat(5) { index ->
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (index < task.difficulty)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.surfaceContainerHighest
+                                        )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (task.energyCost != null) {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Bolt,
+                        label = "Energy",
+                        value = "${task.energyCost}",
+                        valueColor = MaterialTheme.colorScheme.tertiary
+                    )
+                } else {
+                    StatCard(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Loop,
+                        label = "Type",
+                        value = task.type.displayName,
+                        valueColor = MaterialTheme.colorScheme.secondary
                     )
                 }
             }
 
-            HorizontalDivider()
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Description
+            // ── DESCRIPTION ──────────────────────────────────────────
             if (task.description.isNotEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
                         text = "Description",
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = task.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
-            // Parent Goal (if mission)
-            if (parentGoalTitle != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Parent Goal",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = parentGoalTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(12.dp)
-                        )
-                    }
-                }
-            }
-
-            // Task Type & Status
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            // ── DETAILS ──────────────────────────────────────────────
+            // Type (only if energy was in the stats row), Deadline, Category
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "Type",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = task.type.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                if (task.energyCost != null) {
+                    DetailRow(
+                        icon = Icons.Default.Loop,
+                        label = "Type",
+                        value = task.type.displayName
                     )
                 }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "Status",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = task.status.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (task.status == TaskStatus.COMPLETED) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
+                if (task.deadline != null) {
+                    DetailRow(
+                        icon = Icons.Default.CalendarToday,
+                        label = "Deadline",
+                        value = formatDeadline(task.deadline)
                     )
                 }
+                DetailRow(
+                    icon = Icons.AutoMirrored.Default.Label,
+                    label = "Category",
+                    value = task.customCategoryName ?: task.category.displayName
+                )
             }
 
-            // Difficulty & XP
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Spacer(modifier = Modifier.height(20.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── ACTION BUTTONS ───────────────────────────────────────
+            Column(
+                modifier = Modifier.padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "Difficulty",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = "${task.difficulty}/5",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "XP Reward",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = "+${task.xp} XP",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            // Energy Cost
-            if (task.energyCost != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    FilledTonalButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = "Energy Cost",
-                            style = MaterialTheme.typography.labelLarge
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Complete")
+                    }
+                    OutlinedButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Postpone")
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.SkipNext, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Skip")
+                    }
+                    OutlinedButton(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
                         )
-                        Text(
-                            text = "${task.energyCost} energy",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Delete")
                     }
                 }
             }
+        }
+    }
+}
 
-            // Deadline
-            if (task.deadline != null) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Deadline",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(
-                        text = task.deadline.toString(), // TODO: format deadline nicely (e.g., "This Week", "Jan 15, 2026")
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun StatCard(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    value: String,
+    valueColor: Color
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = valueColor,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = valueColor
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(
+    icon: ImageVector,
+    label: String,
+    value: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+private fun formatDeadline(deadline: TaskDeadline): String {
+    return when (deadline) {
+        TaskDeadline.ThisWeek -> "This Week"
+        is TaskDeadline.OnDate -> {
+            val cal = java.util.Calendar.getInstance().also {
+                it.timeInMillis = deadline.epochDay * 86_400_000L
             }
-
-            // Category
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Category",
-                    style = MaterialTheme.typography.labelLarge
-                )
-                val categoryName = if (task.customCategoryName != null) {
-                    task.customCategoryName
-                } else {
-                    task.category.displayName
-                }
-                Text(
-                    text = categoryName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            HorizontalDivider()
-
-            // Action Buttons (TODO: implement in future steps)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(
-                    onClick = { /* TODO: implement complete/mark as done action */ },
-                    label = { Text("Mark Complete") }
-                )
-                AssistChip(
-                    onClick = { /* TODO: implement edit action */ },
-                    label = { Text("Edit") }
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(
-                    onClick = { /* TODO: implement postpone action */ },
-                    label = { Text("Postpone") }
-                )
-                AssistChip(
-                    onClick = { /* TODO: implement delete action */ },
-                    label = { Text("Delete") }
-                )
-            }
-
-            // Bottom padding for scrollability
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.padding(12.dp))
+            val months = arrayOf(
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            )
+            val day = cal.get(java.util.Calendar.DAY_OF_MONTH)
+            val month = months[cal.get(java.util.Calendar.MONTH)]
+            val year = cal.get(java.util.Calendar.YEAR)
+            "$day $month $year"
         }
     }
 }

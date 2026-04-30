@@ -86,6 +86,9 @@ fun NavGraph() {
     val currentScreenTitle = AppScreens.topLevelScreens
         .firstOrNull { it.route == currentRoute }?.label ?: ""
 
+    // Sub-screens that live under a top-level route but should manage their own chrome
+    val isSubScreen = currentRoute == AppScreens.TargetsScreen.route + "/goal/{goalId}"
+
     var isFabExpanded by remember { mutableStateOf(false) }
     var isTaskCardVisible by remember { mutableStateOf(false) }
     var isGoalCardVisible by remember { mutableStateOf(false) }
@@ -104,7 +107,7 @@ fun NavGraph() {
                         username = currentUser?.name ?: "Profile",
                         onBack = { navController.popBackStack() }
                     )
-                } else if (currentBaseRoute in topLevelRoutes) {
+                } else if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
                     DefaultTopBar(
                         title = currentScreenTitle,
                         onProfileClick = {
@@ -114,7 +117,7 @@ fun NavGraph() {
                 }
             },
             bottomBar = {
-                if (currentBaseRoute in topLevelRoutes) {
+                if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
                     BottomNavBar(
                         currentRoute = currentRoute,
                         isFabExpanded = isFabExpanded,
@@ -235,7 +238,7 @@ fun NavGraph() {
             }
         }
 
-        if (currentBaseRoute in topLevelRoutes) {
+        if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
             ExpandableFabMenu(
                 isExpanded = isFabExpanded,
                 onClose = { isFabExpanded = false },

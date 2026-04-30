@@ -12,11 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,13 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.Goal
 
-/**
- * Goal Detail Screen: Shows goal info and its related missions (Tasks with goalId).
- * Missions are displayed as task rows with action buttons (Complete, Postpone, Delete).
- * TODO: Replace visible action buttons with swipe-reveal interaction in future iteration.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -53,7 +43,6 @@ fun GoalDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Find the goal in the list (mock data lookup)
     val goal = uiState.goal
     val missions = uiState.missions
 
@@ -77,12 +66,10 @@ fun GoalDetailScreen(
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Goal Header
                 item {
                     GoalHeaderCard(goal = goal)
                 }
 
-                // Missions Section
                 if (missions.isNotEmpty()) {
                     item {
                         Text(
@@ -94,10 +81,12 @@ fun GoalDetailScreen(
                     items(items = missions, key = { it.id }) { mission ->
                         TaskRowWithActions(
                             task = mission,
-                            onComplete = { viewModel.onTaskComplete(mission.id) },
-                            onPostpone = { viewModel.onTaskPostpone(mission.id) },
-                            onSkip = { viewModel.onTaskSkipped(mission.id) },
-                            onDelete = { viewModel.onTaskDelete(mission.id) }
+                            parentGoalTitle = goal.title,
+                            onTaskDetail = { viewModel.onMissionClicked(mission) },
+                            onTaskComplete = { viewModel.onTaskComplete(mission.id) },
+                            onTaskPostpone = { viewModel.onTaskPostpone(mission.id) },
+                            onTaskSkip = { viewModel.onTaskSkipped(mission.id) },
+                            onTaskDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
                 } else {
@@ -111,7 +100,6 @@ fun GoalDetailScreen(
                 }
             }
         } else {
-            // Goal not found
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -122,11 +110,20 @@ fun GoalDetailScreen(
                 Text("Goal not found", style = MaterialTheme.typography.bodyLarge)
             }
         }
+
+        val selectedMission = uiState.selectedMission
+        if (selectedMission != null) {
+            TaskDetailModal(
+                task = selectedMission,
+                parentGoalTitle = goal?.title,
+                onClose = viewModel::onCloseMissionDetail
+            )
+        }
     }
 }
 
 @Composable
-private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
+private fun GoalHeaderCard(goal: Goal) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -138,10 +135,8 @@ private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Title
             Text(text = goal.title, style = MaterialTheme.typography.headlineSmall)
 
-            // Description
             if (goal.description.isNotEmpty()) {
                 Text(
                     text = goal.description,
@@ -152,7 +147,6 @@ private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
 
             HorizontalDivider()
 
-            // Category and Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -179,7 +173,6 @@ private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
                 }
             }
 
-            // Progress
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -196,7 +189,6 @@ private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
                 )
             }
 
-            // XP and Difficulty
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -215,77 +207,6 @@ private fun GoalHeaderCard(goal: es.uc3m.android.a1percent.data.model.Goal) {
                     Text(text = "Difficulty", style = MaterialTheme.typography.labelSmall)
                     Text(text = "${goal.difficulty}/5", style = MaterialTheme.typography.bodyMedium)
                 }
-            }
-        }
-    }
-}
-
-/**
- * TaskRowWithActions: Reusable task row with visible action buttons.
- * Shows task info in a card with Complete, Postpone, and Delete buttons below.
- * TODO: Replace this with swipe-reveal interaction once gesture handling is optimized.
- */
-@Composable
-private fun TaskRowWithActions(
-    task: Task,
-    onComplete: () -> Unit,
-    onPostpone: () -> Unit,
-    onSkip: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Task Info
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(text = task.title, style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        text = "Status: ${task.status.displayName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Text(text = "+${task.xp} XP", style = MaterialTheme.typography.labelMedium)
-            }
-
-            // Action Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                AssistChip(
-                    onClick = onComplete,
-                    label = { Icon(Icons.Default.Check, contentDescription = "Complete") },
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onPostpone,
-                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone") },
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onSkip,
-                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skipped") },
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onDelete,
-                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete") },
-                    modifier = Modifier.weight(1f)
-                )
             }
         }
     }

@@ -18,7 +18,8 @@ import kotlinx.coroutines.launch
 
 data class GoalDetailUiState(
     val goal: Goal? = null,
-    val missions: List<Task> = emptyList()
+    val missions: List<Task> = emptyList(),
+    val selectedMission: Task? = null
 )
 
 /**
@@ -68,6 +69,14 @@ class GoalDetailViewModel : ViewModel() {
                 it.copy(goal = goal, missions = missions)
             }
         }
+    }
+
+    fun onMissionClicked(task: Task) {
+        _uiState.update { it.copy(selectedMission = task) }
+    }
+
+    fun onCloseMissionDetail() {
+        _uiState.update { it.copy(selectedMission = null) }
     }
 
     // TODO: Implement actual task update logic (currently just logs action)
