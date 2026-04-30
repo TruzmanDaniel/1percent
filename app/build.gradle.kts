@@ -69,6 +69,8 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.coil.compose)
     //implementation(libs.firebase.ai) // Replaced by OpenAI via Retrofit
     implementation(libs.kotlinx.serialization.json)
     //implementation(platform("com.google.firebase:firebase-bom:34.12.0"))

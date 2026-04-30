@@ -7,5 +7,7 @@ import es.uc3m.android.a1percent.data.model.UserProfile
  */
 data class ProfileUiState(
     val user: UserProfile? = null,
-    val isOwnProfile: Boolean = true
+    val isOwnProfile: Boolean = true,
+    val isUploadingAvatar: Boolean = false,
+    val uploadError: String? = null
 )

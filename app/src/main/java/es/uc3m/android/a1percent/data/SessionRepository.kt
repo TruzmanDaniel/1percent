@@ -1,7 +1,9 @@
 package es.uc3m.android.a1percent.data
 
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.remote.encodeToMap
 import es.uc3m.android.a1percent.data.remote.toObjectSerializable
@@ -130,6 +132,22 @@ object SessionRepository {
                 .await()
             _currentUser.value = profile
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun uploadProfilePicture(uri: Uri): Result<String> {
+        return try {
+            val firebaseUser = auth.currentUser ?: throw Exception("Not authenticated")
+            val ref = FirebaseStorage.getInstance()
+                .reference
+                .child("profile_pictures/${firebaseUser.uid}.jpg")
+            ref.putFile(uri).await()
+            val downloadUrl = ref.downloadUrl.await().toString()
+            val current = _currentUser.value ?: throw Exception("No current user")
+            updateUserProfile(current.copy(avatarUrl = downloadUrl))
+            Result.success(downloadUrl)
         } catch (e: Exception) {
             Result.failure(e)
         }
