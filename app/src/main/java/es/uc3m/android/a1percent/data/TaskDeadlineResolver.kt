@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.data
 
+import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import java.util.Calendar
 
@@ -25,6 +26,39 @@ object TaskDeadlineResolver {
             TaskDeadline.ThisWeek -> sundayEndOfCurrentWeekMillis()
             is TaskDeadline.OnDate -> deadline.epochDay * MILLIS_PER_DAY + END_OF_DAY_OFFSET_MILLIS
         }
+    }
+
+    enum class DeadlineStatus { OVERDUE, TODAY, FUTURE, NO_DEADLINE }
+
+    fun deadlineStatus(deadline: TaskDeadline?): DeadlineStatus {
+        if (deadline == null) return DeadlineStatus.NO_DEADLINE
+        val deadlineMillis = toSortKey(deadline)
+        val now = System.currentTimeMillis()
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val tomorrowStart = todayStart + MILLIS_PER_DAY
+
+        return when {
+            deadlineMillis < todayStart -> DeadlineStatus.OVERDUE
+            deadlineMillis < tomorrowStart -> DeadlineStatus.TODAY
+            else -> DeadlineStatus.FUTURE
+        }
+    }
+
+    private fun deadlineStatusOrder(status: DeadlineStatus): Int = when (status) {
+        DeadlineStatus.OVERDUE -> 0
+        DeadlineStatus.TODAY -> 1
+        DeadlineStatus.FUTURE -> 2
+        DeadlineStatus.NO_DEADLINE -> 3
+    }
+
+    fun taskDeadlineComparator(): Comparator<Task> {
+        return compareBy<Task> { deadlineStatusOrder(deadlineStatus(it.deadline)) }
+            .thenBy { toSortKey(it.deadline) }
     }
 
     private fun sundayEndOfCurrentWeekMillis(): Long {
