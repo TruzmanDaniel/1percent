@@ -82,6 +82,7 @@ import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
 import es.uc3m.android.a1percent.ui.components.taskDeadlineLabel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Suppress("UNUSED_PARAMETER")
 fun TargetsScreen(
