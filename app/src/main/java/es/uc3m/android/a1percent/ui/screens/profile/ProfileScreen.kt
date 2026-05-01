@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 import es.uc3m.android.a1percent.navigation.AppScreens
 
 @Composable
@@ -34,16 +35,20 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
         viewModel.loadUser(text)
     }
 
-    ProfileBodyContent(navController, uiState, onPickImage = { uri ->
-        viewModel.uploadProfilePicture(uri)
-    })
+    ProfileBodyContent(
+        navController = navController,
+        uiState = uiState,
+        onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
+        onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) }
+    )
 }
 
 @Composable
 fun ProfileBodyContent(
     navController: NavController,
     uiState: ProfileUiState,
-    onPickImage: (android.net.Uri) -> Unit = {}
+    onPickImage: (android.net.Uri) -> Unit = {},
+    onFriendAction: () -> Unit = {}
 ) {
     val user = uiState.user
     val isOwn = uiState.isOwnProfile
@@ -170,6 +175,36 @@ fun ProfileBodyContent(
             StatRow(label = "XP", value = "${user.currentXp} / ${user.xpToNextLevel}")
             StatRow(label = "Streak", value = "${user.streakDays} days")
             StatRow(label = "Tasks Completed", value = user.totalTasksCompleted.toString())
+            if (isOwn) {
+                StatRow(label = "Credits", value = user.availableCredits.toString())
+            }
+        }
+
+        if (!isOwn) {
+            val relStatus = uiState.relationshipStatus
+            when (relStatus) {
+                null -> Button(
+                    onClick = onFriendAction,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Add Friend")
+                }
+                RelationshipStatus.PENDING -> OutlinedButton(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false
+                ) {
+                    Text("Request Pending")
+                }
+                RelationshipStatus.FRIENDS -> OutlinedButton(
+                    onClick = {},
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = false
+                ) {
+                    Text("Friends")
+                }
+                RelationshipStatus.BLOCKED -> {}
+            }
         }
 
         HorizontalDivider()
