@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.ui.screens.targets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,20 +24,26 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -46,6 +53,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -65,8 +74,13 @@ import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.ui.components.EditTaskCard
+import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
+import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
+import es.uc3m.android.a1percent.ui.components.taskDeadlineLabel
 
 @Composable
 @Suppress("UNUSED_PARAMETER")
@@ -98,7 +112,10 @@ fun TargetsScreen(
             onCloseTaskDetail = viewModel::onCloseTaskDetail,
             onTaskComplete = viewModel::onTaskComplete,
             onTaskPostpone = viewModel::onTaskPostpone,
-            onTaskDelete = viewModel::onTaskDelete
+            onTaskDelete = viewModel::onTaskDelete,
+            onTaskEdit = viewModel::onTaskEdit,
+            onTaskShare = viewModel::onShareTaskRequested,
+            onGoalDelete = viewModel::onGoalDeleteRequested
         )
 
         SnackbarHost(
@@ -107,6 +124,69 @@ fun TargetsScreen(
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
         )
+
+        // Snackbar for share success
+        LaunchedEffect(uiState.snackbarMessage) {
+            val message = uiState.snackbarMessage ?: return@LaunchedEffect
+            snackbarHostState.showSnackbar(message)
+            viewModel.clearSnackbarMessage()
+        }
+
+        // DatePicker dialog for postpone
+        val showDatePicker = uiState.showDatePickerForTask
+        if (showDatePicker != null) {
+            val datePickerState = rememberDatePickerState()
+            DatePickerDialog(
+                onDismissRequest = { viewModel.onDatePickerDismissed() },
+                confirmButton = {
+                    TextButton(onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            viewModel.onDatePickerResult(showDatePicker, millis / 86_400_000L)
+                        }
+                    }) { Text("OK") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.onDatePickerDismissed() }) { Text("Cancel") }
+                }
+            ) { DatePicker(state = datePickerState) }
+        }
+
+        // Edit task dialog
+        val editingTask = uiState.editingTask
+        if (editingTask != null) {
+            EditTaskCard(
+                task = editingTask,
+                onSave = { viewModel.onTaskUpdate(it) },
+                onDismiss = { viewModel.onEditDismissed() }
+            )
+        }
+
+        // Share bottom sheet
+        if (uiState.showShareSheet) {
+            val itemName = uiState.shareTargetTask?.title ?: uiState.shareTargetGoal?.title ?: ""
+            ShareBottomSheet(
+                itemName = itemName,
+                friends = uiState.friends,
+                onShareWith = { userId, name -> viewModel.onShareWithFriend(userId, name) },
+                onDismiss = { viewModel.onShareDismissed() }
+            )
+        }
+
+        // Goal delete confirmation
+        val deleteGoalId = uiState.showDeleteGoalConfirm
+        if (deleteGoalId != null) {
+            AlertDialog(
+                onDismissRequest = { viewModel.onGoalDeleteDismissed() },
+                title = { Text("Delete Goal") },
+                text = { Text("This will delete the goal and all its missions. This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.onGoalDeleteConfirmed() }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.onGoalDeleteDismissed() }) { Text("Cancel") }
+                }
+            )
+        }
     }
 }
 
@@ -124,7 +204,10 @@ private fun TargetsBodyContent(
     onCloseTaskDetail: () -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
-    onTaskDelete: (String) -> Unit
+    onTaskDelete: (String) -> Unit,
+    onTaskEdit: (Task) -> Unit,
+    onTaskShare: (Task) -> Unit,
+    onGoalDelete: (String) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -151,13 +234,16 @@ private fun TargetsBodyContent(
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
                 onTaskPostpone = onTaskPostpone,
-                onTaskDelete = onTaskDelete
+                onTaskDelete = onTaskDelete,
+                onTaskEdit = onTaskEdit,
+                onTaskShare = onTaskShare
             )
 
             TargetsTab.GOALS -> GoalsTabContent(
                 uiState = uiState,
                 onGoalFilterClicked = onGoalFilterClicked,
-                onGoalClicked = onGoalClicked
+                onGoalClicked = onGoalClicked,
+                onGoalDelete = onGoalDelete
             )
         }
 
@@ -180,7 +266,9 @@ private fun TasksTabContent(
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
-    onTaskDelete: (String) -> Unit
+    onTaskDelete: (String) -> Unit,
+    onTaskEdit: (Task) -> Unit,
+    onTaskShare: (Task) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -235,7 +323,9 @@ private fun TasksTabContent(
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
                 onTaskPostpone = { onTaskPostpone(task.id) },
-                onTaskDelete = { onTaskDelete(task.id) }
+                onTaskDelete = { onTaskDelete(task.id) },
+                onTaskEdit = { onTaskEdit(task) },
+                onTaskShare = { onTaskShare(task) }
             )
         }
     }
@@ -245,7 +335,8 @@ private fun TasksTabContent(
 private fun GoalsTabContent(
     uiState: TargetsUiState,
     onGoalFilterClicked: (GoalFilterKey) -> Unit,
-    onGoalClicked: (String) -> Unit
+    onGoalClicked: (String) -> Unit,
+    onGoalDelete: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -273,7 +364,8 @@ private fun GoalsTabContent(
         items(items = uiState.goals, key = { it.id }) { goal ->
             GoalCompactItem(
                 goal = goal,
-                onClick = { onGoalClicked(goal.id) }
+                onClick = { onGoalClicked(goal.id) },
+                onDelete = { onGoalDelete(goal.id) }
             )
         }
     }
@@ -291,14 +383,19 @@ internal fun TaskRowWithActions(
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
     onTaskPostpone: () -> Unit,
-    onTaskDelete: () -> Unit
+    onTaskDelete: () -> Unit,
+    onTaskEdit: () -> Unit = {},
+    onTaskShare: () -> Unit = {}
 ) {
+    val borderColor = taskDeadlineBorderColor(task.deadline)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onTaskDetail),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(2.dp, borderColor)
     ) {
         Column(
             modifier = Modifier
@@ -397,6 +494,16 @@ internal fun TaskRowWithActions(
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
+                    onClick = onTaskEdit,
+                    label = { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
+                AssistChip(
+                    onClick = onTaskShare,
+                    label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
+                AssistChip(
                     onClick = onTaskDelete,
                     label = { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
@@ -407,7 +514,7 @@ internal fun TaskRowWithActions(
 }
 
 @Composable
-private fun GoalCompactItem(goal: Goal, onClick: () -> Unit) {
+private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -436,6 +543,14 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete goal", tint = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
 }
