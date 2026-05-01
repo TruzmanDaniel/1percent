@@ -5,7 +5,5 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class TaskStatus(val displayName: String) {
     PENDING("Pending"),
-    COMPLETED("Completed"),
-    SKIPPED("Skipped"),
-    POSTPONED("Postponed")
+    COMPLETED("Completed")
 }
