@@ -7,10 +7,13 @@ import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.WeeklySummaryRepository
 import es.uc3m.android.a1percent.data.ai.AICoachService
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.WeeklySummary
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
@@ -70,6 +73,12 @@ class HomeViewModel : ViewModel() {
                     goal = goals.firstOrNull()
                 ) }
                 checkWeeklyRituals(goals)
+            }
+            .launchIn(viewModelScope)
+
+        SocialRepository.observeFriends(userId)
+            .onEach { friends ->
+                _uiState.update { it.copy(friends = friends) }
             }
             .launchIn(viewModelScope)
 
@@ -222,10 +231,64 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    private fun applyFiltersAndSort(tasks: List<Task>, filters: HomeFilters): List<Task> {
-        val pendingTasks = tasks.filter { task ->
-            task.status == TaskStatus.PENDING
+    fun onTaskChecked(taskId: String) {
+        val task = _uiState.value.tasks.find { it.id == taskId } ?: return
+        val newStatus = if (task.status == TaskStatus.PENDING) TaskStatus.COMPLETED else TaskStatus.PENDING
+        viewModelScope.launch {
+            TaskRespository.updateTaskStatus(taskId, newStatus)
         }
+    }
+
+    fun onTaskClicked(task: Task) {
+        _uiState.update { it.copy(selectedTask = task) }
+    }
+
+    fun dismissTaskDetail() {
+        _uiState.update { it.copy(selectedTask = null) }
+    }
+
+    fun onTaskPostpone(taskId: String) {
+        _uiState.update { it.copy(showDatePickerForTask = taskId) }
+    }
+
+    fun onDatePickerResult(taskId: String, epochDay: Long) {
+        viewModelScope.launch {
+            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay))
+        }
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onDatePickerDismissed() {
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onShareTaskRequested(task: Task) {
+        _uiState.update { it.copy(showShareSheet = true, shareTargetTask = task) }
+    }
+
+    fun onShareWithFriend(friendUserId: String, friendName: String) {
+        val task = _uiState.value.shareTargetTask ?: return
+        viewModelScope.launch {
+            TaskRespository.shareTask(task.id, friendUserId).onSuccess {
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    shareTargetTask = null,
+                    snackbarMessage = "Shared with $friendName"
+                ) }
+            }
+        }
+    }
+
+    fun onShareDismissed() {
+        _uiState.update { it.copy(showShareSheet = false, shareTargetTask = null) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    private fun applyFiltersAndSort(tasks: List<Task>, filters: HomeFilters): List<Task> {
+        val pendingTasks = tasks.filter { it.status == TaskStatus.PENDING }
 
         val filtered = if (filters.showOnlyMissions) {
             pendingTasks.filter { it.goalId != null }
@@ -234,10 +297,8 @@ class HomeViewModel : ViewModel() {
         }
 
         return when (filters.sortBy) {
-            HomeSort.NONE -> filtered
-            HomeSort.DATE_ASC -> filtered.sortedBy { task ->
-                TaskDeadlineResolver.toSortKey(task.deadline)
-            }
+            HomeSort.NONE -> filtered.sortedWith(TaskDeadlineResolver.taskDeadlineComparator())
+            HomeSort.DATE_ASC -> filtered.sortedBy { TaskDeadlineResolver.toSortKey(it.deadline) }
         }
     }
 

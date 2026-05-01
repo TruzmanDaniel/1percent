@@ -19,5 +19,11 @@ data class HomeUiState(
     val ritualTotalTasks: Int = 0,
     val ritualEpicPassed: Boolean = false,
     val ritualXpEarned: Int = 0,
-    val isGeneratingWeek: Boolean = false
+    val isGeneratingWeek: Boolean = false,
+    val selectedTask: Task? = null,
+    val showDatePickerForTask: String? = null,
+    val showShareSheet: Boolean = false,
+    val shareTargetTask: Task? = null,
+    val friends: List<UserProfile> = emptyList(),
+    val snackbarMessage: String? = null
 )
