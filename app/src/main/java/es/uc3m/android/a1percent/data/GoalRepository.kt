@@ -1,5 +1,6 @@
 package es.uc3m.android.a1percent.data
 
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.remote.encodeToMap
@@ -69,6 +70,37 @@ object GoalRepository {
     suspend fun updateGoal(goal: Goal): Result<Unit> {
         return try {
             goalsCollection.document(goal.id).set(goal.encodeToMap()!!).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteGoalWithMissions(goalId: String): Result<Unit> {
+        return try {
+            val tasksSnapshot = FirebaseFirestore.getInstance()
+                .collection("tasks")
+                .whereEqualTo("goalId", goalId)
+                .get()
+                .await()
+
+            val batch = db.batch()
+            tasksSnapshot.documents.forEach { doc ->
+                batch.delete(doc.reference)
+            }
+            batch.delete(goalsCollection.document(goalId))
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun shareGoal(goalId: String, friendUserId: String): Result<Unit> {
+        return try {
+            goalsCollection.document(goalId)
+                .update("sharedWith", FieldValue.arrayUnion(friendUserId))
+                .await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -1,40 +1,60 @@
 package es.uc3m.android.a1percent.data
 
+import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.enums.Category
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.tasks.await
 
-/**
- * Memory source for user-created (CUSTOM) categories.
- * For the moment data is not persistent, it is reset when the app is restarted
- */
 object TaskCategoryRepository {
+
+    private val db by lazy { FirebaseFirestore.getInstance() }
 
     private val _customCategories = MutableStateFlow<List<String>>(emptyList())
     val customCategories: StateFlow<List<String>> = _customCategories.asStateFlow()
 
     val predefinedCategories: List<Category> = Category.entries.toList()
 
-    // All predefined categories are candidates for future AI inference
     val inferenceCandidates: List<Category> = predefinedCategories
 
-    fun addCustomCategory(rawName: String): String? {
+    fun observeCustomCategories(userId: String) {
+        db.collection("users").document(userId).collection("categories")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val categories = snapshot.documents.mapNotNull { it.getString("name") }
+                    _customCategories.value = categories
+                }
+            }
+    }
+
+    suspend fun addCustomCategory(userId: String, rawName: String): String? {
         val normalized = rawName.trim()
-        if (normalized.isEmpty())
-            return null
+        if (normalized.isEmpty()) return null
 
-        // Check already existing
         val existing = _customCategories.value.firstOrNull { it.equals(normalized, ignoreCase = true) }
-        if (existing != null)
-            return existing
+        if (existing != null) return existing
 
-        _customCategories.update { it + normalized }
-        return normalized
+        return try {
+            db.collection("users").document(userId).collection("categories")
+                .add(mapOf("name" to normalized))
+                .await()
+            normalized
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun deleteCustomCategory(userId: String, name: String): Result<Unit> {
+        return try {
+            val snapshot = db.collection("users").document(userId).collection("categories")
+                .whereEqualTo("name", name)
+                .get()
+                .await()
+            snapshot.documents.forEach { it.reference.delete().await() }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
-
-// TODO: persist with DataStore/Room when persistence layer is introduced.
-// Significa que hay que cambiar la forma en la que recordamos la categoria con estados a tenerlo simplemente en la database?
-// SÍ: ahora se guardan con StateFlow: si se cierra la app, se pierden

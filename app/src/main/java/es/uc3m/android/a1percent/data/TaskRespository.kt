@@ -1,8 +1,11 @@
 package es.uc3m.android.a1percent.data
 
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.data.remote.FirestoreMapper
 import es.uc3m.android.a1percent.data.remote.encodeToMap
 import es.uc3m.android.a1percent.data.remote.toObjectSerializable
 import es.uc3m.android.a1percent.data.remote.toObjectsSerializable
@@ -44,7 +47,9 @@ object TaskRespository {
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {
-                    trySend(snapshot.toObjectsSerializable<Task>())
+                    val sorted = snapshot.toObjectsSerializable<Task>()
+                        .sortedWith(TaskDeadlineResolver.taskDeadlineComparator())
+                    trySend(sorted)
                 }
             }
         awaitClose { registration.remove() }
@@ -56,7 +61,10 @@ object TaskRespository {
                 .whereArrayContains("sharedWith", userId)
                 .get()
                 .await()
-            Result.success(snapshot.toObjectsSerializable<Task>())
+            Result.success(
+                snapshot.toObjectsSerializable<Task>()
+                    .sortedWith(TaskDeadlineResolver.taskDeadlineComparator())
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -98,6 +106,36 @@ object TaskRespository {
                 batch.set(taskRef, finalTask.encodeToMap()!!)
             }
             batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateTaskDeadline(taskId: String, newDeadline: TaskDeadline): Result<Unit> {
+        return try {
+            val deadlineMap = FirestoreMapper.encodeToMap(newDeadline)
+            tasksCollection.document(taskId).update("deadline", deadlineMap).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateTask(task: Task): Result<Unit> {
+        return try {
+            tasksCollection.document(task.id).set(task.encodeToMap()!!).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun shareTask(taskId: String, friendUserId: String): Result<Unit> {
+        return try {
+            tasksCollection.document(taskId)
+                .update("sharedWith", FieldValue.arrayUnion(friendUserId))
+                .await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

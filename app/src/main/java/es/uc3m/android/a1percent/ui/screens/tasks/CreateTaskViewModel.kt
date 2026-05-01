@@ -33,6 +33,11 @@ class CreateTaskViewModel : ViewModel() {
     val uiState: StateFlow<CreateTaskUiState> = _uiState.asStateFlow()
 
     init {
+        val userId = SessionRepository.currentUser.value?.id
+        if (userId != null) {
+            TaskCategoryRepository.observeCustomCategories(userId)
+        }
+
         TaskCategoryRepository.customCategories
             .onEach { categories ->
                 _uiState.update { it.copy(customCategories = categories) }
@@ -88,23 +93,28 @@ class CreateTaskViewModel : ViewModel() {
 
     fun onCreateCategoryConfirmed() {
         val rawName = _uiState.value.newCategoryName
-        val savedName = TaskCategoryRepository.addCustomCategory(rawName)
+        val userId = SessionRepository.currentUser.value?.id
 
-        if (savedName != null) {
-            _uiState.update {
-                it.copy(
-                    selectedCategory = Category.PERSONAL,
-                    selectedCustomCategoryName = savedName,  // Select this new created category
-                    isCreateCategoryDialogVisible = false,
-                    newCategoryName = ""
-                )
-            }
-        } else {
-            _uiState.update {
-                it.copy(
-                    isCreateCategoryDialogVisible = false,
-                    newCategoryName = ""
-                )
+        if (userId == null) {
+            _uiState.update { it.copy(isCreateCategoryDialogVisible = false, newCategoryName = "") }
+            return
+        }
+
+        viewModelScope.launch {
+            val savedName = TaskCategoryRepository.addCustomCategory(userId, rawName)
+            if (savedName != null) {
+                _uiState.update {
+                    it.copy(
+                        selectedCategory = Category.PERSONAL,
+                        selectedCustomCategoryName = savedName,
+                        isCreateCategoryDialogVisible = false,
+                        newCategoryName = ""
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(isCreateCategoryDialogVisible = false, newCategoryName = "")
+                }
             }
         }
     }
