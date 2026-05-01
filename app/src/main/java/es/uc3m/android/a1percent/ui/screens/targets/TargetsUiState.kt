@@ -19,17 +19,22 @@ data class TargetsUiState(
     val tasks: List<Task> = emptyList(),
     val goals: List<Goal> = emptyList(),
 
-    // Filtering state for each tab
     val taskFilters: TaskFilters = TaskFilters(),
     val goalFilters: GoalFilters = GoalFilters(),
     val taskFilterItems: List<TaskFilterUiItem> = buildTaskFilterUiItems(TaskFilters()),
     val goalFilterItems: List<GoalFilterUiItem> = buildGoalFilterUiItems(GoalFilters()),
 
     val goalTitleById: Map<String, String> = emptyMap(),
-    
-    // Task detail modal state
-    val selectedTask: Task? = null,
 
-    // UI feedback for transient failures, such as delete errors.
-    val errorMessage: String? = null
+    val selectedTask: Task? = null,
+    val editingTask: Task? = null,
+    val showDatePickerForTask: String? = null,
+    val showShareSheet: Boolean = false,
+    val shareTargetTask: Task? = null,
+    val shareTargetGoal: Goal? = null,
+    val friends: List<es.uc3m.android.a1percent.data.model.UserProfile> = emptyList(),
+    val showDeleteGoalConfirm: String? = null,
+
+    val errorMessage: String? = null,
+    val snackbarMessage: String? = null
 )

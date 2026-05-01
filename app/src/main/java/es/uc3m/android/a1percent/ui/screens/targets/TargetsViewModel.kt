@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,6 +62,12 @@ class TargetsViewModel : ViewModel() {
             .onEach { goals ->
                 allGoals = goals
                 _uiState.update { current -> reduceTargetsState(current) }
+            }
+            .launchIn(viewModelScope)
+
+        SocialRepository.observeFriends(userId)
+            .onEach { friends ->
+                _uiState.update { it.copy(friends = friends) }
             }
             .launchIn(viewModelScope)
     }
@@ -172,7 +181,94 @@ class TargetsViewModel : ViewModel() {
     }
 
     fun onTaskPostpone(taskId: String) {
-        // TODO: will be refactored to DatePicker in Task 7
+        _uiState.update { it.copy(showDatePickerForTask = taskId) }
+    }
+
+    fun onDatePickerResult(taskId: String, epochDay: Long) {
+        viewModelScope.launch {
+            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay)).onFailure { error ->
+                _uiState.update { it.copy(errorMessage = "Error updating deadline: ${error.message}") }
+            }
+        }
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onDatePickerDismissed() {
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onTaskEdit(task: Task) {
+        _uiState.update { it.copy(editingTask = task) }
+    }
+
+    fun onTaskUpdate(task: Task) {
+        viewModelScope.launch {
+            TaskRespository.updateTask(task).onFailure { error ->
+                _uiState.update { it.copy(errorMessage = "Error updating task: ${error.message}") }
+            }
+        }
+        _uiState.update { it.copy(editingTask = null) }
+    }
+
+    fun onEditDismissed() {
+        _uiState.update { it.copy(editingTask = null) }
+    }
+
+    fun onGoalDeleteRequested(goalId: String) {
+        _uiState.update { it.copy(showDeleteGoalConfirm = goalId) }
+    }
+
+    fun onGoalDeleteConfirmed() {
+        val goalId = _uiState.value.showDeleteGoalConfirm ?: return
+        viewModelScope.launch {
+            GoalRepository.deleteGoalWithMissions(goalId).onFailure { error ->
+                _uiState.update { it.copy(errorMessage = "Error deleting goal: ${error.message}") }
+            }
+        }
+        _uiState.update { it.copy(showDeleteGoalConfirm = null) }
+    }
+
+    fun onGoalDeleteDismissed() {
+        _uiState.update { it.copy(showDeleteGoalConfirm = null) }
+    }
+
+    fun onShareTaskRequested(task: Task) {
+        _uiState.update { it.copy(showShareSheet = true, shareTargetTask = task, shareTargetGoal = null) }
+    }
+
+    fun onShareGoalRequested(goal: Goal) {
+        _uiState.update { it.copy(showShareSheet = true, shareTargetGoal = goal, shareTargetTask = null) }
+    }
+
+    fun onShareWithFriend(friendUserId: String, friendName: String) {
+        viewModelScope.launch {
+            val task = _uiState.value.shareTargetTask
+            val goal = _uiState.value.shareTargetGoal
+            val result = if (task != null) {
+                TaskRespository.shareTask(task.id, friendUserId)
+            } else if (goal != null) {
+                GoalRepository.shareGoal(goal.id, friendUserId)
+            } else return@launch
+
+            result.onSuccess {
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    shareTargetTask = null,
+                    shareTargetGoal = null,
+                    snackbarMessage = "Shared with $friendName"
+                ) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(errorMessage = "Error sharing: ${error.message}") }
+            }
+        }
+    }
+
+    fun onShareDismissed() {
+        _uiState.update { it.copy(showShareSheet = false, shareTargetTask = null, shareTargetGoal = null) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 
     fun onTaskDelete(taskId: String) {
