@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -99,7 +98,6 @@ fun TargetsScreen(
             onCloseTaskDetail = viewModel::onCloseTaskDetail,
             onTaskComplete = viewModel::onTaskComplete,
             onTaskPostpone = viewModel::onTaskPostpone,
-            onTaskSkip = viewModel::onTaskSkipped,
             onTaskDelete = viewModel::onTaskDelete
         )
 
@@ -126,7 +124,6 @@ private fun TargetsBodyContent(
     onCloseTaskDetail: () -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
-    onTaskSkip: (String) -> Unit,
     onTaskDelete: (String) -> Unit
 ) {
     Column(
@@ -154,7 +151,6 @@ private fun TargetsBodyContent(
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
                 onTaskPostpone = onTaskPostpone,
-                onTaskSkip = onTaskSkip,
                 onTaskDelete = onTaskDelete
             )
 
@@ -184,7 +180,6 @@ private fun TasksTabContent(
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskPostpone: (String) -> Unit,
-    onTaskSkip: (String) -> Unit,
     onTaskDelete: (String) -> Unit
 ) {
     LazyColumn(
@@ -240,7 +235,6 @@ private fun TasksTabContent(
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
                 onTaskPostpone = { onTaskPostpone(task.id) },
-                onTaskSkip = { onTaskSkip(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) }
             )
         }
@@ -297,7 +291,6 @@ internal fun TaskRowWithActions(
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
     onTaskPostpone: () -> Unit,
-    onTaskSkip: () -> Unit,
     onTaskDelete: () -> Unit
 ) {
     Card(
@@ -371,8 +364,6 @@ internal fun TaskRowWithActions(
                 val statusColor = when (task.status) {
                     TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
                     TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
-                    TaskStatus.SKIPPED   -> MaterialTheme.colorScheme.outline
-                    TaskStatus.POSTPONED -> MaterialTheme.colorScheme.secondary
                 }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
@@ -403,11 +394,6 @@ internal fun TaskRowWithActions(
                 AssistChip(
                     onClick = onTaskPostpone,
                     label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onTaskSkip,
-                    label = { Icon(Icons.Default.SkipNext, contentDescription = "Skip", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
@@ -515,8 +501,6 @@ internal fun TaskDetailModal(
                         val statusColor = when (task.status) {
                             TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
                             TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
-                            TaskStatus.SKIPPED   -> MaterialTheme.colorScheme.outline
-                            TaskStatus.POSTPONED -> MaterialTheme.colorScheme.secondary
                         }
                         Surface(
                             shape = RoundedCornerShape(20.dp),
@@ -722,14 +706,6 @@ internal fun TaskDetailModal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.SkipNext, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Skip")
-                    }
                     OutlinedButton(
                         onClick = { /* TODO */ },
                         modifier = Modifier.weight(1f),

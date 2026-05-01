@@ -65,7 +65,7 @@ class CreateTaskViewModel : ViewModel() {
     fun onCustomCategorySelected(customCategory: String) {
         _uiState.update {
             it.copy(
-                selectedCategory = Category.AUTOMATIC,   // placeholder, useless (selectedCategory is from Category enum and not nullable)
+                selectedCategory = Category.PERSONAL,   // placeholder, useless (selectedCategory is from Category enum and not nullable)
                 selectedCustomCategoryName = customCategory,
                 isCategoryDropdownExpanded = false
             )
@@ -93,7 +93,7 @@ class CreateTaskViewModel : ViewModel() {
         if (savedName != null) {
             _uiState.update {
                 it.copy(
-                    selectedCategory = Category.AUTOMATIC,
+                    selectedCategory = Category.PERSONAL,
                     selectedCustomCategoryName = savedName,  // Select this new created category
                     isCreateCategoryDialogVisible = false,
                     newCategoryName = ""

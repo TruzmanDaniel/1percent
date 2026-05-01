@@ -44,7 +44,7 @@ class CreateGoalViewModel : ViewModel() {
 
             val tempGoal = Goal(
                 title = _uiState.value.goalName,
-                category = Category.AUTOMATIC,
+                category = Category.PERSONAL,
                 difficulty = _uiState.value.difficulty.toInt(),
                 xp = _uiState.value.difficulty.toInt() * 50,
                 currentIntensity = currentIntensity
@@ -108,7 +108,7 @@ class CreateGoalViewModel : ViewModel() {
 
                 val goal = Goal(
                     title = _uiState.value.goalName,
-                    category = Category.AUTOMATIC,
+                    category = Category.PERSONAL,
                     difficulty = _uiState.value.difficulty.toInt(),
                     xp = _uiState.value.difficulty.toInt() * 50,
                     currentIntensity = currentIntensity,
@@ -148,7 +148,7 @@ class CreateGoalViewModel : ViewModel() {
             try {
                 val goal = Goal(
                     title = _uiState.value.goalName,
-                    category = Category.AUTOMATIC,
+                    category = Category.PERSONAL,
                     difficulty = _uiState.value.difficulty.toInt(),
                     xp = _uiState.value.difficulty.toInt() * 50
                 )

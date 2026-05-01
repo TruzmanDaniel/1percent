@@ -38,7 +38,6 @@ fun statusFilterLabel(selectedStatus: TaskStatus?): String {
     return when (selectedStatus) {
         TaskStatus.PENDING -> "Status: Pending"
         TaskStatus.COMPLETED -> "Status: Completed"
-        TaskStatus.SKIPPED -> "Status: Skipped"
         else -> "Status: All"
     }
 }

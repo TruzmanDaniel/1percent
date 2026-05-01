@@ -176,14 +176,6 @@ fun CreateTaskCard(
                             shadowElevation = 10.dp
                         ) {
 
-                        // AUTOMATIC
-                        DropdownMenuItem(
-                            text = { Text(Category.AUTOMATIC.displayName) },
-                            onClick = { viewModel.onCategorySelected(Category.AUTOMATIC) }
-                        )
-
-                        HorizontalDivider()
-
                         // PREDEFINED
                         uiState.predefinedCategories.forEach { category ->
                             DropdownMenuItem(

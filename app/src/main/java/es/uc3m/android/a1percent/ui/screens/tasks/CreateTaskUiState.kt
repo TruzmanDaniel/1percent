@@ -17,7 +17,7 @@ data class CreateTaskUiState(
     val taskDescription: String = "",
     val isLoading: Boolean = false,
 
-    val selectedCategory: Category = Category.AUTOMATIC, // Default is AUTOMATIC
+    val selectedCategory: Category = Category.PERSONAL,
     val selectedCustomCategoryName: String? = null,
     val predefinedCategories: List<Category> = emptyList(),
     val customCategories: List<String> = emptyList(),

@@ -15,10 +15,9 @@ object TaskCategoryRepository {
     private val _customCategories = MutableStateFlow<List<String>>(emptyList())
     val customCategories: StateFlow<List<String>> = _customCategories.asStateFlow()
 
-    val predefinedCategories: List<Category> =
-        Category.entries.filter { it != Category.AUTOMATIC }
+    val predefinedCategories: List<Category> = Category.entries.toList()
 
-    // Automatic categorization must only evaluate predefined categories (except 'AUTOMATIC')
+    // All predefined categories are candidates for future AI inference
     val inferenceCandidates: List<Category> = predefinedCategories
 
     fun addCustomCategory(rawName: String): String? {

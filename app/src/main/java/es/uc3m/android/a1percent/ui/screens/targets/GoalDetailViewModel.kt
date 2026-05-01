@@ -89,19 +89,7 @@ class GoalDetailViewModel : ViewModel() {
     }
 
     fun onTaskPostpone(taskId: String) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.POSTPONED).onSuccess {
-                applyLocalTaskStatus(taskId, TaskStatus.POSTPONED)
-            }
-        }
-    }
-
-    fun onTaskSkipped(taskId: String) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.SKIPPED).onSuccess {
-                applyLocalTaskStatus(taskId, TaskStatus.SKIPPED)
-            }
-        }
+        // TODO: will be refactored to DatePicker in Task 8
     }
 
     fun onTaskDelete(taskId: String) {

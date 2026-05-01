@@ -172,23 +172,7 @@ class TargetsViewModel : ViewModel() {
     }
 
     fun onTaskPostpone(taskId: String) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.POSTPONED).onFailure { error ->
-                _uiState.update { current ->
-                    current.copy(errorMessage = "Error postponing task: ${error.message ?: "unknown error"}")
-                }
-            }
-        }
-    }
-
-    fun onTaskSkipped(taskId: String) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.SKIPPED).onFailure { error ->
-                _uiState.update { current ->
-                    current.copy(errorMessage = "Error skipping task: ${error.message ?: "unknown error"}")
-                }
-            }
-        }
+        // TODO: will be refactored to DatePicker in Task 7
     }
 
     fun onTaskDelete(taskId: String) {
@@ -217,11 +201,9 @@ class TargetsViewModel : ViewModel() {
 
     private fun nextTaskStatusFilter(current: TaskStatus?): TaskStatus? {
         return when (current) {
-            TaskStatus.PENDING -> TaskStatus.COMPLETED
-            TaskStatus.COMPLETED -> TaskStatus.SKIPPED
-            TaskStatus.SKIPPED -> null
             null -> TaskStatus.PENDING
-            TaskStatus.POSTPONED -> null
+            TaskStatus.PENDING -> TaskStatus.COMPLETED
+            TaskStatus.COMPLETED -> null
         }
     }
 

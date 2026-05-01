@@ -85,7 +85,6 @@ fun GoalDetailScreen(
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
                             onTaskPostpone = { viewModel.onTaskPostpone(mission.id) },
-                            onTaskSkip = { viewModel.onTaskSkipped(mission.id) },
                             onTaskDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
