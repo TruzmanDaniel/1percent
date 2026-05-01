@@ -5,8 +5,7 @@ import kotlinx.serialization.Serializable
 // PREDEFINED CATEGORIES (Custom Ones go to the Database)
 @Serializable
 enum class Category(val displayName: String) {
-    // Future behavior: let the app infer one of the predefined categories.
-    AUTOMATIC("Automatic"),
+    // AUTOMATIC("Automatic"),  // TODO: re-enable for future AI auto-categorization
 
     HEALTH("Health"),
     FITNESS("Fitness"),
