@@ -4,7 +4,9 @@ import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +53,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
+import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
+import es.uc3m.android.a1percent.ui.screens.targets.TaskDetailModal
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -90,13 +96,39 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         )
     }
 
-    HomeBodyContent(uiState = uiState, onFilterClick = viewModel::onFilterClicked)
+    HomeBodyContent(
+        uiState = uiState,
+        onFilterClick = viewModel::onFilterClicked,
+        onTaskChecked = viewModel::onTaskChecked,
+        onTaskClicked = viewModel::onTaskClicked
+    )
+
+    if (uiState.selectedTask != null) {
+        TaskDetailModal(
+            task = uiState.selectedTask!!,
+            parentGoalTitle = uiState.selectedTask!!.goalId?.let { goalId ->
+                uiState.goals.find { it.id == goalId }?.title
+            },
+            onClose = { viewModel.dismissTaskDetail() }
+        )
+    }
+
+    if (uiState.showShareSheet && uiState.shareTargetTask != null) {
+        ShareBottomSheet(
+            itemName = uiState.shareTargetTask!!.title,
+            friends = uiState.friends,
+            onShareWith = viewModel::onShareWithFriend,
+            onDismiss = viewModel::onShareDismissed
+        )
+    }
 }
 
 @Composable
 fun HomeBodyContent(
     uiState: HomeUiState,
-    onFilterClick: (HomeFilterKey) -> Unit
+    onFilterClick: (HomeFilterKey) -> Unit,
+    onTaskChecked: (String) -> Unit = {},
+    onTaskClicked: (Task) -> Unit = {}
 ) {
     var isFocusMode by rememberSaveable { mutableStateOf(false) }
 
@@ -178,8 +210,15 @@ fun HomeBodyContent(
             }
         } else {
             items(uiState.visibleTasks) { task ->
-                val goalTitle = if (task.goalId != null) uiState.goal?.title else null
-                TaskItem(task = task, goalTitle = goalTitle)
+                val goalTitle = if (task.goalId != null) {
+                    uiState.goals.find { it.id == task.goalId }?.title
+                } else null
+                TaskItem(
+                    task = task,
+                    goalTitle = goalTitle,
+                    onCheckedChange = onTaskChecked,
+                    onClick = { onTaskClicked(task) }
+                )
             }
         }
 
@@ -285,16 +324,25 @@ private fun HeaderSection(uiState: HomeUiState) {
 }
 
 @Composable
-fun TaskItem(task: Task, goalTitle: String?) {
+fun TaskItem(
+    task: Task,
+    goalTitle: String?,
+    onCheckedChange: (String) -> Unit = {},
+    onClick: () -> Unit = {}
+) {
     val isCompleted = task.status == TaskStatus.COMPLETED
+    val borderColor = taskDeadlineBorderColor(task.deadline)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = BorderStroke(2.dp, borderColor)
     ) {
         Row(
             modifier = Modifier
@@ -304,7 +352,7 @@ fun TaskItem(task: Task, goalTitle: String?) {
         ) {
             Checkbox(
                 checked = isCompleted,
-                onCheckedChange = null
+                onCheckedChange = { onCheckedChange(task.id) }
             )
 
             Column(
