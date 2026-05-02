@@ -35,12 +35,19 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
         viewModel.loadUser(text)
     }
 
-    ProfileBodyContent(
-        navController = navController,
-        uiState = uiState,
-        onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
-        onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) }
-    )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ProfileScreen now manages its own top bar with the correct user name
+        ProfileTopBar(
+            username = uiState.user?.name ?: "Profile",
+            onBack = { navController.popBackStack() }
+        )
+        ProfileBodyContent(
+            navController = navController,
+            uiState = uiState,
+            onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
+            onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) }
+        )
+    }
 }
 
 @Composable

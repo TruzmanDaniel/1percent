@@ -89,6 +89,7 @@ fun NavGraph() {
     // Sub-screens that live under a top-level route but should manage their own chrome
     val isSubScreen = currentRoute == AppScreens.TargetsScreen.route + "/goal/{goalId}"
 
+
     var isFabExpanded by remember { mutableStateOf(false) }
     var isTaskCardVisible by remember { mutableStateOf(false) }
     var isGoalCardVisible by remember { mutableStateOf(false) }
@@ -102,12 +103,8 @@ fun NavGraph() {
         Scaffold(
             modifier = Modifier.blur(blurRadius),
             topBar = {
-                if (currentBaseRoute == AppScreens.ProfileScreen.route) {
-                    ProfileTopBar(
-                        username = currentUser?.name ?: "Profile",
-                        onBack = { navController.popBackStack() }
-                    )
-                } else if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
+                // ProfileScreen manages its own top bar
+                if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
                     DefaultTopBar(
                         title = currentScreenTitle,
                         onProfileClick = {
