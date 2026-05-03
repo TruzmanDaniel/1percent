@@ -98,9 +98,24 @@ object GoalRepository {
 
     suspend fun shareGoal(goalId: String, friendUserId: String): Result<Unit> {
         return try {
-            goalsCollection.document(goalId)
-                .update("sharedWith", FieldValue.arrayUnion(friendUserId))
+            val batch = db.batch()
+
+            batch.update(
+                goalsCollection.document(goalId),
+                "sharedWith", FieldValue.arrayUnion(friendUserId)
+            )
+
+            val childTasks = FirebaseFirestore.getInstance()
+                .collection("tasks")
+                .whereEqualTo("goalId", goalId)
+                .get()
                 .await()
+
+            childTasks.documents.forEach { doc ->
+                batch.update(doc.reference, "sharedWith", FieldValue.arrayUnion(friendUserId))
+            }
+
+            batch.commit().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
