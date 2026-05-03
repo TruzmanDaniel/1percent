@@ -77,6 +77,8 @@ class TargetsViewModel : ViewModel() {
     }
 
     private fun applyTaskFiltersAndSort(filters: TaskFilters): List<Task> {
+        val currentUserId = SessionRepository.currentUser.value?.id ?: ""
+
         val statusFiltered = filters.selectedStatus?.let { status ->
             allTasks.filter { it.status == status }
         } ?: allTasks
@@ -88,7 +90,7 @@ class TargetsViewModel : ViewModel() {
                 filters.quickFilters.all { filter ->
                     when (filter) {
                         TaskQuickFilter.MISSIONS -> task.goalId != null
-                        TaskQuickFilter.SHARED -> true  // TODO: replace with real shared/collaboration source
+                        TaskQuickFilter.SHARED -> task.ownerId != currentUserId
                     }
                 }
             }
