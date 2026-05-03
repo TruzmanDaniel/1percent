@@ -7,6 +7,8 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.SocialRepository
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +21,10 @@ import kotlinx.coroutines.launch
 data class GoalDetailUiState(
     val goal: Goal? = null,
     val missions: List<Task> = emptyList(),
-    val selectedMission: Task? = null
+    val selectedMission: Task? = null,
+    val showShareSheet: Boolean = false,
+    val friends: List<UserProfile> = emptyList(),
+    val snackbarMessage: String? = null
 )
 
 /**
@@ -41,6 +46,11 @@ class GoalDetailViewModel : ViewModel() {
                     _uiState.value = GoalDetailUiState()
                 } else {
                     loadGoalForUser(user.id, goalId)
+                    SocialRepository.observeFriends(user.id)
+                        .onEach { friends ->
+                            _uiState.update { it.copy(friends = friends) }
+                        }
+                        .launchIn(viewModelScope)
                 }
             }
             .launchIn(viewModelScope)
@@ -95,6 +105,35 @@ class GoalDetailViewModel : ViewModel() {
         _uiState.update { current ->
             current.copy(missions = current.missions.filter { it.id != taskId })
         }
+    }
+
+    fun onShareGoalRequested() {
+        _uiState.update { it.copy(showShareSheet = true) }
+    }
+
+    fun onShareWithFriend(friendUserId: String, friendName: String) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            GoalRepository.shareGoal(goal.id, friendUserId).onSuccess {
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    snackbarMessage = "Shared with $friendName"
+                ) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    snackbarMessage = "Error sharing: ${error.message}"
+                ) }
+            }
+        }
+    }
+
+    fun onShareDismissed() {
+        _uiState.update { it.copy(showShareSheet = false) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
     }
 
     private fun applyLocalTaskStatus(taskId: String, status: TaskStatus) {

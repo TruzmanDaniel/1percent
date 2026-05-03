@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,10 +22,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Goal
+import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +51,13 @@ fun GoalDetailScreen(
 
     val goal = uiState.goal
     val missions = uiState.missions
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        val message = uiState.snackbarMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearSnackbarMessage()
+    }
 
     Scaffold(
         topBar = {
@@ -54,9 +67,17 @@ fun GoalDetailScreen(
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    if (goal != null) {
+                        IconButton(onClick = { viewModel.onShareGoalRequested() }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share goal")
+                        }
+                    }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { innerPadding ->
         if (goal != null) {
             LazyColumn(
@@ -118,6 +139,14 @@ fun GoalDetailScreen(
             )
         }
 
+        if (uiState.showShareSheet && goal != null) {
+            ShareBottomSheet(
+                itemName = goal.title,
+                friends = uiState.friends,
+                onShareWith = { userId, name -> viewModel.onShareWithFriend(userId, name) },
+                onDismiss = { viewModel.onShareDismissed() }
+            )
+        }
     }
 }
 
