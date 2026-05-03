@@ -36,7 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
+import es.uc3m.android.a1percent.data.model.UserProfile
+import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,7 +91,11 @@ fun GoalDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    GoalHeaderCard(goal = goal)
+                    GoalHeaderCard(
+                        goal = goal,
+                        friends = uiState.friends,
+                        currentUserId = SessionRepository.currentUser.value?.id ?: ""
+                    )
                 }
 
                 if (missions.isNotEmpty()) {
@@ -103,6 +110,8 @@ fun GoalDetailScreen(
                         TaskRowWithActions(
                             task = mission,
                             parentGoalTitle = goal.title,
+                            friends = uiState.friends,
+                            currentUserId = SessionRepository.currentUser.value?.id ?: "",
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
                             onTaskDelete = { viewModel.onTaskDelete(mission.id) }
@@ -151,7 +160,11 @@ fun GoalDetailScreen(
 }
 
 @Composable
-private fun GoalHeaderCard(goal: Goal) {
+private fun GoalHeaderCard(
+    goal: Goal,
+    friends: List<UserProfile>,
+    currentUserId: String
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -236,6 +249,13 @@ private fun GoalHeaderCard(goal: Goal) {
                     Text(text = "${goal.difficulty}/5", style = MaterialTheme.typography.bodyMedium)
                 }
             }
+
+            CollaboratorAvatars(
+                sharedWith = goal.sharedWith,
+                currentUserId = currentUserId,
+                friends = friends,
+                avatarSize = 28
+            )
         }
     }
 }

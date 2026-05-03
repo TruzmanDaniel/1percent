@@ -73,6 +73,8 @@ import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
@@ -294,6 +296,8 @@ private fun TasksTabContent(
             TaskRowWithActions(
                 task = task,
                 parentGoalTitle = task.goalId?.let { uiState.goalTitleById[it] },
+                friends = uiState.friends,
+                currentUserId = SessionRepository.currentUser.value?.id ?: "",
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) },
@@ -353,6 +357,8 @@ private fun GoalsTabContent(
 internal fun TaskRowWithActions(
     task: Task,
     parentGoalTitle: String? = null,
+    friends: List<UserProfile> = emptyList(),
+    currentUserId: String = "",
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
     onTaskDelete: () -> Unit,
@@ -447,6 +453,12 @@ internal fun TaskRowWithActions(
                     )
                 }
             }
+
+            CollaboratorAvatars(
+                sharedWith = task.sharedWith,
+                currentUserId = currentUserId,
+                friends = friends
+            )
 
             HorizontalDivider()
 
