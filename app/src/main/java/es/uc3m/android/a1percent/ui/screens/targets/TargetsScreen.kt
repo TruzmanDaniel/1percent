@@ -465,11 +465,13 @@ internal fun TaskRowWithActions(
                     label = { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
-                AssistChip(
-                    onClick = onTaskShare,
-                    label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
-                )
+                if (task.goalId == null) {
+                    AssistChip(
+                        onClick = onTaskShare,
+                        label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 AssistChip(
                     onClick = onTaskDelete,
                     label = { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp)) },
