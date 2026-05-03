@@ -462,7 +462,7 @@ internal fun TaskRowWithActions(
                 friends = friends
             )
 
-            if (task.completedBy.isNotEmpty()) {
+            if (task.completedBy.isNotEmpty() && task.sharedWith.size > 1) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
