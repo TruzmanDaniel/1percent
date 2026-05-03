@@ -44,7 +44,7 @@ import es.uc3m.android.a1percent.ui.screens.home.HomeScreen
 import es.uc3m.android.a1percent.ui.screens.login.LoginScreen
 import es.uc3m.android.a1percent.ui.screens.login.RegisterScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
-import es.uc3m.android.a1percent.ui.screens.profile.ProfileTopBar
+
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
 import es.uc3m.android.a1percent.ui.screens.splash.SplashScreen
@@ -102,12 +102,7 @@ fun NavGraph() {
         Scaffold(
             modifier = Modifier.blur(blurRadius),
             topBar = {
-                if (currentBaseRoute == AppScreens.ProfileScreen.route) {
-                    ProfileTopBar(
-                        username = currentUser?.name ?: "Profile",
-                        onBack = { navController.popBackStack() }
-                    )
-                } else if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
+                if (currentBaseRoute in topLevelRoutes && !isSubScreen) {
                     DefaultTopBar(
                         title = currentScreenTitle,
                         onProfileClick = {

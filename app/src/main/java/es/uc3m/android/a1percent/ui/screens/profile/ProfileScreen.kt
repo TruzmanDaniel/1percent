@@ -25,8 +25,12 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.PaddingValues
 import es.uc3m.android.a1percent.navigation.AppScreens
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController, text: String?, viewModel: ProfileViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -35,12 +39,22 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
         viewModel.loadUser(text)
     }
 
-    ProfileBodyContent(
-        navController = navController,
-        uiState = uiState,
-        onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
-        onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) }
-    )
+    Scaffold(
+        topBar = {
+            ProfileTopBar(
+                username = uiState.user?.name ?: "Profile",
+                onBack = { navController.popBackStack() }
+            )
+        }
+    ) { innerPadding ->
+        ProfileBodyContent(
+            navController = navController,
+            uiState = uiState,
+            onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
+            onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) },
+            modifier = innerPadding
+        )
+    }
 }
 
 @Composable
@@ -48,7 +62,8 @@ fun ProfileBodyContent(
     navController: NavController,
     uiState: ProfileUiState,
     onPickImage: (android.net.Uri) -> Unit = {},
-    onFriendAction: () -> Unit = {}
+    onFriendAction: () -> Unit = {},
+    modifier: PaddingValues = PaddingValues(0.dp)
 ) {
     val user = uiState.user
     val isOwn = uiState.isOwnProfile
@@ -72,6 +87,7 @@ fun ProfileBodyContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(modifier)
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
