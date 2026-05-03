@@ -21,7 +21,8 @@ data class GoalDetailUiState(
     val goal: Goal? = null,
     val missions: List<Task> = emptyList(),
     val selectedMission: Task? = null,
-    val showDatePickerForTask: String? = null
+    val showDatePickerForTask: String? = null,
+    val editingTask: Task? = null
 )
 
 /**
@@ -103,6 +104,26 @@ class GoalDetailViewModel : ViewModel() {
 
     fun onDatePickerDismissed() {
         _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onTaskEdit(task: Task) {
+        _uiState.update { it.copy(editingTask = task) }
+    }
+
+    fun onTaskUpdate(task: Task) {
+        viewModelScope.launch {
+            TaskRespository.updateTask(task)
+        }
+        _uiState.update { current ->
+            current.copy(
+                editingTask = null,
+                missions = current.missions.map { if (it.id == task.id) task else it }
+            )
+        }
+    }
+
+    fun onEditDismissed() {
+        _uiState.update { it.copy(editingTask = null) }
     }
 
     fun onTaskDelete(taskId: String) {

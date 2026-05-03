@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,22 +12,31 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,9 +45,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.TaskDeadline
-import java.time.LocalDate
+import es.uc3m.android.a1percent.data.model.enums.Category
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,18 +59,22 @@ fun EditTaskCard(
     onSave: (Task) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
+    val userId = SessionRepository.currentUser.collectAsStateWithLifecycle().value?.id
+
+    val customCategories by TaskCategoryRepository.customCategories.collectAsStateWithLifecycle()
+    val predefinedCategories = TaskCategoryRepository.predefinedCategories
+
     var title by remember { mutableStateOf(task.title) }
     var description by remember { mutableStateOf(task.description) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var deadlineEnabled by remember { mutableStateOf(task.deadline != null) }
-    var selectedEpochDay by remember {
-        mutableStateOf(
-            when (task.deadline) {
-                is TaskDeadline.OnDate -> task.deadline.epochDay
-                else -> null
-            }
-        )
-    }
+
+    var selectedCategory by remember { mutableStateOf(task.category) }
+    var selectedCustomCategoryName by remember { mutableStateOf(task.customCategoryName) }
+    var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
+    var isCreateCategoryDialogVisible by remember { mutableStateOf(false) }
+    var newCategoryName by remember { mutableStateOf("") }
+
+    val categoryLabel = selectedCustomCategoryName ?: selectedCategory.displayName
 
     Dialog(onDismissRequest = onDismiss) {
         Box(
@@ -68,7 +83,6 @@ fun EditTaskCard(
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Glassmorphism style values
             val glassShape = RoundedCornerShape(24.dp)
             val glassGradient = Brush.verticalGradient(
                 colors = listOf(
@@ -78,9 +92,7 @@ fun EditTaskCard(
             )
 
             Card(
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .fillMaxHeight(0.85f),
+                modifier = Modifier.fillMaxWidth(0.95f),
                 shape = glassShape,
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                 border = BorderStroke(
@@ -91,21 +103,21 @@ fun EditTaskCard(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .background(brush = glassGradient)
                 ) {
-                    // Header - Fixed
+                    // Header
                     Text(
                         text = "Edit ${if (task.goalId != null) "Mission" else "Task"}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
                     )
 
-                    // Content - Scrollable
+                    // Scrollable content
                     Column(
                         modifier = Modifier
-                            .weight(1f)
+                            .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -123,13 +135,96 @@ fun EditTaskCard(
                             onValueChange = { description = it },
                             label = { Text("Description") },
                             modifier = Modifier.fillMaxWidth(),
-                            minLines = 2,
-                            maxLines = 4
+                            minLines = 3,
+                            maxLines = 5
                         )
+
+                        // Category dropdown
+                        ExposedDropdownMenuBox(
+                            expanded = isCategoryDropdownExpanded,
+                            onExpandedChange = { isCategoryDropdownExpanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = categoryLabel,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Category") },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryDropdownExpanded)
+                                },
+                                modifier = Modifier
+                                    .menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
+                                    .fillMaxWidth()
+                            )
+
+                            ExposedDropdownMenu(
+                                expanded = isCategoryDropdownExpanded,
+                                onDismissRequest = { isCategoryDropdownExpanded = false },
+                                shape = RoundedCornerShape(16.dp),
+                                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+                                tonalElevation = 0.dp,
+                                shadowElevation = 10.dp
+                            ) {
+                                predefinedCategories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { Text(category.displayName) },
+                                        onClick = {
+                                            selectedCategory = category
+                                            selectedCustomCategoryName = null
+                                            isCategoryDropdownExpanded = false
+                                        }
+                                    )
+                                }
+
+                                if (customCategories.isNotEmpty()) {
+                                    HorizontalDivider()
+                                    customCategories.forEach { custom ->
+                                        DropdownMenuItem(
+                                            text = { Text(custom) },
+                                            onClick = {
+                                                selectedCustomCategoryName = custom
+                                                isCategoryDropdownExpanded = false
+                                            },
+                                            trailingIcon = {
+                                                IconButton(onClick = {
+                                                    scope.launch {
+                                                        userId?.let {
+                                                            TaskCategoryRepository.deleteCustomCategory(it, custom)
+                                                        }
+                                                        if (selectedCustomCategoryName == custom) {
+                                                            selectedCustomCategoryName = null
+                                                            selectedCategory = Category.PERSONAL
+                                                        }
+                                                    }
+                                                }) {
+                                                    Icon(
+                                                        Icons.Default.Delete,
+                                                        contentDescription = "Delete category",
+                                                        tint = MaterialTheme.colorScheme.error,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider()
+
+                                DropdownMenuItem(
+                                    text = { Text("Create a Category") },
+                                    onClick = {
+                                        isCategoryDropdownExpanded = false
+                                        newCategoryName = ""
+                                        isCreateCategoryDialogVisible = true
+                                    }
+                                )
+                            }
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
                                 text = "XP: ${task.xp}",
@@ -142,39 +237,9 @@ fun EditTaskCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-
-                        OutlinedButton(
-                            onClick = {
-                                deadlineEnabled = true
-                                showDatePicker = true
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val label = if (!deadlineEnabled) {
-                                "No Deadline"
-                            } else if (selectedEpochDay != null) {
-                                val date = LocalDate.ofEpochDay(selectedEpochDay!!)
-                                "Deadline: ${date.dayOfMonth} ${date.month.name.take(3).lowercase().replaceFirstChar { it.uppercase() }} ${date.year}"
-                            } else {
-                                "Set Deadline"
-                            }
-                            Text(label)
-                        }
-
-                        if (deadlineEnabled || selectedEpochDay != null) {
-                            OutlinedButton(
-                                onClick = {
-                                    deadlineEnabled = false
-                                    selectedEpochDay = null
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("No Deadline")
-                            }
-                        }
                     }
 
-                    // Footer - Buttons - Fixed
+                    // Footer buttons
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -189,16 +254,14 @@ fun EditTaskCard(
                         }
                         Button(
                             onClick = {
-                                val updatedDeadline = if (!deadlineEnabled) {
-                                    null
-                                } else {
-                                    selectedEpochDay?.let { TaskDeadline.OnDate(it) } ?: task.deadline
-                                }
-                                onSave(task.copy(
-                                    title = title,
-                                    description = description,
-                                    deadline = updatedDeadline
-                                ))
+                                onSave(
+                                    task.copy(
+                                        title = title,
+                                        description = description,
+                                        category = selectedCategory,
+                                        customCategoryName = selectedCustomCategoryName
+                                    )
+                                )
                             },
                             modifier = Modifier.weight(1f),
                             enabled = title.isNotBlank()
@@ -211,27 +274,46 @@ fun EditTaskCard(
         }
     }
 
-    if (showDatePicker) {
-        val initialMillis = selectedEpochDay?.let { it * 86_400_000L }
-            ?: System.currentTimeMillis()
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
-
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
+    // Create category dialog
+    if (isCreateCategoryDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isCreateCategoryDialogVisible = false },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            title = { Text("Create a Category") },
+            text = {
+                OutlinedTextField(
+                    value = newCategoryName,
+                    onValueChange = { newCategoryName = it },
+                    label = { Text("Category name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
             confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        deadlineEnabled = true
-                        selectedEpochDay = millis / 86_400_000L
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
+                TextButton(
+                    onClick = {
+                        val name = newCategoryName.trim()
+                        scope.launch {
+                            val saved = userId?.let {
+                                TaskCategoryRepository.addCustomCategory(it, name)
+                            }
+                            if (saved != null) {
+                                selectedCustomCategoryName = saved
+                                selectedCategory = Category.PERSONAL
+                            }
+                            isCreateCategoryDialogVisible = false
+                            newCategoryName = ""
+                        }
+                    },
+                    enabled = newCategoryName.trim().isNotEmpty()
+                ) { Text("Create") }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = {
+                    isCreateCategoryDialogVisible = false
+                    newCategoryName = ""
+                }) { Text("Cancel") }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        )
     }
 }

@@ -1,31 +1,50 @@
 package es.uc3m.android.a1percent.data
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import es.uc3m.android.a1percent.data.model.enums.Category
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 object TaskCategoryRepository {
 
     private val db by lazy { FirebaseFirestore.getInstance() }
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private val _customCategories = MutableStateFlow<List<String>>(emptyList())
     val customCategories: StateFlow<List<String>> = _customCategories.asStateFlow()
 
     val predefinedCategories: List<Category> = Category.entries.toList()
-
     val inferenceCandidates: List<Category> = predefinedCategories
 
-    fun observeCustomCategories(userId: String) {
-        db.collection("users").document(userId).collection("categories")
-            .addSnapshotListener { snapshot, _ ->
-                if (snapshot != null) {
-                    val categories = snapshot.documents.mapNotNull { it.getString("name") }
-                    _customCategories.value = categories
+    private var activeListener: ListenerRegistration? = null
+
+    init {
+        scope.launch {
+            SessionRepository.currentUser.collect { user ->
+                activeListener?.remove()
+                activeListener = null
+                _customCategories.value = emptyList()
+
+                if (user != null) {
+                    activeListener = db.collection("users")
+                        .document(user.id)
+                        .collection("categories")
+                        .addSnapshotListener { snapshot, _ ->
+                            if (snapshot != null) {
+                                _customCategories.value =
+                                    snapshot.documents.mapNotNull { it.getString("name") }
+                            }
+                        }
                 }
             }
+        }
     }
 
     suspend fun addCustomCategory(userId: String, rawName: String): String? {

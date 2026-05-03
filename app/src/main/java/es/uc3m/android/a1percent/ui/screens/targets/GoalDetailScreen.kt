@@ -36,6 +36,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.model.Goal
+import es.uc3m.android.a1percent.ui.components.EditTaskCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +90,7 @@ fun GoalDetailScreen(
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
                             onTaskPostpone = { viewModel.onTaskPostpone(mission.id) },
+                            onTaskEdit = { viewModel.onTaskEdit(mission) },
                             onTaskDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
@@ -119,7 +121,19 @@ fun GoalDetailScreen(
             TaskDetailModal(
                 task = selectedMission,
                 parentGoalTitle = goal?.title,
-                onClose = viewModel::onCloseMissionDetail
+                onClose = viewModel::onCloseMissionDetail,
+                onComplete = { viewModel.onTaskComplete(selectedMission.id) },
+                onPostpone = { viewModel.onTaskPostpone(selectedMission.id) },
+                onDelete = { viewModel.onTaskDelete(selectedMission.id) }
+            )
+        }
+
+        val editingTask = uiState.editingTask
+        if (editingTask != null) {
+            EditTaskCard(
+                task = editingTask,
+                onSave = { viewModel.onTaskUpdate(it) },
+                onDismiss = { viewModel.onEditDismissed() }
             )
         }
 
