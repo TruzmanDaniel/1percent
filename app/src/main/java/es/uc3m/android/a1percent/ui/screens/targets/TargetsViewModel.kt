@@ -9,7 +9,6 @@ import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
@@ -178,23 +177,6 @@ class TargetsViewModel : ViewModel() {
                 }
             }
         }
-    }
-
-    fun onTaskPostpone(taskId: String) {
-        _uiState.update { it.copy(showDatePickerForTask = taskId) }
-    }
-
-    fun onDatePickerResult(taskId: String, epochDay: Long) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay)).onFailure { error ->
-                _uiState.update { it.copy(errorMessage = "Error updating deadline: ${error.message}") }
-            }
-        }
-        _uiState.update { it.copy(showDatePickerForTask = null) }
-    }
-
-    fun onDatePickerDismissed() {
-        _uiState.update { it.copy(showDatePickerForTask = null) }
     }
 
     fun onTaskEdit(task: Task) {

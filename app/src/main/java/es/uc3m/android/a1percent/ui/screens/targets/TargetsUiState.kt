@@ -28,7 +28,6 @@ data class TargetsUiState(
 
     val selectedTask: Task? = null,
     val editingTask: Task? = null,
-    val showDatePickerForTask: String? = null,
     val showShareSheet: Boolean = false,
     val shareTargetTask: Task? = null,
     val shareTargetGoal: Goal? = null,

@@ -29,15 +29,12 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Loop
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -54,7 +51,6 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -112,7 +108,6 @@ fun TargetsScreen(
             onTaskClicked = viewModel::onTaskClicked,
             onCloseTaskDetail = viewModel::onCloseTaskDetail,
             onTaskComplete = viewModel::onTaskComplete,
-            onTaskPostpone = viewModel::onTaskPostpone,
             onTaskDelete = viewModel::onTaskDelete,
             onTaskEdit = viewModel::onTaskEdit,
             onTaskShare = viewModel::onShareTaskRequested,
@@ -131,25 +126,6 @@ fun TargetsScreen(
             val message = uiState.snackbarMessage ?: return@LaunchedEffect
             snackbarHostState.showSnackbar(message)
             viewModel.clearSnackbarMessage()
-        }
-
-        // DatePicker dialog for postpone
-        val showDatePicker = uiState.showDatePickerForTask
-        if (showDatePicker != null) {
-            val datePickerState = rememberDatePickerState()
-            DatePickerDialog(
-                onDismissRequest = { viewModel.onDatePickerDismissed() },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            viewModel.onDatePickerResult(showDatePicker, millis / 86_400_000L)
-                        }
-                    }) { Text("OK") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.onDatePickerDismissed() }) { Text("Cancel") }
-                }
-            ) { DatePicker(state = datePickerState) }
         }
 
         // Edit task dialog
@@ -204,7 +180,6 @@ private fun TargetsBodyContent(
     onTaskClicked: (Task) -> Unit,
     onCloseTaskDetail: () -> Unit,
     onTaskComplete: (String) -> Unit,
-    onTaskPostpone: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
     onTaskEdit: (Task) -> Unit,
     onTaskShare: (Task) -> Unit,
@@ -234,7 +209,6 @@ private fun TargetsBodyContent(
                 onTaskFilterClicked = onTaskFilterClicked,
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
-                onTaskPostpone = onTaskPostpone,
                 onTaskDelete = onTaskDelete,
                 onTaskEdit = onTaskEdit,
                 onTaskShare = onTaskShare
@@ -266,7 +240,6 @@ private fun TasksTabContent(
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
-    onTaskPostpone: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
     onTaskEdit: (Task) -> Unit,
     onTaskShare: (Task) -> Unit
@@ -323,7 +296,6 @@ private fun TasksTabContent(
                 parentGoalTitle = task.goalId?.let { uiState.goalTitleById[it] },
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
-                onTaskPostpone = { onTaskPostpone(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) },
                 onTaskEdit = { onTaskEdit(task) },
                 onTaskShare = { onTaskShare(task) }
@@ -383,7 +355,6 @@ internal fun TaskRowWithActions(
     parentGoalTitle: String? = null,
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
-    onTaskPostpone: () -> Unit,
     onTaskDelete: () -> Unit,
     onTaskEdit: () -> Unit = {},
     onTaskShare: () -> Unit = {}
@@ -487,11 +458,6 @@ internal fun TaskRowWithActions(
                 AssistChip(
                     onClick = onTaskComplete,
                     label = { Icon(Icons.Default.Check, contentDescription = "Complete", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onTaskPostpone,
-                    label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
@@ -808,14 +774,6 @@ internal fun TaskDetailModal(
                         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("Complete")
-                    }
-                    OutlinedButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Postpone")
                     }
                 }
                 Row(

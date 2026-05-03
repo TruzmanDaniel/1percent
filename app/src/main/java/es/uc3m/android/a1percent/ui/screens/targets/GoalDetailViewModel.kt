@@ -7,7 +7,6 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,13 +19,12 @@ import kotlinx.coroutines.launch
 data class GoalDetailUiState(
     val goal: Goal? = null,
     val missions: List<Task> = emptyList(),
-    val selectedMission: Task? = null,
-    val showDatePickerForTask: String? = null
+    val selectedMission: Task? = null
 )
 
 /**
  * ViewModel for Goal Detail screen.
- * Handles goal lookup and mission management (complete, postpone, delete actions).
+ * Handles goal lookup and mission management (complete, delete actions).
  * TODO: Replace mock data with real repository once backend is integrated.
  */
 class GoalDetailViewModel : ViewModel() {
@@ -88,21 +86,6 @@ class GoalDetailViewModel : ViewModel() {
                 applyLocalTaskStatus(taskId, TaskStatus.COMPLETED)
             }
         }
-    }
-
-    fun onTaskPostpone(taskId: String) {
-        _uiState.update { it.copy(showDatePickerForTask = taskId) }
-    }
-
-    fun onDatePickerResult(taskId: String, epochDay: Long) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay))
-        }
-        _uiState.update { it.copy(showDatePickerForTask = null) }
-    }
-
-    fun onDatePickerDismissed() {
-        _uiState.update { it.copy(showDatePickerForTask = null) }
     }
 
     fun onTaskDelete(taskId: String) {

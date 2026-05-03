@@ -14,8 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -24,9 +22,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -88,7 +84,6 @@ fun GoalDetailScreen(
                             parentGoalTitle = goal.title,
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
-                            onTaskPostpone = { viewModel.onTaskPostpone(mission.id) },
                             onTaskDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
@@ -123,29 +118,6 @@ fun GoalDetailScreen(
             )
         }
 
-        if (uiState.showDatePickerForTask != null) {
-            val datePickerState = rememberDatePickerState(
-                initialSelectedDateMillis = System.currentTimeMillis()
-            )
-            DatePickerDialog(
-                onDismissRequest = { viewModel.onDatePickerDismissed() },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            viewModel.onDatePickerResult(
-                                uiState.showDatePickerForTask!!,
-                                millis / 86_400_000L
-                            )
-                        }
-                    }) { Text("OK") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.onDatePickerDismissed() }) { Text("Cancel") }
-                }
-            ) {
-                DatePicker(state = datePickerState)
-            }
-        }
     }
 }
 
