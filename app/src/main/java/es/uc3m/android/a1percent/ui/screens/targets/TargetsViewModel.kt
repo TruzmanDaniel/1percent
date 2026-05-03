@@ -80,7 +80,10 @@ class TargetsViewModel : ViewModel() {
         val currentUserId = SessionRepository.currentUser.value?.id ?: ""
 
         val statusFiltered = filters.selectedStatus?.let { status ->
-            allTasks.filter { it.status == status }
+            when (status) {
+                TaskStatus.COMPLETED -> allTasks.filter { currentUserId in it.completedBy }
+                TaskStatus.PENDING -> allTasks.filter { currentUserId !in it.completedBy }
+            }
         } ?: allTasks
 
         val filtered = if (filters.quickFilters.isEmpty()) {
@@ -172,8 +175,9 @@ class TargetsViewModel : ViewModel() {
     // ACTIONS
 
     fun onTaskComplete(taskId: String) {
+        val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onFailure { error ->
+            TaskRespository.toggleTaskCompletion(taskId, userId).onFailure { error ->
                 _uiState.update { current ->
                     current.copy(errorMessage = "Error completing task: ${error.message ?: "unknown error"}")
                 }

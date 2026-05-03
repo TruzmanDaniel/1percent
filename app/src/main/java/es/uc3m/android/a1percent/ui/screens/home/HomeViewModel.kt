@@ -245,10 +245,9 @@ class HomeViewModel : ViewModel() {
     }
 
     fun onTaskChecked(taskId: String) {
-        val task = _uiState.value.tasks.find { it.id == taskId } ?: return
-        val newStatus = if (task.status == TaskStatus.PENDING) TaskStatus.COMPLETED else TaskStatus.PENDING
+        val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, newStatus)
+            TaskRespository.toggleTaskCompletion(taskId, userId)
         }
     }
 
@@ -301,9 +300,10 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun applyFiltersAndSort(tasks: List<Task>, filters: HomeFilters): List<Task> {
+        val currentUserId = SessionRepository.currentUser.value?.id ?: ""
         val statusFiltered = when (filters.statusFilter) {
-            HomeStatusFilter.PENDING -> tasks.filter { it.status == TaskStatus.PENDING }
-            HomeStatusFilter.COMPLETED -> tasks.filter { it.status == TaskStatus.COMPLETED }
+            HomeStatusFilter.PENDING -> tasks.filter { currentUserId !in it.completedBy }
+            HomeStatusFilter.COMPLETED -> tasks.filter { currentUserId in it.completedBy }
             HomeStatusFilter.ALL -> tasks
         }
 

@@ -436,16 +436,18 @@ internal fun TaskRowWithActions(
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                val statusColor = when (task.status) {
-                    TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
-                    TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                val isCompletedByMe = currentUserId in task.completedBy
+                val statusColor = if (isCompletedByMe) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.tertiary
                 }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = statusColor.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        text = task.status.displayName,
+                        text = if (isCompletedByMe) "Completed" else "Pending",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = statusColor,
@@ -459,6 +461,24 @@ internal fun TaskRowWithActions(
                 currentUserId = currentUserId,
                 friends = friends
             )
+
+            if (task.completedBy.isNotEmpty()) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Completed by",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    CollaboratorAvatars(
+                        sharedWith = task.completedBy,
+                        currentUserId = "",
+                        friends = friends
+                    )
+                }
+            }
 
             HorizontalDivider()
 

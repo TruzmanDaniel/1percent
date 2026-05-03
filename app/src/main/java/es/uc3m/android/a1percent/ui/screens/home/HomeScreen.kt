@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -216,6 +217,7 @@ fun HomeBodyContent(
                 TaskItem(
                     task = task,
                     goalTitle = goalTitle,
+                    currentUserId = SessionRepository.currentUser.value?.id ?: "",
                     onCheckedChange = onTaskChecked,
                     onClick = { onTaskClicked(task) }
                 )
@@ -327,10 +329,11 @@ private fun HeaderSection(uiState: HomeUiState) {
 fun TaskItem(
     task: Task,
     goalTitle: String?,
+    currentUserId: String = "",
     onCheckedChange: (String) -> Unit = {},
     onClick: () -> Unit = {}
 ) {
-    val isCompleted = task.status == TaskStatus.COMPLETED
+    val isCompleted = currentUserId in task.completedBy
     val borderColor = taskDeadlineBorderColor(task.deadline)
 
     Card(

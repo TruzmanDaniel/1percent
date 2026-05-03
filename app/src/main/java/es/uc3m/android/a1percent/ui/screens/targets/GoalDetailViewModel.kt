@@ -61,6 +61,11 @@ class GoalDetailViewModel : ViewModel() {
         currentGoalId = goalId
         val userId = SessionRepository.currentUser.value?.id ?: return
         loadGoalForUser(userId, goalId)
+        SocialRepository.observeFriends(userId)
+            .onEach { friends ->
+                _uiState.update { it.copy(friends = friends) }
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun loadGoalForUser(userId: String, goalId: String) {
@@ -89,11 +94,11 @@ class GoalDetailViewModel : ViewModel() {
         _uiState.update { it.copy(selectedMission = null) }
     }
 
-    // TODO: Implement actual task update logic (currently just logs action)
     fun onTaskComplete(taskId: String) {
+        val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onSuccess {
-                applyLocalTaskStatus(taskId, TaskStatus.COMPLETED)
+            TaskRespository.toggleTaskCompletion(taskId, userId).onSuccess {
+                applyLocalToggleCompletion(taskId, userId)
             }
         }
     }
@@ -136,11 +141,18 @@ class GoalDetailViewModel : ViewModel() {
         _uiState.update { it.copy(snackbarMessage = null) }
     }
 
-    private fun applyLocalTaskStatus(taskId: String, status: TaskStatus) {
+    private fun applyLocalToggleCompletion(taskId: String, userId: String) {
         _uiState.update { current ->
             current.copy(
                 missions = current.missions.map { mission ->
-                    if (mission.id == taskId) mission.copy(status = status) else mission
+                    if (mission.id == taskId) {
+                        val updated = if (userId in mission.completedBy) {
+                            mission.completedBy - userId
+                        } else {
+                            mission.completedBy + userId
+                        }
+                        mission.copy(completedBy = updated)
+                    } else mission
                 }
             )
         }
