@@ -15,7 +15,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -191,7 +194,17 @@ fun CreateTaskCard(
                             uiState.customCategories.forEach { customCategory ->
                                 DropdownMenuItem(
                                     text = { Text(customCategory) },
-                                    onClick = { viewModel.onCustomCategorySelected(customCategory) }
+                                    onClick = { viewModel.onCustomCategorySelected(customCategory) },
+                                    trailingIcon = {
+                                        IconButton(onClick = { viewModel.onDeleteCustomCategory(customCategory) }) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "Delete category",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
                                 )
                             }
                         }

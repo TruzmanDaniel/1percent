@@ -7,6 +7,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
@@ -24,7 +25,9 @@ data class GoalDetailUiState(
     val selectedMission: Task? = null,
     val showShareSheet: Boolean = false,
     val friends: List<UserProfile> = emptyList(),
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val showDatePickerForTask: String? = null,
+    val editingTask: Task? = null
 )
 
 /**
@@ -101,6 +104,41 @@ class GoalDetailViewModel : ViewModel() {
                 applyLocalToggleCompletion(taskId, userId)
             }
         }
+    }
+
+    fun onTaskPostpone(taskId: String) {
+        _uiState.update { it.copy(showDatePickerForTask = taskId) }
+    }
+
+    fun onDatePickerResult(taskId: String, epochDay: Long) {
+        viewModelScope.launch {
+            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay))
+        }
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onDatePickerDismissed() {
+        _uiState.update { it.copy(showDatePickerForTask = null) }
+    }
+
+    fun onTaskEdit(task: Task) {
+        _uiState.update { it.copy(editingTask = task) }
+    }
+
+    fun onTaskUpdate(task: Task) {
+        viewModelScope.launch {
+            TaskRespository.updateTask(task)
+        }
+        _uiState.update { current ->
+            current.copy(
+                editingTask = null,
+                missions = current.missions.map { if (it.id == task.id) task else it }
+            )
+        }
+    }
+
+    fun onEditDismissed() {
+        _uiState.update { it.copy(editingTask = null) }
     }
 
     fun onTaskDelete(taskId: String) {

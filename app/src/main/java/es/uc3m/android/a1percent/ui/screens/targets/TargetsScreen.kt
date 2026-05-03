@@ -225,11 +225,14 @@ private fun TargetsBodyContent(
         }
 
         // Task Detail Modal
-        if (uiState.selectedTask != null) {
+        val selectedTask = uiState.selectedTask
+        if (selectedTask != null) {
             TaskDetailModal(
-                task = uiState.selectedTask,
-                parentGoalTitle = uiState.selectedTask.goalId?.let { uiState.goalTitleById[it] },
-                onClose = onCloseTaskDetail
+                task = selectedTask,
+                parentGoalTitle = selectedTask.goalId?.let { uiState.goalTitleById[it] },
+                onClose = onCloseTaskDetail,
+                onComplete = { onTaskComplete(selectedTask.id) },
+                onDelete = { onTaskDelete(selectedTask.id) }
             )
         }
     }
@@ -565,7 +568,9 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Uni
 internal fun TaskDetailModal(
     task: Task,
     parentGoalTitle: String?,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    onComplete: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -793,38 +798,30 @@ internal fun TaskDetailModal(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ── ACTION BUTTONS ───────────────────────────────────────
-            Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                FilledTonalButton(
+                    onClick = { onComplete(); onClose() },
+                    modifier = Modifier.weight(1f)
                 ) {
-                    FilledTonalButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Complete")
-                    }
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Complete")
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                OutlinedButton(
+                    onClick = { onDelete(); onClose() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
                 ) {
-                    OutlinedButton(
-                        onClick = { /* TODO */ },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Delete")
-                    }
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Delete")
                 }
             }
         }

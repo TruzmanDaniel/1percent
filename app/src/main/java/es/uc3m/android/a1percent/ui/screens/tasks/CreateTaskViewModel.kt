@@ -33,11 +33,6 @@ class CreateTaskViewModel : ViewModel() {
     val uiState: StateFlow<CreateTaskUiState> = _uiState.asStateFlow()
 
     init {
-        val userId = SessionRepository.currentUser.value?.id
-        if (userId != null) {
-            TaskCategoryRepository.observeCustomCategories(userId)
-        }
-
         TaskCategoryRepository.customCategories
             .onEach { categories ->
                 _uiState.update { it.copy(customCategories = categories) }
@@ -114,6 +109,18 @@ class CreateTaskViewModel : ViewModel() {
             } else {
                 _uiState.update {
                     it.copy(isCreateCategoryDialogVisible = false, newCategoryName = "")
+                }
+            }
+        }
+    }
+
+    fun onDeleteCustomCategory(name: String) {
+        val userId = SessionRepository.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            TaskCategoryRepository.deleteCustomCategory(userId, name)
+            if (_uiState.value.selectedCustomCategoryName == name) {
+                _uiState.update {
+                    it.copy(selectedCustomCategoryName = null, selectedCategory = Category.PERSONAL)
                 }
             }
         }

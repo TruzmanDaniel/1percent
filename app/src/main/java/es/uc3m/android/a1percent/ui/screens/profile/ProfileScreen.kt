@@ -1,5 +1,7 @@
 package es.uc3m.android.a1percent.ui.screens.profile
 
+import android.content.Context
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -14,11 +16,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -29,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.PaddingValues
 import es.uc3m.android.a1percent.navigation.AppScreens
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,17 +69,29 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
 fun ProfileBodyContent(
     navController: NavController,
     uiState: ProfileUiState,
-    onPickImage: (android.net.Uri) -> Unit = {},
+    onPickImage: (Uri) -> Unit = {},
     onFriendAction: () -> Unit = {},
     modifier: PaddingValues = PaddingValues(0.dp)
 ) {
     val user = uiState.user
     val isOwn = uiState.isOwnProfile
+    val context = LocalContext.current
+
+    var showImagePickerDialog by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { onPickImage(it) }
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            cameraImageUri?.let { onPickImage(it) }
+        }
     }
 
     if (user == null) {
@@ -82,6 +102,45 @@ fun ProfileBodyContent(
             Text("Profile not available")
         }
         return
+    }
+
+    if (showImagePickerDialog) {
+        AlertDialog(
+            onDismissRequest = { showImagePickerDialog = false },
+            title = { Text("Change Profile Picture") },
+            text = {
+                Column {
+                    TextButton(
+                        onClick = {
+                            showImagePickerDialog = false
+                            val uri = createTempImageUri(context)
+                            cameraImageUri = uri
+                            cameraLauncher.launch(uri)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Take Photo")
+                    }
+                    TextButton(
+                        onClick = {
+                            showImagePickerDialog = false
+                            pickImageLauncher.launch("image/*")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Choose from Gallery")
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showImagePickerDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Column(
@@ -114,7 +173,7 @@ fun ProfileBodyContent(
                             .clip(CircleShape)
                             .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             .then(
-                                if (isOwn) Modifier.clickable { pickImageLauncher.launch("image/*") }
+                                if (isOwn) Modifier.clickable { showImagePickerDialog = true }
                                 else Modifier
                             )
                     )
@@ -125,7 +184,7 @@ fun ProfileBodyContent(
                         modifier = Modifier
                             .size(100.dp)
                             .then(
-                                if (isOwn) Modifier.clickable { pickImageLauncher.launch("image/*") }
+                                if (isOwn) Modifier.clickable { showImagePickerDialog = true }
                                 else Modifier
                             ),
                         tint = MaterialTheme.colorScheme.primary
@@ -139,7 +198,7 @@ fun ProfileBodyContent(
                             .size(28.dp)
                             .align(Alignment.BottomEnd)
                             .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            .clickable { pickImageLauncher.launch("image/*") },
+                            .clickable { showImagePickerDialog = true },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -274,4 +333,9 @@ private fun StatRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurface
         )
     }
+}
+
+private fun createTempImageUri(context: Context): Uri {
+    val tempFile = File.createTempFile("profile_photo_", ".jpg", context.cacheDir)
+    return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)
 }

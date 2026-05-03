@@ -40,6 +40,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
+import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,6 +115,7 @@ fun GoalDetailScreen(
                             currentUserId = SessionRepository.currentUser.value?.id ?: "",
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
+                            onTaskEdit = { viewModel.onTaskEdit(mission) },
                             onTaskDelete = { viewModel.onTaskDelete(mission.id) }
                         )
                     }
@@ -144,7 +146,18 @@ fun GoalDetailScreen(
             TaskDetailModal(
                 task = selectedMission,
                 parentGoalTitle = goal?.title,
-                onClose = viewModel::onCloseMissionDetail
+                onClose = viewModel::onCloseMissionDetail,
+                onComplete = { viewModel.onTaskComplete(selectedMission.id) },
+                onDelete = { viewModel.onTaskDelete(selectedMission.id) }
+            )
+        }
+
+        val editingTask = uiState.editingTask
+        if (editingTask != null) {
+            EditTaskCard(
+                task = editingTask,
+                onSave = { viewModel.onTaskUpdate(it) },
+                onDismiss = { viewModel.onEditDismissed() }
             )
         }
 
