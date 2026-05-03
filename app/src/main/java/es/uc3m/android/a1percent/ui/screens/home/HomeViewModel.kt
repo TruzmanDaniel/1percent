@@ -224,8 +224,21 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun onStatusFilterToggled() {
+        _uiState.update { current ->
+            val nextStatus = when (current.filters.statusFilter) {
+                HomeStatusFilter.PENDING -> HomeStatusFilter.COMPLETED
+                HomeStatusFilter.COMPLETED -> HomeStatusFilter.ALL
+                HomeStatusFilter.ALL -> HomeStatusFilter.PENDING
+            }
+            val updatedFilters = current.filters.copy(statusFilter = nextStatus)
+            reduceHomeState(current.copy(filters = updatedFilters))
+        }
+    }
+
     fun onFilterClicked(filterKey: HomeFilterKey) {
         when (filterKey) {
+            HomeFilterKey.STATUS -> onStatusFilterToggled()
             HomeFilterKey.MISSIONS -> onMissionsFilterToggled()
             HomeFilterKey.SORT_BY_DATE -> onSortByDateToggled()
         }
@@ -288,12 +301,16 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun applyFiltersAndSort(tasks: List<Task>, filters: HomeFilters): List<Task> {
-        val pendingTasks = tasks.filter { it.status == TaskStatus.PENDING }
+        val statusFiltered = when (filters.statusFilter) {
+            HomeStatusFilter.PENDING -> tasks.filter { it.status == TaskStatus.PENDING }
+            HomeStatusFilter.COMPLETED -> tasks.filter { it.status == TaskStatus.COMPLETED }
+            HomeStatusFilter.ALL -> tasks
+        }
 
         val filtered = if (filters.showOnlyMissions) {
-            pendingTasks.filter { it.goalId != null }
+            statusFiltered.filter { it.goalId != null }
         } else {
-            pendingTasks
+            statusFiltered
         }
 
         return when (filters.sortBy) {
