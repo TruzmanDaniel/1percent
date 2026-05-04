@@ -10,7 +10,6 @@ import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
@@ -99,8 +98,13 @@ class TargetsViewModel : ViewModel() {
     }
 
     private fun applyTaskFiltersAndSort(filters: TaskFilters): List<Task> {
+        val currentUserId = SessionRepository.currentUser.value?.id ?: ""
+
         val statusFiltered = filters.selectedStatus?.let { status ->
-            allTasks.filter { it.status == status }
+            when (status) {
+                TaskStatus.COMPLETED -> allTasks.filter { currentUserId in it.completedBy }
+                TaskStatus.PENDING -> allTasks.filter { currentUserId !in it.completedBy }
+            }
         } ?: allTasks
 
         val filtered = if (filters.quickFilters.isEmpty()) {
@@ -110,7 +114,7 @@ class TargetsViewModel : ViewModel() {
                 filters.quickFilters.all { filter ->
                     when (filter) {
                         TaskQuickFilter.MISSIONS -> task.goalId != null
-                        TaskQuickFilter.SHARED -> true  // TODO: replace with real shared/collaboration source
+                        TaskQuickFilter.SHARED -> task.ownerId != currentUserId
                     }
                 }
             }
@@ -192,30 +196,14 @@ class TargetsViewModel : ViewModel() {
     // ACTIONS
 
     fun onTaskComplete(taskId: String) {
+        val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onFailure { error ->
+            TaskRespository.toggleTaskCompletion(taskId, userId).onFailure { error ->
                 _uiState.update { current ->
                     current.copy(errorMessage = "Error completing task: ${error.message ?: "unknown error"}")
                 }
             }
         }
-    }
-
-    fun onTaskPostpone(taskId: String) {
-        _uiState.update { it.copy(showDatePickerForTask = taskId) }
-    }
-
-    fun onDatePickerResult(taskId: String, epochDay: Long) {
-        viewModelScope.launch {
-            TaskRespository.updateTaskDeadline(taskId, TaskDeadline.OnDate(epochDay)).onFailure { error ->
-                _uiState.update { it.copy(errorMessage = "Error updating deadline: ${error.message}") }
-            }
-        }
-        _uiState.update { it.copy(showDatePickerForTask = null) }
-    }
-
-    fun onDatePickerDismissed() {
-        _uiState.update { it.copy(showDatePickerForTask = null) }
     }
 
     fun onTaskEdit(task: Task) {

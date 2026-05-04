@@ -93,6 +93,25 @@ object TaskRespository {
         }
     }
 
+    suspend fun toggleTaskCompletion(taskId: String, userId: String): Result<Unit> {
+        return try {
+            val snapshot = tasksCollection.document(taskId).get().await()
+            val currentTask = snapshot.toObjectSerializable<Task>()
+                ?: throw IllegalStateException("Task $taskId not found")
+
+            val isCompleted = userId in currentTask.completedBy
+            val update = if (isCompleted) {
+                FieldValue.arrayRemove(userId)
+            } else {
+                FieldValue.arrayUnion(userId)
+            }
+            tasksCollection.document(taskId).update("completedBy", update).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun saveTaskBatch(userId: String, tasks: List<Task>): Result<Unit> {
         return try {
             val batch = db.batch()

@@ -35,7 +35,8 @@ data class Task(
     val weekNumber: Int? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val ownerId: String = "",
-    val sharedWith: List<String> = emptyList()
+    val sharedWith: List<String> = emptyList(),
+    val completedBy: List<String> = emptyList()
 ) {
 
     init {

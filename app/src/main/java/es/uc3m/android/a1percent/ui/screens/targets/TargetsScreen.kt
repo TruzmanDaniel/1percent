@@ -19,9 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarToday
@@ -32,15 +29,12 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Loop
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -49,6 +43,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -56,14 +51,12 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import coil.compose.AsyncImage
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -80,6 +73,8 @@ import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
@@ -115,7 +110,6 @@ fun TargetsScreen(
             onTaskClicked = viewModel::onTaskClicked,
             onCloseTaskDetail = viewModel::onCloseTaskDetail,
             onTaskComplete = viewModel::onTaskComplete,
-            onTaskPostpone = viewModel::onTaskPostpone,
             onTaskDelete = viewModel::onTaskDelete,
             onTaskEdit = viewModel::onTaskEdit,
             onTaskShare = viewModel::onShareTaskRequested,
@@ -134,25 +128,6 @@ fun TargetsScreen(
             val message = uiState.snackbarMessage ?: return@LaunchedEffect
             snackbarHostState.showSnackbar(message)
             viewModel.clearSnackbarMessage()
-        }
-
-        // DatePicker dialog for postpone
-        val showDatePicker = uiState.showDatePickerForTask
-        if (showDatePicker != null) {
-            val datePickerState = rememberDatePickerState()
-            DatePickerDialog(
-                onDismissRequest = { viewModel.onDatePickerDismissed() },
-                confirmButton = {
-                    TextButton(onClick = {
-                        datePickerState.selectedDateMillis?.let { millis ->
-                            viewModel.onDatePickerResult(showDatePicker, millis / 86_400_000L)
-                        }
-                    }) { Text("OK") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.onDatePickerDismissed() }) { Text("Cancel") }
-                }
-            ) { DatePicker(state = datePickerState) }
         }
 
         // Edit task dialog
@@ -207,7 +182,6 @@ private fun TargetsBodyContent(
     onTaskClicked: (Task) -> Unit,
     onCloseTaskDetail: () -> Unit,
     onTaskComplete: (String) -> Unit,
-    onTaskPostpone: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
     onTaskEdit: (Task) -> Unit,
     onTaskShare: (Task) -> Unit,
@@ -237,7 +211,6 @@ private fun TargetsBodyContent(
                 onTaskFilterClicked = onTaskFilterClicked,
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
-                onTaskPostpone = onTaskPostpone,
                 onTaskDelete = onTaskDelete,
                 onTaskEdit = onTaskEdit,
                 onTaskShare = onTaskShare
@@ -257,16 +230,9 @@ private fun TargetsBodyContent(
             TaskDetailModal(
                 task = selectedTask,
                 parentGoalTitle = selectedTask.goalId?.let { uiState.goalTitleById[it] },
-                sharedWithProfiles = selectedTask.sharedWith
-                    .filter { it != uiState.currentUserId }
-                    .mapNotNull { uiState.sharedUserProfilesById[it] },
                 onClose = onCloseTaskDetail,
                 onComplete = { onTaskComplete(selectedTask.id) },
-                onPostpone = { onTaskPostpone(selectedTask.id) },
-                onDelete = { onTaskDelete(selectedTask.id) },
-                onShare = if (selectedTask.goalId == null) {
-                    { onTaskShare(selectedTask) }
-                } else null
+                onDelete = { onTaskDelete(selectedTask.id) }
             )
         }
     }
@@ -279,7 +245,6 @@ private fun TasksTabContent(
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
-    onTaskPostpone: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
     onTaskEdit: (Task) -> Unit,
     onTaskShare: (Task) -> Unit
@@ -334,9 +299,10 @@ private fun TasksTabContent(
             TaskRowWithActions(
                 task = task,
                 parentGoalTitle = task.goalId?.let { uiState.goalTitleById[it] },
+                friends = uiState.friends,
+                currentUserId = SessionRepository.currentUser.value?.id ?: "",
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
-                onTaskPostpone = { onTaskPostpone(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) },
                 onTaskEdit = { onTaskEdit(task) },
                 onTaskShare = { onTaskShare(task) }
@@ -394,9 +360,10 @@ private fun GoalsTabContent(
 internal fun TaskRowWithActions(
     task: Task,
     parentGoalTitle: String? = null,
+    friends: List<UserProfile> = emptyList(),
+    currentUserId: String = "",
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
-    onTaskPostpone: () -> Unit,
     onTaskDelete: () -> Unit,
     onTaskEdit: () -> Unit = {},
     onTaskShare: () -> Unit = {}
@@ -472,20 +439,46 @@ internal fun TaskRowWithActions(
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                val statusColor = when (task.status) {
-                    TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
-                    TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                val isCompletedByMe = currentUserId in task.completedBy
+                val statusColor = if (isCompletedByMe) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.tertiary
                 }
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = statusColor.copy(alpha = 0.15f)
                 ) {
                     Text(
-                        text = task.status.displayName,
+                        text = if (isCompletedByMe) "Completed" else "Pending",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Medium,
                         color = statusColor,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            CollaboratorAvatars(
+                sharedWith = task.sharedWith,
+                currentUserId = currentUserId,
+                friends = friends
+            )
+
+            if (task.completedBy.isNotEmpty() && task.sharedWith.size > 1) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "Completed by",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    CollaboratorAvatars(
+                        sharedWith = task.completedBy,
+                        currentUserId = "",
+                        friends = friends
                     )
                 }
             }
@@ -502,18 +495,11 @@ internal fun TaskRowWithActions(
                     label = { Icon(Icons.Default.Check, contentDescription = "Complete", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
-                if (task.status != TaskStatus.COMPLETED) {
-                    AssistChip(
-                        onClick = onTaskPostpone,
-                        label = { Icon(Icons.Default.Schedule, contentDescription = "Postpone", modifier = Modifier.size(16.dp)) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    AssistChip(
-                        onClick = onTaskEdit,
-                        label = { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp)) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                AssistChip(
+                    onClick = onTaskEdit,
+                    label = { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp)) },
+                    modifier = Modifier.weight(1f)
+                )
                 if (task.goalId == null) {
                     AssistChip(
                         onClick = onTaskShare,
@@ -582,12 +568,9 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Uni
 internal fun TaskDetailModal(
     task: Task,
     parentGoalTitle: String?,
-    sharedWithProfiles: List<UserProfile> = emptyList(),
     onClose: () -> Unit,
     onComplete: () -> Unit = {},
-    onPostpone: () -> Unit = {},
-    onDelete: () -> Unit = {},
-    onShare: (() -> Unit)? = null
+    onDelete: () -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -810,62 +793,35 @@ internal fun TaskDetailModal(
                 )
             }
 
-            if (sharedWithProfiles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(20.dp))
-                SharedWithSection(profiles = sharedWithProfiles)
-            }
-
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
             Spacer(modifier = Modifier.height(16.dp))
 
             // ── ACTION BUTTONS ───────────────────────────────────────
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilledTonalButton(
                     onClick = { onComplete(); onClose() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (task.status == TaskStatus.COMPLETED) "Mark as Pending" else "Mark as Complete",
-                        style = MaterialTheme.typography.labelLarge
-                    )
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Complete")
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (task.status != TaskStatus.COMPLETED) {
-                        ModalActionButton(
-                            icon = Icons.Default.Schedule,
-                            label = "Postpone",
-                            onClick = { onClose(); onPostpone() },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    if (task.goalId == null && onShare != null) {
-                        ModalActionButton(
-                            icon = Icons.Default.Share,
-                            label = "Share",
-                            onClick = { onShare(); onClose() },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    ModalActionButton(
-                        icon = Icons.Default.Delete,
-                        label = "Delete",
-                        onClick = { onDelete(); onClose() },
-                        modifier = Modifier.weight(1f),
-                        tint = MaterialTheme.colorScheme.error
+                OutlinedButton(
+                    onClick = { onDelete(); onClose() },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
                     )
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Delete")
                 }
             }
         }
@@ -951,122 +907,6 @@ private fun DetailRow(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
-        }
-    }
-}
-
-@Composable
-private fun ModalActionButton(
-    icon: ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
-) {
-    Card(
-        modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = tint,
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = tint
-            )
-        }
-    }
-}
-
-@Composable
-private fun SharedWithSection(profiles: List<UserProfile>) {
-    var expanded by remember { mutableStateOf(false) }
-    val maxVisible = 3
-    val visibleProfiles = if (expanded) profiles else profiles.take(maxVisible)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.People,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "Shared with ${profiles.size}",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (profiles.size > maxVisible) {
-                TextButton(onClick = { expanded = !expanded }) {
-                    Text(if (expanded) "Show less" else "Show all")
-                }
-            }
-        }
-
-        visibleProfiles.forEach { profile ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.secondaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (!profile.avatarUrl.isNullOrEmpty()) {
-                        AsyncImage(
-                            model = profile.avatarUrl,
-                            contentDescription = profile.name,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                        )
-                    } else {
-                        Text(
-                            text = profile.name.take(1).uppercase(),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-                }
-                Text(
-                    text = profile.name,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
         }
     }
 }
