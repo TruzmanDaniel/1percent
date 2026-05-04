@@ -39,9 +39,10 @@ import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.UserProfile
-import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
+import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
+import es.uc3m.android.a1percent.ui.components.SharedWithDropdown
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,7 +96,10 @@ fun GoalDetailScreen(
                     GoalHeaderCard(
                         goal = goal,
                         friends = uiState.friends,
-                        currentUserId = SessionRepository.currentUser.value?.id ?: ""
+                        currentUserId = SessionRepository.currentUser.value?.id ?: "",
+                        onProfileClicked = { userId ->
+                            navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
+                        }
                     )
                 }
 
@@ -142,13 +146,20 @@ fun GoalDetailScreen(
         }
 
         val selectedMission = uiState.selectedMission
-        if (selectedMission != null) {
+        if (selectedMission != null && goal != null) {
             TaskDetailModal(
                 task = selectedMission,
-                parentGoalTitle = goal?.title,
+                parentGoalTitle = goal.title,
+                sharedProfiles = goal.sharedWith.mapNotNull { userId ->
+                    uiState.friends.find { it.id == userId }
+                }.associateBy { it.id },
+                currentUserId = SessionRepository.currentUser.value?.id ?: "",
                 onClose = viewModel::onCloseMissionDetail,
                 onComplete = { viewModel.onTaskComplete(selectedMission.id) },
-                onDelete = { viewModel.onTaskDelete(selectedMission.id) }
+                onDelete = { viewModel.onTaskDelete(selectedMission.id) },
+                onProfileClicked = { userId ->
+                    navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
+                }
             )
         }
 
@@ -176,7 +187,8 @@ fun GoalDetailScreen(
 private fun GoalHeaderCard(
     goal: Goal,
     friends: List<UserProfile>,
-    currentUserId: String
+    currentUserId: String,
+    onProfileClicked: (String) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -263,11 +275,12 @@ private fun GoalHeaderCard(
                 }
             }
 
-            CollaboratorAvatars(
-                sharedWith = goal.sharedWith,
+            SharedWithDropdown(
+                sharedProfiles = goal.sharedWith.mapNotNull { userId ->
+                    friends.find { it.id == userId }
+                },
                 currentUserId = currentUserId,
-                friends = friends,
-                avatarSize = 28
+                onProfileClicked = onProfileClicked
             )
         }
     }

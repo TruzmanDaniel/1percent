@@ -54,9 +54,8 @@ import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
-import es.uc3m.android.a1percent.data.model.UserProfile
-import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
+import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
 import es.uc3m.android.a1percent.ui.screens.targets.TaskDetailModal
 import java.text.SimpleDateFormat
@@ -110,7 +109,12 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             parentGoalTitle = uiState.selectedTask!!.goalId?.let { goalId ->
                 uiState.goals.find { it.id == goalId }?.title
             },
-            onClose = { viewModel.dismissTaskDetail() }
+            sharedProfiles = uiState.sharedUserProfilesById,
+            currentUserId = uiState.currentUserId,
+            onClose = { viewModel.dismissTaskDetail() },
+            onProfileClicked = { userId ->
+                navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
+            }
         )
     }
 

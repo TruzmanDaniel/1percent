@@ -34,24 +34,39 @@ object TaskCategoryRepository {
                 _customCategories.value = emptyList()
 
                 if (user != null) {
-                    android.util.Log.d("TaskCategoryRepo", "Registering listener for user categories: ${user.id}")
-                    activeListener = db.collection("users")
-                        .document(user.id)
-                        .collection("categories")
-                        .addSnapshotListener { snapshot, error ->
-                            if (error != null) {
-                                android.util.Log.e("TaskCategoryRepo", "❌ Error in listener: ${error.message}", error)
-                                return@addSnapshotListener
-                            }
-                            
-                            if (snapshot != null) {
-                                val categories = snapshot.documents.mapNotNull { it.getString("name") }
-                                android.util.Log.d("TaskCategoryRepo", "✅ Updated categories: $categories")
-                                _customCategories.value = categories
-                            }
-                        }
+                    registerCategoriesListener(user.id)
                 }
             }
+        }
+    }
+
+    private fun registerCategoriesListener(userId: String) {
+        android.util.Log.d("TaskCategoryRepo", "Registering listener for user categories: $userId")
+        activeListener = db.collection("users")
+            .document(userId)
+            .collection("categories")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("TaskCategoryRepo", "❌ Error in listener: ${error.message}", error)
+                    return@addSnapshotListener
+                }
+                
+                if (snapshot != null) {
+                    val categories = snapshot.documents.mapNotNull { it.getString("name") }
+                    android.util.Log.d("TaskCategoryRepo", "✅ Updated categories: $categories")
+                    _customCategories.value = categories
+                }
+            }
+    }
+
+    /**
+     * Ensure the listener is registered for the current user
+     * Useful to call after login to ensure categories are loaded
+     */
+    fun ensureListenerRegistered() {
+        val currentUserId = SessionRepository.currentUser.value?.id
+        if (currentUserId != null && activeListener == null) {
+            registerCategoriesListener(currentUserId)
         }
     }
 

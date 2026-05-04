@@ -49,6 +49,10 @@ class CreateTaskViewModel : ViewModel() {
     }
 
     fun onCategoryDropdownExpandedChange(expanded: Boolean) {  // 'expanded' is the new state of the dropdown (compose logic when calling 'onExpandedChange')
+        // Ensure categories listener is registered when dropdown opens
+        if (expanded) {
+            TaskCategoryRepository.ensureListenerRegistered()
+        }
         _uiState.update { it.copy(isCategoryDropdownExpanded = expanded) }
     }
 

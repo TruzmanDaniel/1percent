@@ -74,11 +74,12 @@ import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
+import es.uc3m.android.a1percent.ui.components.SharedWithDropdown
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
-import es.uc3m.android.a1percent.ui.components.taskDeadlineLabel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -230,9 +231,14 @@ private fun TargetsBodyContent(
             TaskDetailModal(
                 task = selectedTask,
                 parentGoalTitle = selectedTask.goalId?.let { uiState.goalTitleById[it] },
+                sharedProfiles = uiState.sharedUserProfilesById,
+                currentUserId = uiState.currentUserId,
                 onClose = onCloseTaskDetail,
                 onComplete = { onTaskComplete(selectedTask.id) },
-                onDelete = { onTaskDelete(selectedTask.id) }
+                onDelete = { onTaskDelete(selectedTask.id) },
+                onProfileClicked = { userId ->
+                    navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
+                }
             )
         }
     }
@@ -344,6 +350,8 @@ private fun GoalsTabContent(
         items(items = uiState.goals, key = { it.id }) { goal ->
             GoalCompactItem(
                 goal = goal,
+                friends = uiState.friends,
+                currentUserId = uiState.currentUserId,
                 onClick = { onGoalClicked(goal.id) },
                 onDelete = { onGoalDelete(goal.id) }
             )
@@ -518,7 +526,13 @@ internal fun TaskRowWithActions(
 }
 
 @Composable
-private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Unit = {}) {
+private fun GoalCompactItem(
+    goal: Goal,
+    friends: List<UserProfile>,
+    currentUserId: String,
+    onClick: () -> Unit,
+    onDelete: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -547,6 +561,12 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Uni
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
             )
+            CollaboratorAvatars(
+                sharedWith = goal.sharedWith,
+                currentUserId = currentUserId,
+                friends = friends,
+                avatarSize = 24
+            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -568,9 +588,12 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Uni
 internal fun TaskDetailModal(
     task: Task,
     parentGoalTitle: String?,
+    sharedProfiles: Map<String, UserProfile> = emptyMap(),
+    currentUserId: String = "",
     onClose: () -> Unit,
     onComplete: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onProfileClicked: (String) -> Unit = {}
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -791,6 +814,24 @@ internal fun TaskDetailModal(
                     label = "Category",
                     value = task.customCategoryName ?: task.category.displayName
                 )
+
+                // Shared with section (only if task is shared)
+                val otherSharedUsers = task.sharedWith.filter { it != currentUserId }
+                if (otherSharedUsers.isNotEmpty()) {
+                    val sharedUsersList = otherSharedUsers.mapNotNull { userId ->
+                        sharedProfiles[userId]
+                    }
+                    if (sharedUsersList.isNotEmpty()) {
+                        SharedWithDropdown(
+                            sharedProfiles = sharedUsersList,
+                            currentUserId = currentUserId,
+                            onProfileClicked = { userId ->
+                                onClose()
+                                onProfileClicked(userId)
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))

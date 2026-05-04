@@ -159,7 +159,13 @@ fun EditTaskCard(
                         // Category dropdown
                         ExposedDropdownMenuBox(
                             expanded = isCategoryDropdownExpanded,
-                            onExpandedChange = { isCategoryDropdownExpanded = it }
+                            onExpandedChange = { expanded ->
+                                // Ensure categories listener is registered when dropdown opens
+                                if (expanded) {
+                                    TaskCategoryRepository.ensureListenerRegistered()
+                                }
+                                isCategoryDropdownExpanded = expanded
+                            }
                         ) {
                             OutlinedTextField(
                                 value = categoryLabel,
