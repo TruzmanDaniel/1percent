@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.AccountCircle
@@ -29,11 +30,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.navigation.AppScreens
+import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 
 private enum class SocialSection(val label: String) {
-    COMMUNITY("Community"),
+    // COMMUNITY("Community"),
     FRIENDS("Friends"),
     GROUPS("Groups")
 }
@@ -41,13 +44,13 @@ private enum class SocialSection(val label: String) {
 @Composable
 fun SocialScreen(
     navController: NavController,
-    initialSection: String = "community",
+    initialSection: String = "friends",
     viewModel: SocialViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val startSection = SocialSection.entries.firstOrNull {
         it.name.equals(initialSection, ignoreCase = true)
-    } ?: SocialSection.COMMUNITY
+    } ?: SocialSection.FRIENDS
     var selectedSection by rememberSaveable(initialSection) { mutableStateOf(startSection) }
 
     Column(
@@ -63,22 +66,18 @@ fun SocialScreen(
 
         when (selectedSection) {
             SocialSection.FRIENDS -> FriendsSection(
+                currentUser = uiState.currentUser,
                 friends = uiState.friends,
                 pendingRequests = uiState.pendingRequests,
+                searchQuery = uiState.searchQuery,
+                searchResults = uiState.searchResults,
+                onSearchQueryChange = viewModel::onSearchQueryChange,
+                onSendFriendRequest = viewModel::sendFriendRequest,
                 onProfileClick = { friendId ->
                     navController.navigate(AppScreens.ProfileScreen.route + "/$friendId")
                 },
                 onAcceptRequest = viewModel::acceptRequest,
                 onRejectRequest = viewModel::rejectRequest
-            )
-
-            SocialSection.COMMUNITY -> CommunitySection(
-                uiState = uiState,
-                onSearchQueryChange = viewModel::onSearchQueryChange,
-                onProfileClick = { userId ->
-                    navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
-                },
-                onSendFriendRequest = viewModel::sendFriendRequest
             )
 
             SocialSection.GROUPS -> GroupsSection()
@@ -108,8 +107,13 @@ private fun SectionSelector(
 
 @Composable
 private fun FriendsSection(
+    currentUser: UserProfile?,
     friends: List<UserProfile>,
     pendingRequests: List<UserProfile>,
+    searchQuery: String,
+    searchResults: List<UserProfile>,
+    onSearchQueryChange: (String) -> Unit,
+    onSendFriendRequest: (String) -> Unit,
     onProfileClick: (String) -> Unit,
     onAcceptRequest: (String) -> Unit,
     onRejectRequest: (String) -> Unit
@@ -118,6 +122,113 @@ private fun FriendsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxSize()
     ) {
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = { Text("Find people by name...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                shape = MaterialTheme.shapes.large,
+                singleLine = true
+            )
+        }
+
+        if (searchQuery.length < 2) {
+            item {
+                Text(
+                    text = "Type at least 2 characters to search users.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        } else if (searchResults.isEmpty()) {
+            item {
+                Text(
+                    text = "No users found for \"$searchQuery\".",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        } else {
+            item {
+                Text(
+                    text = "Search results (${searchResults.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+            items(searchResults) { user ->
+                val isAlreadyFriend = friends.any { it.id == user.id }
+                val currentUserId = currentUser?.id.orEmpty()
+                val relationship = if (currentUserId.isNotEmpty()) {
+                    SocialRepository.getRelationshipBetween(currentUserId, user.id)
+                } else null
+                val isIncomingRequest = relationship?.status == RelationshipStatus.PENDING && relationship.userBId == currentUserId && relationship.userAId == user.id
+                val isOutgoingRequest = relationship?.status == RelationshipStatus.PENDING && relationship.userAId == currentUserId && relationship.userBId == user.id
+                UserListItem(
+                    user = user,
+                    onProfileClick = { onProfileClick(user.id) },
+                    trailingIcon = {
+                        if (isAlreadyFriend) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Already friends",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        } else if (isIncomingRequest) {
+                            Row {
+                                IconButton(onClick = { onAcceptRequest(user.id) }) {
+                                    Icon(Icons.Default.Check, contentDescription = "Accept request", tint = Color(0xFF4CAF50))
+                                }
+                                IconButton(onClick = { onRejectRequest(user.id) }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Reject request", tint = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        } else if (isOutgoingRequest) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.height(36.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Pending",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        } else {
+                            IconButton(onClick = { onSendFriendRequest(user.id) }) {
+                                Icon(
+                                    Icons.Default.PersonAdd,
+                                    contentDescription = "Send friend request",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                )
+            }
+        }
+
         if (pendingRequests.isNotEmpty()) {
             item {
                 Text(
@@ -157,7 +268,7 @@ private fun FriendsSection(
         if (friends.isEmpty() && pendingRequests.isEmpty()) {
             item {
                 Text(
-                    text = "You don't have friends yet. Go to Community to discover people.",
+                    text = "You don't have friends yet. Search users to discover people.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
@@ -173,72 +284,6 @@ private fun FriendsSection(
     }
 }
 
-@Composable
-private fun CommunitySection(
-    uiState: SocialUiState,
-    onSearchQueryChange: (String) -> Unit,
-    onProfileClick: (String) -> Unit,
-    onSendFriendRequest: (String) -> Unit
-) {
-    Text(
-        text = "Community",
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-
-    OutlinedTextField(
-        value = uiState.searchQuery,
-        onValueChange = onSearchQueryChange,
-        placeholder = { Text("Find people by name...") },
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 12.dp),
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        shape = MaterialTheme.shapes.large,
-        singleLine = true
-    )
-
-    if (uiState.searchQuery.length < 2) {
-        Text(
-            text = "Type at least 2 characters to search users.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-        return
-    }
-
-    if (uiState.searchResults.isEmpty()) {
-        Text(
-            text = "No users found for \"${uiState.searchQuery}\".",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-        return
-    }
-
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(uiState.searchResults) { user ->
-            UserListItem(
-                user = user,
-                onProfileClick = { onProfileClick(user.id) },
-                trailingIcon = {
-                    IconButton(onClick = { onSendFriendRequest(user.id) }) {
-                        Icon(
-                            Icons.Default.PersonAdd,
-                            contentDescription = "Add Friend",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            )
-        }
-    }
-}
 
 @Composable
 private fun GroupsSection() {
@@ -277,7 +322,7 @@ private fun GroupsSection() {
 @Composable
 fun UserListItem(
     user: UserProfile,
-    onProfileClick: () -> Unit,
+    onProfileClick: (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null
 ) {
     val progress = if (user.xpToNextLevel > 0) user.currentXp.toFloat() / user.xpToNextLevel else 0f
@@ -285,7 +330,7 @@ fun UserListItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onProfileClick() },
+            .then(if (onProfileClick != null) Modifier.clickable { onProfileClick() } else Modifier),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(

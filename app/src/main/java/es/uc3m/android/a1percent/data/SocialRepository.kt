@@ -75,6 +75,13 @@ object SocialRepository {
         }
     }
 
+    fun getRelationshipBetween(user1Id: String, user2Id: String): UserRelationship? {
+        return _friendshipTable.value.find { rel ->
+            (rel.userAId == user1Id && rel.userBId == user2Id) ||
+            (rel.userAId == user2Id && rel.userBId == user1Id)
+        }
+    }
+
     private fun hasPendingRequest(user1Id: String, user2Id: String): Boolean {
         return _friendshipTable.value.any { rel ->
             rel.status == RelationshipStatus.PENDING &&

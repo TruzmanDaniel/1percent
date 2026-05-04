@@ -10,6 +10,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +63,8 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
             uiState = uiState,
             onPickImage = { uri -> viewModel.uploadProfilePicture(uri) },
             onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) },
+            onAcceptRequest = { viewModel.onAcceptRequest(uiState.user?.id ?: return@ProfileBodyContent) },
+            onRejectRequest = { viewModel.onRejectRequest(uiState.user?.id ?: return@ProfileBodyContent) },
             modifier = innerPadding
         )
     }
@@ -71,6 +76,8 @@ fun ProfileBodyContent(
     uiState: ProfileUiState,
     onPickImage: (Uri) -> Unit = {},
     onFriendAction: () -> Unit = {},
+    onAcceptRequest: () -> Unit = {},
+    onRejectRequest: () -> Unit = {},
     modifier: PaddingValues = PaddingValues(0.dp)
 ) {
     val user = uiState.user
@@ -256,29 +263,47 @@ fun ProfileBodyContent(
         }
 
         if (!isOwn) {
-            val relStatus = uiState.relationshipStatus
-            when (relStatus) {
-                null -> Button(
+            val relationship = uiState.relationship
+            val isIncomingRequest = relationship?.status == RelationshipStatus.PENDING && relationship.userBId == uiState.currentUserId
+            when {
+                isIncomingRequest -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = onAcceptRequest,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = "Accept request", tint = Color(0xFF4CAF50))
+                    }
+                    IconButton(
+                        onClick = onRejectRequest,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Reject request", tint = MaterialTheme.colorScheme.error)
+                    }
+                }
+                relationship == null -> Button(
                     onClick = onFriendAction,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Add Friend")
                 }
-                RelationshipStatus.PENDING -> OutlinedButton(
+                relationship.status == RelationshipStatus.PENDING -> OutlinedButton(
                     onClick = {},
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false
                 ) {
                     Text("Request Pending")
                 }
-                RelationshipStatus.FRIENDS -> OutlinedButton(
+                relationship.status == RelationshipStatus.FRIENDS -> OutlinedButton(
                     onClick = {},
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false
                 ) {
                     Text("Friends")
                 }
-                RelationshipStatus.BLOCKED -> {}
+                else -> {}
             }
         }
 
@@ -309,7 +334,7 @@ fun ProfileBodyContent(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Back to Community")
+                Text("Back")
             }
         }
     }

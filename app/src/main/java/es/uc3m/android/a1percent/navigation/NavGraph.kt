@@ -224,10 +224,10 @@ fun NavGraph() {
                     route = AppScreens.SocialScreen.route + "?section={section}",
                     arguments = listOf(navArgument("section") {
                         type = NavType.StringType
-                        defaultValue = "community"
+                        defaultValue = "friends"
                     })
                 ) { backStackEntry ->
-                    val section = backStackEntry.arguments?.getString("section") ?: "community"
+                    val section = backStackEntry.arguments?.getString("section") ?: "friends"
                     SocialScreen(navController, initialSection = section)
                 }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
