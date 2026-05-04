@@ -21,6 +21,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -30,8 +33,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,12 +50,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.firebase.auth.FirebaseAuth
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.enums.Category
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,7 +71,8 @@ fun EditTaskCard(
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val userId = SessionRepository.currentUser.collectAsStateWithLifecycle().value?.id
+    val userId = FirebaseAuth.getInstance().currentUser?.uid 
+        ?: SessionRepository.currentUser.collectAsStateWithLifecycle().value?.id
 
     val customCategories by TaskCategoryRepository.customCategories.collectAsStateWithLifecycle()
     val predefinedCategories = TaskCategoryRepository.predefinedCategories
@@ -73,6 +85,11 @@ fun EditTaskCard(
     var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
     var isCreateCategoryDialogVisible by remember { mutableStateOf(false) }
     var newCategoryName by remember { mutableStateOf("") }
+
+    // Deadline state
+    var selectedDeadline by remember { mutableStateOf(task.deadline) }
+    var isDatePickerVisible by remember { mutableStateOf(false) }
+    var showDeadlineOptions by remember { mutableStateOf(false) }
 
     val categoryLabel = selectedCustomCategoryName ?: selectedCategory.displayName
 
@@ -222,6 +239,41 @@ fun EditTaskCard(
                             }
                         }
 
+                        // Change Deadline Section
+                        Button(
+                            onClick = { showDeadlineOptions = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Change Deadline")
+                        }
+
+                        // Display current deadline
+                        if (selectedDeadline != null) {
+                            val deadlineText = when (selectedDeadline) {
+                                is TaskDeadline.ThisWeek -> "Deadline: This Week"
+                                is TaskDeadline.OnDate -> {
+                                    val epochDay = (selectedDeadline as TaskDeadline.OnDate).epochDay
+                                    val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
+                                    val formattedDate = formatter.format(Date(epochDay * 86_400_000L))
+                                    "Deadline: $formattedDate"
+                                }
+                                else -> "No Deadline"
+                            }
+                            Text(
+                                text = deadlineText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "No Deadline",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -259,7 +311,8 @@ fun EditTaskCard(
                                         title = title,
                                         description = description,
                                         category = selectedCategory,
-                                        customCategoryName = selectedCustomCategoryName
+                                        customCategoryName = selectedCustomCategoryName,
+                                        deadline = selectedDeadline
                                     )
                                 )
                             },
@@ -271,6 +324,117 @@ fun EditTaskCard(
                     }
                 }
             }
+        }
+    }
+
+    // Deadline Options Dialog
+    if (showDeadlineOptions) {
+        AlertDialog(
+            onDismissRequest = { showDeadlineOptions = false },
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+            title = { Text("Change Deadline") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    // No Deadline
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedDeadline = null
+                                showDeadlineOptions = false
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedDeadline == null,
+                            onClick = {
+                                selectedDeadline = null
+                                showDeadlineOptions = false
+                            }
+                        )
+                        Text("No Deadline", modifier = Modifier.padding(start = 8.dp))
+                    }
+
+                    // This Week
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedDeadline = TaskDeadline.ThisWeek
+                                showDeadlineOptions = false
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedDeadline is TaskDeadline.ThisWeek,
+                            onClick = {
+                                selectedDeadline = TaskDeadline.ThisWeek
+                                showDeadlineOptions = false
+                            }
+                        )
+                        Text("This Week", modifier = Modifier.padding(start = 8.dp))
+                    }
+
+                    // Specific Date
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { isDatePickerVisible = true },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = selectedDeadline is TaskDeadline.OnDate,
+                            onClick = { isDatePickerVisible = true }
+                        )
+                        Text("Specific Date", modifier = Modifier.padding(start = 8.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDeadlineOptions = false }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
+
+    // Date Picker Dialog
+    if (isDatePickerVisible) {
+        val millisPerDay = 86_400_000L
+        val initialMillis = when (val deadline = selectedDeadline) {
+            is TaskDeadline.OnDate -> deadline.epochDay * millisPerDay
+            else -> System.currentTimeMillis()
+        }
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+
+        DatePickerDialog(
+            onDismissRequest = { isDatePickerVisible = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selectedMillis = datePickerState.selectedDateMillis
+                        if (selectedMillis != null) {
+                            selectedDeadline = TaskDeadline.OnDate(epochDay = selectedMillis / millisPerDay)
+                            isDatePickerVisible = false
+                            showDeadlineOptions = false
+                        }
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { isDatePickerVisible = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                )
+            )
         }
     }
 

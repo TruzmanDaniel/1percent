@@ -28,18 +28,26 @@ object TaskCategoryRepository {
     init {
         scope.launch {
             SessionRepository.currentUser.collect { user ->
+                android.util.Log.d("TaskCategoryRepo", "User changed: ${user?.id}")
                 activeListener?.remove()
                 activeListener = null
                 _customCategories.value = emptyList()
 
                 if (user != null) {
+                    android.util.Log.d("TaskCategoryRepo", "Registering listener for user categories: ${user.id}")
                     activeListener = db.collection("users")
                         .document(user.id)
                         .collection("categories")
-                        .addSnapshotListener { snapshot, _ ->
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                android.util.Log.e("TaskCategoryRepo", "❌ Error in listener: ${error.message}", error)
+                                return@addSnapshotListener
+                            }
+                            
                             if (snapshot != null) {
-                                _customCategories.value =
-                                    snapshot.documents.mapNotNull { it.getString("name") }
+                                val categories = snapshot.documents.mapNotNull { it.getString("name") }
+                                android.util.Log.d("TaskCategoryRepo", "✅ Updated categories: $categories")
+                                _customCategories.value = categories
                             }
                         }
                 }
@@ -55,11 +63,16 @@ object TaskCategoryRepository {
         if (existing != null) return existing
 
         return try {
-            db.collection("users").document(userId).collection("categories")
+            android.util.Log.d("TaskCategoryRepo", "Trying to add custom category: $normalized for user: $userId")
+            
+            val docRef = db.collection("users").document(userId).collection("categories")
                 .add(mapOf("name" to normalized))
                 .await()
+            
+            android.util.Log.d("TaskCategoryRepo", "✅ Successfully added custom category: ${docRef.id}")
             normalized
         } catch (e: Exception) {
+            android.util.Log.e("TaskCategoryRepo", "❌ Error adding custom category: ${e.message}", e)
             null
         }
     }

@@ -88,16 +88,24 @@ class CreateTaskViewModel : ViewModel() {
 
     fun onCreateCategoryConfirmed() {
         val rawName = _uiState.value.newCategoryName
-        val userId = SessionRepository.currentUser.value?.id
+        val userId = FirebaseAuth.getInstance().currentUser?.uid 
+            ?: SessionRepository.currentUser.value?.id
+
+        android.util.Log.d("CreateTaskVM", "onCreateCategoryConfirmed called with rawName: $rawName, userId: $userId")
 
         if (userId == null) {
+            android.util.Log.e("CreateTaskVM", "❌ userId is null, cannot add custom category")
             _uiState.update { it.copy(isCreateCategoryDialogVisible = false, newCategoryName = "") }
             return
         }
 
         viewModelScope.launch {
+            android.util.Log.d("CreateTaskVM", "Calling addCustomCategory...")
             val savedName = TaskCategoryRepository.addCustomCategory(userId, rawName)
+            android.util.Log.d("CreateTaskVM", "addCustomCategory answer: $savedName")
+            
             if (savedName != null) {
+                android.util.Log.d("CreateTaskVM", "✅ Saved custom category: $savedName")
                 _uiState.update {
                     it.copy(
                         selectedCategory = Category.PERSONAL,
@@ -107,6 +115,7 @@ class CreateTaskViewModel : ViewModel() {
                     )
                 }
             } else {
+                android.util.Log.e("CreateTaskVM", "❌ addCustomCategory returned null")
                 _uiState.update {
                     it.copy(isCreateCategoryDialogVisible = false, newCategoryName = "")
                 }
@@ -115,7 +124,10 @@ class CreateTaskViewModel : ViewModel() {
     }
 
     fun onDeleteCustomCategory(name: String) {
-        val userId = SessionRepository.currentUser.value?.id ?: return
+        val userId = FirebaseAuth.getInstance().currentUser?.uid 
+            ?: SessionRepository.currentUser.value?.id
+        if (userId == null) return
+        
         viewModelScope.launch {
             TaskCategoryRepository.deleteCustomCategory(userId, name)
             if (_uiState.value.selectedCustomCategoryName == name) {
