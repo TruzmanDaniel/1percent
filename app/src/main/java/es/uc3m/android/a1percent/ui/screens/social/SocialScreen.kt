@@ -143,7 +143,7 @@ private fun FriendsSection(
                     }
                 )
             }
-            item { Divider(modifier = Modifier.padding(vertical = 8.dp)) }
+            item { HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp)) }
         }
 
         item {

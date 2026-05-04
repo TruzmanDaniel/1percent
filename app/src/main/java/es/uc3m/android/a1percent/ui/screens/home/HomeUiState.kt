@@ -25,5 +25,7 @@ data class HomeUiState(
     val showShareSheet: Boolean = false,
     val shareTargetTask: Task? = null,
     val friends: List<UserProfile> = emptyList(),
-    val snackbarMessage: String? = null
+    val snackbarMessage: String? = null,
+    val sharedUserProfilesById: Map<String, UserProfile> = emptyMap(),
+    val currentUserId: String = ""
 )

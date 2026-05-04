@@ -19,6 +19,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CalendarToday
@@ -29,11 +32,11 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Loop
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
@@ -46,7 +49,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -61,6 +63,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import coil.compose.AsyncImage
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -254,10 +257,16 @@ private fun TargetsBodyContent(
             TaskDetailModal(
                 task = selectedTask,
                 parentGoalTitle = selectedTask.goalId?.let { uiState.goalTitleById[it] },
+                sharedWithProfiles = selectedTask.sharedWith
+                    .filter { it != uiState.currentUserId }
+                    .mapNotNull { uiState.sharedUserProfilesById[it] },
                 onClose = onCloseTaskDetail,
                 onComplete = { onTaskComplete(selectedTask.id) },
                 onPostpone = { onTaskPostpone(selectedTask.id) },
-                onDelete = { onTaskDelete(selectedTask.id) }
+                onDelete = { onTaskDelete(selectedTask.id) },
+                onShare = if (selectedTask.goalId == null) {
+                    { onTaskShare(selectedTask) }
+                } else null
             )
         }
     }
@@ -505,11 +514,13 @@ internal fun TaskRowWithActions(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                AssistChip(
-                    onClick = onTaskShare,
-                    label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
-                )
+                if (task.goalId == null) {
+                    AssistChip(
+                        onClick = onTaskShare,
+                        label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 AssistChip(
                     onClick = onTaskDelete,
                     label = { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp)) },
@@ -571,10 +582,12 @@ private fun GoalCompactItem(goal: Goal, onClick: () -> Unit, onDelete: () -> Uni
 internal fun TaskDetailModal(
     task: Task,
     parentGoalTitle: String?,
+    sharedWithProfiles: List<UserProfile> = emptyList(),
     onClose: () -> Unit,
     onComplete: () -> Unit = {},
     onPostpone: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onShare: (() -> Unit)? = null
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -797,45 +810,62 @@ internal fun TaskDetailModal(
                 )
             }
 
+            if (sharedWithProfiles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(20.dp))
+                SharedWithSection(profiles = sharedWithProfiles)
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
             Spacer(modifier = Modifier.height(16.dp))
 
             // ── ACTION BUTTONS ───────────────────────────────────────
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 FilledTonalButton(
                     onClick = { onComplete(); onClose() },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Complete")
-                }
-                if (task.status != TaskStatus.COMPLETED) {
-                    OutlinedButton(
-                        onClick = { onClose(); onPostpone() },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Postpone")
-                    }
-                }
-                OutlinedButton(
-                    onClick = { onDelete(); onClose() },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (task.status == TaskStatus.COMPLETED) "Mark as Pending" else "Mark as Complete",
+                        style = MaterialTheme.typography.labelLarge
                     )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Delete")
+                    if (task.status != TaskStatus.COMPLETED) {
+                        ModalActionButton(
+                            icon = Icons.Default.Schedule,
+                            label = "Postpone",
+                            onClick = { onClose(); onPostpone() },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (task.goalId == null && onShare != null) {
+                        ModalActionButton(
+                            icon = Icons.Default.Share,
+                            label = "Share",
+                            onClick = { onShare(); onClose() },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    ModalActionButton(
+                        icon = Icons.Default.Delete,
+                        label = "Delete",
+                        onClick = { onDelete(); onClose() },
+                        modifier = Modifier.weight(1f),
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -921,6 +951,122 @@ private fun DetailRow(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium
             )
+        }
+    }
+}
+
+@Composable
+private fun ModalActionButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant
+) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = tint,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = tint
+            )
+        }
+    }
+}
+
+@Composable
+private fun SharedWithSection(profiles: List<UserProfile>) {
+    var expanded by remember { mutableStateOf(false) }
+    val maxVisible = 3
+    val visibleProfiles = if (expanded) profiles else profiles.take(maxVisible)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.People,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "Shared with ${profiles.size}",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (profiles.size > maxVisible) {
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) "Show less" else "Show all")
+                }
+            }
+        }
+
+        visibleProfiles.forEach { profile ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!profile.avatarUrl.isNullOrEmpty()) {
+                        AsyncImage(
+                            model = profile.avatarUrl,
+                            contentDescription = profile.name,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Text(
+                            text = profile.name.take(1).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+                Text(
+                    text = profile.name,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }

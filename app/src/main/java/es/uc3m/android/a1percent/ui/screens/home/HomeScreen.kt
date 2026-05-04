@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -34,11 +35,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,9 +52,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -65,6 +71,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -74,6 +81,12 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    LaunchedEffect(uiState.snackbarMessage) {
+        val message = uiState.snackbarMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.clearSnackbarMessage()
     }
 
     if (uiState.showWeeklyRitual && uiState.ritualGoal != null) {
@@ -96,20 +109,36 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         )
     }
 
-    HomeBodyContent(
-        uiState = uiState,
-        onFilterClick = viewModel::onFilterClicked,
-        onTaskChecked = viewModel::onTaskChecked,
-        onTaskClicked = viewModel::onTaskClicked
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        HomeBodyContent(
+            uiState = uiState,
+            onFilterClick = viewModel::onFilterClicked,
+            onTaskChecked = viewModel::onTaskChecked,
+            onTaskClicked = viewModel::onTaskClicked
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
+    }
 
     if (uiState.selectedTask != null) {
+        val selectedTask = uiState.selectedTask!!
         TaskDetailModal(
-            task = uiState.selectedTask!!,
-            parentGoalTitle = uiState.selectedTask!!.goalId?.let { goalId ->
+            task = selectedTask,
+            parentGoalTitle = selectedTask.goalId?.let { goalId ->
                 uiState.goals.find { it.id == goalId }?.title
             },
-            onClose = { viewModel.dismissTaskDetail() }
+            sharedWithProfiles = selectedTask.sharedWith
+                .filter { it != uiState.currentUserId }
+                .mapNotNull { uiState.sharedUserProfilesById[it] },
+            onClose = { viewModel.dismissTaskDetail() },
+            onShare = if (selectedTask.goalId == null) {
+                { viewModel.onShareTaskRequested(selectedTask) }
+            } else null
         )
     }
 
@@ -216,6 +245,8 @@ fun HomeBodyContent(
                 TaskItem(
                     task = task,
                     goalTitle = goalTitle,
+                    currentUserId = uiState.currentUserId,
+                    sharedUserProfilesById = uiState.sharedUserProfilesById,
                     onCheckedChange = onTaskChecked,
                     onClick = { onTaskClicked(task) }
                 )
@@ -327,11 +358,16 @@ private fun HeaderSection(uiState: HomeUiState) {
 fun TaskItem(
     task: Task,
     goalTitle: String?,
+    currentUserId: String = "",
+    sharedUserProfilesById: Map<String, UserProfile> = emptyMap(),
     onCheckedChange: (String) -> Unit = {},
     onClick: () -> Unit = {}
 ) {
     val isCompleted = task.status == TaskStatus.COMPLETED
     val borderColor = taskDeadlineBorderColor(task.deadline)
+    val sharedProfiles = task.sharedWith
+        .filter { it != currentUserId }
+        .mapNotNull { sharedUserProfilesById[it] }
 
     Card(
         modifier = Modifier
@@ -390,6 +426,10 @@ fun TaskItem(
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
+
+                if (sharedProfiles.isNotEmpty()) {
+                    SharedAvatarGroup(profiles = sharedProfiles)
+                }
             }
 
             Text(
@@ -398,6 +438,57 @@ fun TaskItem(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.tertiary
             )
+        }
+    }
+}
+
+@Composable
+private fun SharedAvatarGroup(profiles: List<UserProfile>) {
+    val maxVisible = 3
+    val visible = profiles.take(maxVisible)
+    val overflow = profiles.size - maxVisible
+
+    Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
+        visible.forEach { profile ->
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!profile.avatarUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = profile.avatarUrl,
+                        contentDescription = profile.name,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                    )
+                } else {
+                    Text(
+                        text = profile.name.take(1).uppercase(),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+        if (overflow > 0) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.tertiary),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "+$overflow",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                    color = MaterialTheme.colorScheme.onTertiary
+                )
+            }
         }
     }
 }

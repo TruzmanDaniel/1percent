@@ -4,11 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
+import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
+import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,56 +26,90 @@ data class GoalDetailUiState(
     val missions: List<Task> = emptyList(),
     val selectedMission: Task? = null,
     val showDatePickerForTask: String? = null,
-    val editingTask: Task? = null
+    val editingTask: Task? = null,
+    val showShareSheet: Boolean = false,
+    val friends: List<UserProfile> = emptyList(),
+    val sharedWithProfiles: List<UserProfile> = emptyList(),
+    val snackbarMessage: String? = null
 )
 
-/**
- * ViewModel for Goal Detail screen.
- * Handles goal lookup and mission management (complete, postpone, delete actions).
- * TODO: Replace mock data with real repository once backend is integrated.
- */
 class GoalDetailViewModel : ViewModel() {
     private var currentGoalId: String? = null
+    private var currentUserId: String? = null
 
     private val _uiState = MutableStateFlow(GoalDetailUiState())
     val uiState: StateFlow<GoalDetailUiState> = _uiState.asStateFlow()
+
+    private var goalsJob: Job? = null
+    private var tasksJob: Job? = null
+    private var socialJob: Job? = null
+    private var profilesJob: Job? = null
 
     init {
         SessionRepository.currentUser
             .onEach { user ->
                 val goalId = currentGoalId
                 if (user == null || goalId == null) {
+                    stopObserving()
                     _uiState.value = GoalDetailUiState()
                 } else {
-                    loadGoalForUser(user.id, goalId)
+                    currentUserId = user.id
+                    startObserving(user.id, goalId)
                 }
             }
             .launchIn(viewModelScope)
     }
 
-    // Load goal screen by the parameter goalId in the route/url
     fun loadGoal(goalId: String) {
         currentGoalId = goalId
         val userId = SessionRepository.currentUser.value?.id ?: return
-        loadGoalForUser(userId, goalId)
+        currentUserId = userId
+        startObserving(userId, goalId)
     }
 
-    private fun loadGoalForUser(userId: String, goalId: String) {
-        viewModelScope.launch {
-            var goal: Goal? = null
-            var missions: List<Task> = emptyList()
+    private fun startObserving(userId: String, goalId: String) {
+        stopObserving()
 
-            GoalRepository.getGoals(userId).onSuccess { goals ->
-                goal = goals.find { it.id == goalId }
+        goalsJob = GoalRepository.observeGoals(userId)
+            .onEach { goals ->
+                val goal = goals.find { it.id == goalId }
+                val sharedProfiles = resolveSharedProfiles(goal, userId)
+                _uiState.update { it.copy(goal = goal, sharedWithProfiles = sharedProfiles) }
             }
-            TaskRespository.getTasks(userId).onSuccess { tasks ->
-                missions = tasks.filter { it.goalId == goalId }
-            }
+            .launchIn(viewModelScope)
 
-            _uiState.update {
-                it.copy(goal = goal, missions = missions)
+        tasksJob = TaskRespository.observeTasks(userId)
+            .onEach { tasks ->
+                _uiState.update { it.copy(missions = tasks.filter { t -> t.goalId == goalId }) }
             }
-        }
+            .launchIn(viewModelScope)
+
+        socialJob = SocialRepository.observeFriends(userId)
+            .onEach { friends ->
+                _uiState.update { it.copy(friends = friends) }
+            }
+            .launchIn(viewModelScope)
+
+        profilesJob = UserRepository.allUsers
+            .onEach { _ ->
+                val goal = _uiState.value.goal
+                _uiState.update { it.copy(sharedWithProfiles = resolveSharedProfiles(goal, userId)) }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun resolveSharedProfiles(goal: Goal?, userId: String): List<UserProfile> {
+        return goal?.sharedWith
+            ?.filter { it != userId }
+            ?.mapNotNull { UserRepository.findUserById(it) }
+            ?: emptyList()
+    }
+
+    private fun stopObserving() {
+        goalsJob?.cancel()
+        tasksJob?.cancel()
+        socialJob?.cancel()
+        profilesJob?.cancel()
     }
 
     fun onMissionClicked(task: Task) {
@@ -82,7 +120,6 @@ class GoalDetailViewModel : ViewModel() {
         _uiState.update { it.copy(selectedMission = null) }
     }
 
-    // TODO: Implement actual task update logic (currently just logs action)
     fun onTaskComplete(taskId: String) {
         viewModelScope.launch {
             TaskRespository.updateTaskStatus(taskId, TaskStatus.COMPLETED).onSuccess {
@@ -135,6 +172,35 @@ class GoalDetailViewModel : ViewModel() {
         }
     }
 
+    fun onShareGoalRequested() {
+        _uiState.update { it.copy(showShareSheet = true) }
+    }
+
+    fun onShareWithFriend(friendUserId: String, friendName: String) {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            GoalRepository.shareGoal(goal.id, friendUserId).onSuccess {
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    snackbarMessage = "Shared with $friendName!"
+                ) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    snackbarMessage = "Error: ${error.message}"
+                ) }
+            }
+        }
+    }
+
+    fun onShareDismissed() {
+        _uiState.update { it.copy(showShareSheet = false) }
+    }
+
+    fun clearSnackbarMessage() {
+        _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
     private fun applyLocalTaskStatus(taskId: String, status: TaskStatus) {
         _uiState.update { current ->
             current.copy(
@@ -145,4 +211,3 @@ class GoalDetailViewModel : ViewModel() {
         }
     }
 }
-

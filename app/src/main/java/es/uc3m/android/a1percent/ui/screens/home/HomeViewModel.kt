@@ -8,6 +8,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.SocialRepository
+import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.data.WeeklySummaryRepository
 import es.uc3m.android.a1percent.data.ai.AICoachService
 import es.uc3m.android.a1percent.data.model.Goal
@@ -61,7 +62,8 @@ class HomeViewModel : ViewModel() {
         tasksJob = TaskRespository.observeTasks(userId)
             .onEach { tasks ->
                 _uiState.update { current ->
-                    reduceHomeState(current.copy(tasks = tasks))
+                    val profileMap = buildSharedProfileMap(tasks, userId)
+                    reduceHomeState(current.copy(tasks = tasks, sharedUserProfilesById = profileMap, currentUserId = userId))
                 }
             }
             .launchIn(viewModelScope)
@@ -82,9 +84,24 @@ class HomeViewModel : ViewModel() {
             }
             .launchIn(viewModelScope)
 
+        UserRepository.allUsers
+            .onEach { _ ->
+                _uiState.update { current ->
+                    current.copy(sharedUserProfilesById = buildSharedProfileMap(current.tasks, userId))
+                }
+            }
+            .launchIn(viewModelScope)
+
         viewModelScope.launch {
             CreditManager.resetCreditsIfNeeded(userId)
         }
+    }
+
+    private fun buildSharedProfileMap(tasks: List<Task>, userId: String): Map<String, UserProfile> {
+        val sharedIds = tasks.flatMap { it.sharedWith }.toSet() - userId
+        return sharedIds.associateWith { UserRepository.findUserById(it) }
+            .filterValues { it != null }
+            .mapValues { it.value!! }
     }
 
     private fun stopObservingData() {
@@ -273,7 +290,13 @@ class HomeViewModel : ViewModel() {
                 _uiState.update { it.copy(
                     showShareSheet = false,
                     shareTargetTask = null,
-                    snackbarMessage = "Shared with $friendName"
+                    snackbarMessage = "Shared with $friendName!"
+                ) }
+            }.onFailure { error ->
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    shareTargetTask = null,
+                    snackbarMessage = "Error: ${error.message}"
                 ) }
             }
         }

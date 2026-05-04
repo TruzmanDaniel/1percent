@@ -7,6 +7,7 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
@@ -54,7 +55,12 @@ class TargetsViewModel : ViewModel() {
         tasksJob = TaskRespository.observeTasks(userId)
             .onEach { tasks ->
                 allTasks = tasks
-                _uiState.update { current -> reduceTargetsState(current) }
+                _uiState.update { current ->
+                    reduceTargetsState(current.copy(
+                        sharedUserProfilesById = buildSharedProfileMap(tasks, userId),
+                        currentUserId = userId
+                    ))
+                }
             }
             .launchIn(viewModelScope)
 
@@ -70,6 +76,21 @@ class TargetsViewModel : ViewModel() {
                 _uiState.update { it.copy(friends = friends) }
             }
             .launchIn(viewModelScope)
+
+        UserRepository.allUsers
+            .onEach { _ ->
+                _uiState.update { current ->
+                    current.copy(sharedUserProfilesById = buildSharedProfileMap(allTasks, userId))
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun buildSharedProfileMap(tasks: List<Task>, userId: String): Map<String, UserProfile> {
+        val sharedIds = tasks.flatMap { it.sharedWith }.toSet() - userId
+        return sharedIds.associateWith { UserRepository.findUserById(it) }
+            .filterValues { it != null }
+            .mapValues { it.value!! }
     }
 
     private fun stopObservingData() {
@@ -241,24 +262,28 @@ class TargetsViewModel : ViewModel() {
     }
 
     fun onShareWithFriend(friendUserId: String, friendName: String) {
+        val task = _uiState.value.shareTargetTask
+        val goal = _uiState.value.shareTargetGoal
         viewModelScope.launch {
-            val task = _uiState.value.shareTargetTask
-            val goal = _uiState.value.shareTargetGoal
-            val result = if (task != null) {
-                TaskRespository.shareTask(task.id, friendUserId)
-            } else if (goal != null) {
-                GoalRepository.shareGoal(goal.id, friendUserId)
-            } else return@launch
-
+            val result = when {
+                task != null -> TaskRespository.shareTask(task.id, friendUserId)
+                goal != null -> GoalRepository.shareGoal(goal.id, friendUserId)
+                else -> return@launch
+            }
             result.onSuccess {
                 _uiState.update { it.copy(
                     showShareSheet = false,
                     shareTargetTask = null,
                     shareTargetGoal = null,
-                    snackbarMessage = "Shared with $friendName"
+                    snackbarMessage = "Shared with $friendName!"
                 ) }
             }.onFailure { error ->
-                _uiState.update { it.copy(errorMessage = "Error sharing: ${error.message}") }
+                _uiState.update { it.copy(
+                    showShareSheet = false,
+                    shareTargetTask = null,
+                    shareTargetGoal = null,
+                    errorMessage = "Error: ${error.message}"
+                ) }
             }
         }
     }

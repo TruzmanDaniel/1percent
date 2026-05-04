@@ -46,6 +46,7 @@ class SocialViewModel : ViewModel() {
                             _uiState.update { it.copy(pendingRequests = requests) }
                         }
                         .launchIn(viewModelScope)
+
                 }
             }
             .launchIn(viewModelScope)
@@ -82,4 +83,5 @@ class SocialViewModel : ViewModel() {
             SocialRepository.rejectFriendRequest(requesterId, currentId)
         }
     }
+
 }
