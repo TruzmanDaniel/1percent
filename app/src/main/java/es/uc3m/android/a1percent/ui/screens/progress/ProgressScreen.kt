@@ -1,51 +1,81 @@
-@file:Suppress("UNUSED_PARAMETER")
-
 package es.uc3m.android.a1percent.ui.screens.progress
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.compose.runtime.getValue
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+
+private val donutColors = listOf(
+    Color(0xFF818CF8), // indigo
+    Color(0xFF34D399), // emerald
+    Color(0xFFFBBF24), // amber
+    Color(0xFFF472B6), // pink
+    Color(0xFF60A5FA), // blue
+    Color(0xFFA78BFA), // violet
+    Color(0xFF2DD4BF), // teal
+)
 
 @Composable
-@Suppress("UNUSED_PARAMETER")
 fun ProgressScreen(
     navController: NavController,
     viewModel: ProgressViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
     ProgressBodyContent(uiState = uiState)
 }
 
 @Composable
 private fun ProgressBodyContent(uiState: ProgressUiState) {
-    val sections = uiState.sectionTitles
+    if (uiState.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -54,110 +84,224 @@ private fun ProgressBodyContent(uiState: ProgressUiState) {
     ) {
         item {
             Text(
-                text = uiState.title,
+                text = "Progress",
                 style = MaterialTheme.typography.headlineSmall
             )
         }
 
-        item {
+        // Chart 5 — Level / XP / Streak
+        item { LevelXpStatCard(uiState) }
+
+        // Chart 2 — Goals progress
+        item { GoalsProgressCard(uiState.activeGoals) }
+
+        // Chart 1 — XP accumulation curve
+        item { XpCurveCard(uiState.xpCurvePoints) }
+
+        // Chart 3 — Weekly rhythm
+        item { WeeklyRhythmCard(uiState.thisWeekByDay, uiState.lastWeekByDay) }
+
+        // Chart 4 — Category breakdown
+        item { CategoryDonutCard(uiState.categoryBreakdown) }
+
+        // Chart 6 — Weekly sparklines
+        item { GoalSparklinesCard(uiState.goalSparklines) }
+    }
+}
+
+@Composable
+private fun GoalSparklinesCard(sparklines: List<GoalSparkline>) {
+    ProgressCard(title = "Goal Weekly Trend", subtitle = "Completion rate per week") {
+        if (sparklines.isEmpty()) {
             Text(
-                text = uiState.intro,
+                text = "Complete weekly cycles to see the trend",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                sparklines.forEach { sparkline ->
+                    GoalSparklineRow(sparkline)
+                }
+            }
         }
+    }
+}
 
-        item {
+@Composable
+private fun GoalSparklineRow(sparkline: GoalSparkline) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = sparkline.goalTitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        val modelProducer = remember(sparkline.goalTitle) { CartesianChartModelProducer() }
+        LaunchedEffect(sparkline.weeklyCompletionRates) {
+            modelProducer.runTransaction {
+                lineSeries { series(sparkline.weeklyCompletionRates) }
+            }
+        }
+        CartesianChartHost(
+            chart = rememberCartesianChart(rememberLineCartesianLayer()),
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp)
+        )
+    }
+}
+
+@Composable
+private fun WeeklyRhythmCard(thisWeek: List<Int>, lastWeek: List<Int>) {
+    ProgressCard(title = "Weekly Rhythm", subtitle = "This week vs last week") {
+        if (thisWeek.none { it > 0 } && lastWeek.none { it > 0 }) {
+            Text(
+                text = "Complete tasks to track your weekly rhythm",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            return@ProgressCard
+        }
+        val modelProducer = remember { CartesianChartModelProducer() }
+        LaunchedEffect(thisWeek, lastWeek) {
+            modelProducer.runTransaction {
+                columnSeries {
+                    series(thisWeek)
+                    series(lastWeek)
+                }
+            }
+        }
+        val days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        val dayFormatter = CartesianValueFormatter { _, value, _ ->
+            days.getOrElse(value.toInt()) { "" }
+        }
+        CartesianChartHost(
+            chart = rememberCartesianChart(
+                rememberColumnCartesianLayer(),
+                bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = dayFormatter)
+            ),
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            LegendItem(
+                color = MaterialTheme.colorScheme.primary,
+                label = "This week",
+                percent = ""
+            )
+            LegendItem(
+                color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
+                label = "Last week",
+                percent = ""
+            )
+        }
+    }
+}
+
+@Composable
+private fun XpCurveCard(points: List<Float>) {
+    ProgressCard(title = "1% Curve", subtitle = "Cumulative XP — last 30 days") {
+        if (points.none { it > 0f }) {
+            Text(
+                text = "Complete tasks to see your growth curve",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            return@ProgressCard
+        }
+        val modelProducer = remember { CartesianChartModelProducer() }
+        LaunchedEffect(points) {
+            modelProducer.runTransaction { lineSeries { series(points) } }
+        }
+        CartesianChartHost(
+            chart = rememberCartesianChart(rememberLineCartesianLayer()),
+            modelProducer = modelProducer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+        )
+    }
+}
+
+@Composable
+private fun CategoryDonutCard(breakdown: List<CategorySlice>) {
+    ProgressCard(title = "Category Breakdown", subtitle = "Completed tasks by area") {
+        if (breakdown.isEmpty()) {
+            Text(
+                text = "Complete tasks to see the breakdown",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ProgressCard(
-                    title = "Weekly XP Snapshot",
-                    subtitle = "Fast visual check",
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(210.dp)
+                val total = breakdown.sumOf { it.count }
+                DonutChart(
+                    slices = breakdown,
+                    total = total,
+                    modifier = Modifier.size(130.dp)
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    MockBarGroupChart(listOf(0.25f, 0.42f, 0.36f, 0.58f, 0.62f, 0.49f))
-                }
-
-                ProgressCard(
-                    title = "Task Pace Snapshot",
-                    subtitle = "Completion rhythm",
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(210.dp)
-                ) {
-                    MockLineTrendChart()
+                    breakdown.forEachIndexed { index, slice ->
+                        LegendItem(
+                            color = donutColors[index % donutColors.size],
+                            label = slice.category.displayName,
+                            percent = "${(slice.fraction * 100).toInt()}%"
+                        )
+                    }
                 }
             }
         }
+    }
+}
 
-        sections.forEach { sectionTitle ->
-            item {
-            when (sectionTitle) {
-                "1% Curve" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Daily improvement trend") {
-                        MockLineTrendChart()
-                    }
-                }
-
-                "Completed Tasks (Total & This Month)" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Global vs monthly comparison") {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MetricRow(label = "Total", value = "248")
-                            MetricRow(label = "This month", value = "34")
-                            MockBarGroupChart(listOf(0.35f, 0.62f, 0.48f, 0.80f, 0.57f))
-                        }
-                    }
-                }
-
-                "Task Category Heatmap" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Intensity by category") {
-                        MockHeatMapGrid()
-                    }
-                }
-
-                "XP Gained Over the Month" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Weekly accumulation") {
-                        MockBarGroupChart(listOf(0.22f, 0.31f, 0.44f, 0.38f, 0.56f, 0.71f, 0.65f))
-                    }
-                }
-
-                "Average Difficulty of Completed Tasks" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Current average: 3.4 / 5") {
-                        MockDifficultyBlocks()
-                    }
-                }
-
-                "Level Evolution and Progress to Next Level" -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Level 8 -> progress to level 9") {
-                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            MockLineTrendChart()
-                            Text(
-                                text = "340 / 500 XP",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-
-                else -> {
-                    ProgressCard(title = sectionTitle, subtitle = "Accumulated growth curve") {
-                        MockExponentialBlocks()
-                    }
-                }
-            }
+@Composable
+private fun DonutChart(
+    slices: List<CategorySlice>,
+    total: Int,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokePx = 26.dp.toPx()
+            val gapDegrees = 2f
+            val diameter = size.minDimension - strokePx
+            val arcTopLeft = Offset((size.width - diameter) / 2f, (size.height - diameter) / 2f)
+            val arcSize = Size(diameter, diameter)
+            var startAngle = -90f
+            slices.forEachIndexed { index, slice ->
+                val sweep = (slice.fraction * 360f - gapDegrees).coerceAtLeast(0f)
+                drawArc(
+                    color = donutColors[index % donutColors.size],
+                    startAngle = startAngle,
+                    sweepAngle = sweep,
+                    useCenter = false,
+                    topLeft = arcTopLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokePx, cap = StrokeCap.Butt)
+                )
+                startAngle += slice.fraction * 360f
             }
         }
-
-        item {
-            Spacer(modifier = Modifier.height(12.dp))
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = uiState.footerNote,
-                style = MaterialTheme.typography.labelMedium,
+                text = "$total",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = "tasks",
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -165,7 +309,188 @@ private fun ProgressBodyContent(uiState: ProgressUiState) {
 }
 
 @Composable
-private fun ProgressCard(
+private fun LegendItem(color: Color, label: String, percent: String) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(RoundedCornerShape(50))
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Text(
+            text = percent,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun GoalsProgressCard(goals: List<GoalProgressItem>) {
+    ProgressCard(title = "Goals Progress", subtitle = "Active goals completion") {
+        if (goals.isEmpty()) {
+            Text(
+                text = "No active goals yet",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                goals.forEach { goal -> GoalProgressRow(goal) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalProgressRow(goal: GoalProgressItem) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = goal.title,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = goal.category.displayName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${(goal.progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        LinearProgressIndicator(
+            progress = { goal.progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(50)),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    }
+}
+
+@Composable
+private fun LevelXpStatCard(uiState: ProgressUiState) {
+    ProgressCard(title = "Level & XP", subtitle = "Your growth at a glance") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${uiState.userLevel}",
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Level ${uiState.userLevel}",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        text = "${uiState.currentXp} / ${uiState.xpToNextLevel} XP",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                val xpProgress = (uiState.currentXp.toFloat() / uiState.xpToNextLevel.coerceAtLeast(1))
+                    .coerceIn(0f, 1f)
+                LinearProgressIndicator(
+                    progress = { xpProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(50)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            }
+        }
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 4.dp),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatItem(
+                label = "Streak",
+                value = "${uiState.streakDays} days",
+                color = MaterialTheme.colorScheme.tertiary
+            )
+            StatItem(
+                label = "Completed",
+                value = "${uiState.totalTasksCompleted} tasks",
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatItem(label: String, value: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+internal fun ProgressCard(
     title: String,
     subtitle: String,
     modifier: Modifier = Modifier,
@@ -188,158 +513,6 @@ private fun ProgressCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             content()
-        }
-    }
-}
-
-
-
-@Composable
-private fun MetricRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        Text(text = value, style = MaterialTheme.typography.titleSmall)
-    }
-}
-
-@Composable
-private fun MockBarGroupChart(values: List<Float>) {
-    // TODO: Temporary fake chart placeholder. Remove when real chart library/data is integrated.
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        values.forEachIndexed { index, rawValue ->
-            val clamped = rawValue.coerceIn(0.1f, 1f)
-            val barColor = if (index % 2 == 0) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
-            } else {
-                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.65f)
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .height((clamped * 96f).dp)
-                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                    .background(barColor)
-            )
-        }
-    }
-}
-
-@Composable
-private fun MockLineTrendChart() {
-    // TODO: Temporary fake chart placeholder. Remove when real chart library/data is integrated.
-    val points = listOf(0.15f, 0.22f, 0.31f, 0.44f, 0.52f, 0.67f, 0.82f)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(110.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        points.forEachIndexed { index, point ->
-            val width = if (index % 3 == 0) 18.dp else 12.dp
-            Box(
-                modifier = Modifier
-                    .width(width)
-                    .height((point * 100f).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (index == points.lastIndex) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.primaryContainer
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-private fun MockHeatMapGrid() {
-    // TODO: Temporary fake chart placeholder. Remove when real chart library/data is integrated.
-    val shades = listOf(0.18f, 0.32f, 0.46f, 0.62f, 0.82f)
-
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(4) { rowIndex ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                repeat(7) { colIndex ->
-                    val alpha = shades[(rowIndex + colIndex) % shades.size]
-                    Box(
-                        modifier = Modifier
-                            .size(if ((rowIndex + colIndex) % 3 == 0) 24.dp else 20.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(MaterialTheme.colorScheme.secondary.copy(alpha = alpha))
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MockDifficultyBlocks() {
-    // TODO: Temporary fake chart placeholder. Remove when real chart library/data is integrated.
-    val blocks = listOf(
-        0.25f to 0.45f,
-        0.50f to 0.60f,
-        0.35f to 0.72f,
-        0.60f to 0.38f
-    )
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        blocks.forEach { (left, right) ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height((left * 100f).dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.tertiaryContainer)
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height((right * 100f).dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MockExponentialBlocks() {
-    // TODO: Temporary fake chart placeholder. Remove when real chart library/data is integrated.
-    val widths = listOf(0.18f, 0.24f, 0.32f, 0.43f, 0.58f, 0.76f, 0.94f)
-
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        widths.forEachIndexed { index, widthFactor ->
-            val color: Color = if (index < 3) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else if (index < 5) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.72f)
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(widthFactor)
-                    .height(if (index % 2 == 0) 14.dp else 18.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(color)
-            )
         }
     }
 }

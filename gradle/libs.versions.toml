@@ -15,6 +15,7 @@ google-services = "4.4.4"
 firebaseBom = "34.10.0"
 kotlinxSerializationJson = "1.7.3"
 coil = "2.7.0"
+vico = "2.0.0"
 
 [libraries]
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
@@ -44,6 +45,7 @@ firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
 firebase-storage = { module = "com.google.firebase:firebase-storage" }
 firebase-ai = { module = "com.google.firebase:firebase-ai" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+vico-compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "vico" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
 [plugins]

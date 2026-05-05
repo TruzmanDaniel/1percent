@@ -13,6 +13,8 @@ import es.uc3m.android.a1percent.notifications.AlarmScheduler
 import es.uc3m.android.a1percent.notifications.NotificationHelper
 import es.uc3m.android.a1percent.ui.theme._1percentTheme
 import com.google.firebase.FirebaseApp
+import com.patrykandpatrick.vico.compose.common.ProvideVicoTheme
+import com.patrykandpatrick.vico.compose.m3.common.rememberM3VicoTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class MainActivity : ComponentActivity() {
@@ -35,8 +37,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             _1percentTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    NavGraph()
+                ProvideVicoTheme(rememberM3VicoTheme()) {
+                    Surface(color = MaterialTheme.colorScheme.background) {
+                        NavGraph()
+                    }
                 }
             }
         }

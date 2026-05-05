@@ -39,4 +39,17 @@ object WeeklySummaryRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun getSummaries(goalId: String, limit: Int = 6): Result<List<WeeklySummary>> {
+        return try {
+            val snapshot = summariesCollection(goalId)
+                .orderBy("weekNumber", Query.Direction.DESCENDING)
+                .limit(limit.toLong())
+                .get()
+                .await()
+            Result.success(snapshot.toObjectsSerializable<WeeklySummary>())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

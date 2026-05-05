@@ -85,7 +85,10 @@ object TaskRespository {
             val currentTask = snapshot.toObjectSerializable<Task>()
                 ?: throw IllegalStateException("Task $taskId not found")
 
-            val updatedTask = currentTask.copy(status = status)
+            val updatedTask = currentTask.copy(
+                status = status,
+                completedAt = if (status == TaskStatus.COMPLETED) System.currentTimeMillis() else null
+            )
             tasksCollection.document(taskId).set(updatedTask.encodeToMap()!!).await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -100,12 +103,11 @@ object TaskRespository {
                 ?: throw IllegalStateException("Task $taskId not found")
 
             val isCompleted = userId in currentTask.completedBy
-            val update = if (isCompleted) {
-                FieldValue.arrayRemove(userId)
-            } else {
-                FieldValue.arrayUnion(userId)
-            }
-            tasksCollection.document(taskId).update("completedBy", update).await()
+            val completedByUpdate = if (isCompleted) FieldValue.arrayRemove(userId) else FieldValue.arrayUnion(userId)
+            val completedAtUpdate: Any = if (!isCompleted) System.currentTimeMillis() else FieldValue.delete()
+            tasksCollection.document(taskId).update(
+                mapOf("completedBy" to completedByUpdate, "completedAt" to completedAtUpdate)
+            ).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

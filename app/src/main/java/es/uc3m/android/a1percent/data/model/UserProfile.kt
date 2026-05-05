@@ -20,5 +20,6 @@ data class UserProfile(
     val streakDays: Int = 0,
     val totalTasksCompleted: Int = 0,
     val availableCredits: Int = 5,
-    val creditsResetDate: Long? = null
+    val creditsResetDate: Long? = null,
+    val lastActivityDate: Long? = null  // epoch ms of midnight on the last day a task was completed
 )

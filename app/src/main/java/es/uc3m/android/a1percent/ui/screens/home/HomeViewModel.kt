@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.CreditManager
 import es.uc3m.android.a1percent.data.GoalRepository
+import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
@@ -263,8 +264,12 @@ class HomeViewModel : ViewModel() {
 
     fun onTaskChecked(taskId: String) {
         val userId = SessionRepository.currentUser.value?.id ?: return
+        val task = _uiState.value.tasks.find { it.id == taskId } ?: return
+        val wasCompleted = userId in task.completedBy
         viewModelScope.launch {
             TaskRespository.toggleTaskCompletion(taskId, userId)
+            if (wasCompleted) XpManager.revokeXp(userId, task)
+            else XpManager.awardXp(userId, task)
         }
     }
 
