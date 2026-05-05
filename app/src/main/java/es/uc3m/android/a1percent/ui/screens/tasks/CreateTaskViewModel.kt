@@ -188,6 +188,10 @@ class CreateTaskViewModel : ViewModel() {
         }
     }
 
+    fun onDifficultyChange(newValue: Int) {
+        _uiState.update { it.copy(selectedDifficulty = newValue.coerceIn(1, 5)) }
+    }
+
     fun createTask(onSuccess: () -> Unit, onError: (String) -> Unit) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: SessionRepository.currentUser.value?.id
@@ -204,8 +208,8 @@ class CreateTaskViewModel : ViewModel() {
                     title = state.taskName,
                     description = state.taskDescription,
                     type = TaskType.ONE_TIME,
-                    difficulty = 1,
-                    xp = 10,
+                    difficulty = state.selectedDifficulty,
+                    xp = state.selectedDifficulty * 10,
                     energyCost = null,
                     deadline = state.selectedDeadline,
                     status = TaskStatus.PENDING,
