@@ -113,8 +113,8 @@ object AICoachService {
 
             REGLAS:
             - Genera exactamente 7 tareas con dayIndex de 1 a 7
-            - Los días 1-6 son misiones normales con XP proporcional a la dificultad (30-80 XP)
-            - El día 7 es la MISIÓN ÉPICA: un reto de alta intensidad con XP x5 (150-400 XP)
+            - Los días 1-6 son misiones normales
+            - El día 7 es la MISIÓN ÉPICA: un reto de alta intensidad
             - La dificultad de cada tarea debe ser entre 1 y 5
             - Las tareas deben ser concretas, accionables y medibles
             - Adapta la dificultad al nivel de intensidad proporcionado
@@ -123,13 +123,13 @@ object AICoachService {
             Usa este formato exacto:
             {
               "tasks": [
-                {"title": "...", "description": "...", "xp": 50, "difficulty": 2, "dayIndex": 1},
-                {"title": "...", "description": "...", "xp": 50, "difficulty": 2, "dayIndex": 2},
-                {"title": "...", "description": "...", "xp": 50, "difficulty": 2, "dayIndex": 3},
-                {"title": "...", "description": "...", "xp": 50, "difficulty": 2, "dayIndex": 4},
-                {"title": "...", "description": "...", "xp": 60, "difficulty": 3, "dayIndex": 5},
-                {"title": "...", "description": "...", "xp": 60, "difficulty": 3, "dayIndex": 6},
-                {"title": "MISIÓN ÉPICA: ...", "description": "...", "xp": 300, "difficulty": 5, "dayIndex": 7}
+                {"title": "...", "description": "...", "difficulty": 2, "dayIndex": 1},
+                {"title": "...", "description": "...", "difficulty": 2, "dayIndex": 2},
+                {"title": "...", "description": "...", "difficulty": 2, "dayIndex": 3},
+                {"title": "...", "description": "...", "difficulty": 2, "dayIndex": 4},
+                {"title": "...", "description": "...", "difficulty": 3, "dayIndex": 5},
+                {"title": "...", "description": "...", "difficulty": 3, "dayIndex": 6},
+                {"title": "MISIÓN ÉPICA: ...", "description": "...", "difficulty": 5, "dayIndex": 7}
               ]
             }
         """.trimIndent()

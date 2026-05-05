@@ -14,7 +14,7 @@ data class AiTaskListResponse(
 data class AiTaskResponse(
     val title: String,
     val description: String = "",
-    val xp: Int,
+    val xp: Int = 0,
     val difficulty: Int,
     val dayIndex: Int
 ) {
@@ -24,7 +24,7 @@ data class AiTaskResponse(
             description = description,
             type = TaskType.DAILY,
             difficulty = difficulty.coerceIn(1, 5),
-            xp = xp,
+            xp = difficulty.coerceIn(1, 5) * 10,
             energyCost = null,
             category = category,
             goalId = goalId,

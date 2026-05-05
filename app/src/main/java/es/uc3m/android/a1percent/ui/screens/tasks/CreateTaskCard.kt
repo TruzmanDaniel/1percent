@@ -148,6 +148,55 @@ fun CreateTaskCard(
                         minLines = 3
                     )
 
+                    // DIFFICULTY SELECTOR
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "Difficulty: ${uiState.selectedDifficulty}",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            (1..5).forEach { level ->
+                                val isSelected = uiState.selectedDifficulty == level
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { viewModel.onDifficultyChange(level) },
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (isSelected)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "$level",
+                                            color = if (isSelected)
+                                                MaterialTheme.colorScheme.onPrimary
+                                            else
+                                                MaterialTheme.colorScheme.onSurfaceVariant,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Text(
+                            text = "+${uiState.selectedDifficulty * 10} XP",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
                     // CATEGORY DROPDOWN
                     ExposedDropdownMenuBox(
                         expanded = uiState.isCategoryDropdownExpanded,

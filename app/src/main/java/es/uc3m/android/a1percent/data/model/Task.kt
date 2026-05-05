@@ -37,7 +37,8 @@ data class Task(
     val ownerId: String = "",
     val sharedWith: List<String> = emptyList(),
     val completedBy: List<String> = emptyList(),
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val xpAwarded: Int? = null
 ) {
 
     init {

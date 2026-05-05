@@ -1,25 +1,35 @@
 package es.uc3m.android.a1percent.data
 
+import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.UserProfile
 import java.util.Calendar
 
 object XpManager {
 
-    suspend fun awardXp(userId: String, task: Task): Result<Unit> {
+    suspend fun awardTaskXp(userId: String, task: Task): Result<Unit> {
         val profile = SessionRepository.currentUser.value
             ?: return Result.failure(IllegalStateException("No logged-in user"))
         if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
 
+        val base = task.difficulty * 10
+        val bonus = if (task.deadline != null && task.completedAt != null) {
+            val deadlineMillis = TaskDeadlineResolver.toSortKey(task.deadline)
+            if (task.completedAt < deadlineMillis) (base * 0.2).toInt() else 0
+        } else 0
+        val total = base + bonus
+
+        TaskRespository.updateXpAwarded(task.id, total)
+
         val today = startOfDay()
         val yesterday = today - 86_400_000L
         val newStreak = when (profile.lastActivityDate) {
-            today    -> profile.streakDays
+            today     -> profile.streakDays
             yesterday -> profile.streakDays + 1
-            else     -> 1
+            else      -> 1
         }
 
-        val updated = applyXpGain(profile, task.xp).copy(
+        val updated = applyXpGain(profile, total).copy(
             totalTasksCompleted = profile.totalTasksCompleted + 1,
             streakDays = newStreak,
             lastActivityDate = today
@@ -27,15 +37,42 @@ object XpManager {
         return SessionRepository.updateUserProfile(updated)
     }
 
-    suspend fun revokeXp(userId: String, task: Task): Result<Unit> {
+    suspend fun revokeTaskXp(userId: String, task: Task): Result<Unit> {
         val profile = SessionRepository.currentUser.value
             ?: return Result.failure(IllegalStateException("No logged-in user"))
         if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
 
+        val freshTask = TaskRespository.getTask(task.id).getOrNull() ?: task
+        val xpToRevoke = freshTask.xpAwarded ?: return Result.success(Unit)
+
+        TaskRespository.updateXpAwarded(task.id, null)
+
         val updated = profile.copy(
-            currentXp = (profile.currentXp - task.xp).coerceAtLeast(0),
+            currentXp = (profile.currentXp - xpToRevoke).coerceAtLeast(0),
             totalTasksCompleted = (profile.totalTasksCompleted - 1).coerceAtLeast(0)
         )
+        return SessionRepository.updateUserProfile(updated)
+    }
+
+    suspend fun awardEpicWeeklyBonus(userId: String, goal: Goal): Result<Unit> {
+        val profile = SessionRepository.currentUser.value
+            ?: return Result.failure(IllegalStateException("No logged-in user"))
+        if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
+
+        val bonus = goal.difficulty * 30
+        val updated = applyXpGain(profile, bonus)
+        return SessionRepository.updateUserProfile(updated)
+    }
+
+    suspend fun awardGoalCompletionBonus(userId: String, goal: Goal): Result<Unit> {
+        if (goal.deadline == null) return Result.success(Unit)
+
+        val profile = SessionRepository.currentUser.value
+            ?: return Result.failure(IllegalStateException("No logged-in user"))
+        if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
+
+        val bonus = goal.difficulty * 50
+        val updated = applyXpGain(profile, bonus)
         return SessionRepository.updateUserProfile(updated)
     }
 

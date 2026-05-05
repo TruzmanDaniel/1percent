@@ -28,7 +28,8 @@ data class CreateTaskUiState(
     val selectedEpochDay: Long? = null, // Default is no deadline
     val hasDeadline: Boolean = false, // Default is no deadline
     val deadlineOption: DeadlineOption = DeadlineOption.THIS_WEEK,
-    val isDatePickerVisible: Boolean = false
+    val isDatePickerVisible: Boolean = false,
+    val selectedDifficulty: Int = 1
 ) {
     val selectedCategoryLabel: String
         get() = selectedCustomCategoryName ?: selectedCategory.displayName  // If custom selected, display it (it is directly a string)
