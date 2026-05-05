@@ -173,6 +173,19 @@ class HomeViewModel : ViewModel() {
                     intensityUsed = goal.currentIntensity
                 )
                 WeeklySummaryRepository.saveSummary(goal.id, summary)
+
+                if (_uiState.value.ritualEpicPassed) {
+                    XpManager.awardEpicWeeklyBonus(userId, goal)
+                }
+
+                if (goal.deadline != null) {
+                    val totalWeeks = ((goal.deadline - goal.createdAt) / SEVEN_DAYS_MILLIS).toInt().coerceAtLeast(1)
+                    val newProgress = ((weekNumber * 100) / totalWeeks).coerceIn(0, 100)
+                    if (newProgress >= 100) {
+                        XpManager.awardGoalCompletionBonus(userId, goal)
+                    }
+                    GoalRepository.updateGoal(goal.copy(progress = newProgress))
+                }
             }
 
             val maxIntensity = goal.difficulty * 2.0f
@@ -268,8 +281,12 @@ class HomeViewModel : ViewModel() {
         val wasCompleted = userId in task.completedBy
         viewModelScope.launch {
             TaskRespository.toggleTaskCompletion(taskId, userId)
-            if (wasCompleted) XpManager.revokeXp(userId, task)
-            else XpManager.awardXp(userId, task)
+            if (wasCompleted) {
+                XpManager.revokeTaskXp(userId, task)
+            } else {
+                val now = System.currentTimeMillis()
+                XpManager.awardTaskXp(userId, task.copy(completedAt = now))
+            }
         }
     }
 
