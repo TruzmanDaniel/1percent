@@ -92,7 +92,7 @@ class ProgressViewModel : ViewModel() {
             val ca = task.completedAt
             if (ca != null && ca >= thirtyDaysAgo && userId in task.completedBy) {
                 val day = ((ca - thirtyDaysAgo) / (24 * 3600 * 1000)).toInt().coerceIn(0, 29)
-                dailyXp[day] += task.xp
+                dailyXp[day] += (task.xpAwarded ?: task.xp)
             }
         }
         var running = 0f

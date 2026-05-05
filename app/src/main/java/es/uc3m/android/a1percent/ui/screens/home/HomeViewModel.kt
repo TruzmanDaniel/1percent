@@ -133,7 +133,7 @@ class HomeViewModel : ViewModel() {
             val completed = goalTasks.count { it.status == TaskStatus.COMPLETED }
             val epicTask = goalTasks.find { it.dayIndex == 7 }
             val epicPassed = epicTask?.status == TaskStatus.COMPLETED
-            val xpEarned = goalTasks.filter { it.status == TaskStatus.COMPLETED }.sumOf { it.xp }
+            val xpEarned = goalTasks.filter { it.status == TaskStatus.COMPLETED }.sumOf { it.xpAwarded ?: it.xp }
 
             _uiState.update { it.copy(
                 showWeeklyRitual = true,
