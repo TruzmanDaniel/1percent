@@ -57,6 +57,11 @@ import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
+import es.uc3m.android.a1percent.ui.components.taskDeadlineIndicatorColor
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.width
+import es.uc3m.android.a1percent.data.TaskDeadlineResolver
+import es.uc3m.android.a1percent.ui.components.TaskDeadlineColors
 import es.uc3m.android.a1percent.ui.screens.targets.TaskDetailModal
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -339,7 +344,8 @@ fun TaskItem(
     onClick: () -> Unit = {}
 ) {
     val isCompleted = currentUserId in task.completedBy
-    val borderColor = taskDeadlineBorderColor(task.deadline)
+    // val borderColor = taskDeadlineBorderColor(task.deadline)
+    val indicatorColor = taskDeadlineIndicatorColor(task.deadline, isCompleted)
 
     Card(
         modifier = Modifier
@@ -350,62 +356,82 @@ fun TaskItem(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = BorderStroke(2.dp, borderColor)
+        // border = BorderStroke(2.dp, borderColor)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = isCompleted,
-                onCheckedChange = { onCheckedChange(task.id) }
-            )
-
-            Column(
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = task.title,
-                    style = if (isCompleted)
-                        MaterialTheme.typography.bodyLarge.copy(textDecoration = TextDecoration.LineThrough)
-                    else
-                        MaterialTheme.typography.bodyLarge
+                Checkbox(
+                    checked = isCompleted,
+                    onCheckedChange = { onCheckedChange(task.id) }
                 )
 
-                task.deadline?.let { deadline ->
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
                     Text(
-                        text = "Due: ${deadline.toUiLabel()}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = task.title,
+                        style = if (isCompleted)
+                            MaterialTheme.typography.bodyLarge.copy(textDecoration = TextDecoration.LineThrough)
+                        else
+                            MaterialTheme.typography.bodyLarge
                     )
+
+                    task.deadline?.let { deadline ->
+                        val deadlineStatus = TaskDeadlineResolver.deadlineStatus(deadline)
+                        val deadlinePrefix = if (deadlineStatus == TaskDeadlineResolver.DeadlineStatus.OVERDUE) "Overdue" else "Due"
+                        val deadlineColor = if (deadlineStatus == TaskDeadlineResolver.DeadlineStatus.OVERDUE) {
+                            TaskDeadlineColors.Overdue
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                        Text(
+                            text = "$deadlinePrefix: ${deadline.toUiLabel()}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = deadlineColor
+                        )
+                    }
+
+                    if (goalTitle != null) {
+                        Text(
+                            text = "⚡ Mission · $goalTitle",
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier
+                                .background(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
                 }
 
-                if (goalTitle != null) {
-                    Text(
-                        text = "⚡ Mission · $goalTitle",
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier
-                            .background(
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                shape = RoundedCornerShape(4.dp)
-                            )
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
+                Text(
+                    text = "+${task.xp} XP",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
             }
-
-            Text(
-                text = "+${task.xp} XP",
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.tertiary
-            )
+            // Indicador vertical — overlay interno, borde derecho
+            if (indicatorColor != null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()        // toma el tamaño del Box padre
+                        .wrapContentWidth(Alignment.End)  // empuja al borde derecho
+                        .width(4.dp)
+                        .clip(RoundedCornerShape(topEnd = 14.dp, bottomEnd = 14.dp))
+                        .background(indicatorColor)
+                )
+            }
         }
     }
 }

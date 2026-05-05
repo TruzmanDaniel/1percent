@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -80,6 +82,7 @@ import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
 import es.uc3m.android.a1percent.ui.components.SharedWithDropdown
 import es.uc3m.android.a1percent.ui.components.taskDeadlineBorderColor
+import es.uc3m.android.a1percent.ui.components.taskDeadlineIndicatorColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -378,7 +381,9 @@ internal fun TaskRowWithActions(
     onTaskEdit: () -> Unit = {},
     onTaskShare: () -> Unit = {}
 ) {
-    val borderColor = taskDeadlineBorderColor(task.deadline)
+    // val borderColor = taskDeadlineBorderColor(task.deadline)
+    val isCompletedByMe = currentUserId in task.completedBy
+    val indicatorColor = taskDeadlineIndicatorColor(task.deadline, isCompletedByMe)
 
     Card(
         modifier = Modifier
@@ -386,177 +391,211 @@ internal fun TaskRowWithActions(
             .clickable(onClick = onTaskDetail),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        border = BorderStroke(2.dp, borderColor)
+        // border = BorderStroke(2.dp, borderColor)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            val isCompletedByMe = currentUserId in task.completedBy
-
-            // Title + XP pill badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f)
-                )
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                val isCompletedByMe = currentUserId in task.completedBy
+
+                // Title + XP pill badge
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "+${task.xp} XP",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
-
-            // Type badge + goal name (missions) + status badge
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // DESPUÉS
-                if (parentGoalTitle != null) {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            text = "Mission",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                } else {
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.Transparent,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondaryContainer)
-                    ) {
-                        Text(
-                            text = "Task",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                        )
-                    }
-                }
-                if (parentGoalTitle != null) {
-                    Text(
-                        text = "· $parentGoalTitle",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.secondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        text = task.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f)
                     )
-                } else {
-                    Spacer(modifier = Modifier.weight(1f))
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "+${task.xp} XP",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
                 }
-                val statusColor = if (isCompletedByMe) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.tertiary
-                }
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = statusColor.copy(alpha = 0.15f)
-                ) {
-                    Text(
-                        text = if (isCompletedByMe) "Completed" else "Pending",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Medium,
-                        color = statusColor,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                    )
-                }
-            }
 
-            CollaboratorAvatars(
-                sharedWith = task.sharedWith,
-                currentUserId = currentUserId,
-                friends = friends
-            )
-
-            if (task.completedBy.isNotEmpty() && task.sharedWith.size > 1) {
+                // Type badge + goal name (missions) + status badge
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // DESPUÉS
+                    if (parentGoalTitle != null) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "Mission",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    } else {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.Transparent,
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.secondaryContainer
+                            )
+                        ) {
+                            Text(
+                                text = "Task",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                    if (parentGoalTitle != null) {
+                        Text(
+                            text = "· $parentGoalTitle",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.secondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    val statusColor = if (isCompletedByMe) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.tertiary
+                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = statusColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = if (isCompletedByMe) "Completed" else "Pending",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = statusColor,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                CollaboratorAvatars(
+                    sharedWith = task.sharedWith,
+                    currentUserId = currentUserId,
+                    friends = friends
+                )
+
+                if (task.completedBy.isNotEmpty() && task.sharedWith.size > 1) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = "Completed by",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        CollaboratorAvatars(
+                            sharedWith = task.completedBy,
+                            currentUserId = "",
+                            friends = friends + listOfNotNull(currentUserProfile)
+                        )
+                    }
+                }
+
+                HorizontalDivider()
+
+                // Action buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(
-                        text = "Completed by",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    CollaboratorAvatars(
-                        sharedWith = task.completedBy,
-                        currentUserId = "",
-                        friends = friends + listOfNotNull(currentUserProfile)
-                    )
-                }
-            }
-
-            HorizontalDivider()
-
-            // Action buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                AssistChip(
-                    onClick = onTaskComplete,
-                    label = {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = if (isCompletedByMe) "Mark pending" else "Complete",
-                            modifier = Modifier.size(16.dp)
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (isCompletedByMe) {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
-                        labelColor = if (isCompletedByMe) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
-                    ),
-                    modifier = Modifier.weight(1f)
-                )
-                AssistChip(
-                    onClick = onTaskEdit,
-                    label = { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
-                )
-                if (task.goalId == null) {
                     AssistChip(
-                        onClick = onTaskShare,
-                        label = { Icon(Icons.Default.Share, contentDescription = "Share", modifier = Modifier.size(16.dp)) },
+                        onClick = onTaskComplete,
+                        label = {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = if (isCompletedByMe) "Mark pending" else "Complete",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = if (isCompletedByMe) {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                            labelColor = if (isCompletedByMe) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                    AssistChip(
+                        onClick = onTaskEdit,
+                        label = {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (task.goalId == null) {
+                        AssistChip(
+                            onClick = onTaskShare,
+                            label = {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = "Share",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    AssistChip(
+                        onClick = onTaskDelete,
+                        label = {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete",
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
-                AssistChip(
-                    onClick = onTaskDelete,
-                    label = { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp)) },
-                    modifier = Modifier.weight(1f)
+            }
+            // Indicador vertical — overlay interno, borde derecho
+            if (indicatorColor != null) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()        // toma el tamaño del Box padre
+                        .wrapContentWidth(Alignment.End)  // empuja al borde derecho
+                        .width(4.dp)
+                        .clip(RoundedCornerShape(topEnd = 14.dp, bottomEnd = 14.dp))
+                        .background(indicatorColor)
                 )
             }
         }

@@ -1,11 +1,11 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.services)
     alias(libs.plugins.kotlin.serialization)
 }
-
-import java.util.Properties
 
 val localProperties = Properties().apply {
     val file = rootProject.file("local.properties")

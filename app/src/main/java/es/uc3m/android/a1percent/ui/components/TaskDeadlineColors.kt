@@ -19,6 +19,18 @@ fun taskDeadlineBorderColor(deadline: TaskDeadline?): Color {
     }
 }
 
+val TaskDeadlineColors.Completed: Color get() = Color(0xFF22C55E)
+
+fun taskDeadlineIndicatorColor(deadline: TaskDeadline?, isCompleted: Boolean): Color? {
+    if (isCompleted) return Color(0xFF22C55E)
+    return when (TaskDeadlineResolver.deadlineStatus(deadline)) {
+        TaskDeadlineResolver.DeadlineStatus.OVERDUE -> TaskDeadlineColors.Overdue
+        TaskDeadlineResolver.DeadlineStatus.TODAY -> TaskDeadlineColors.DueToday
+        TaskDeadlineResolver.DeadlineStatus.FUTURE -> TaskDeadlineColors.Default
+        TaskDeadlineResolver.DeadlineStatus.NO_DEADLINE -> null
+    }
+}
+
 fun taskDeadlineLabel(deadline: TaskDeadline?): String? {
     return when (TaskDeadlineResolver.deadlineStatus(deadline)) {
         TaskDeadlineResolver.DeadlineStatus.OVERDUE -> "Overdue"
