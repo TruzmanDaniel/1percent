@@ -2,7 +2,6 @@ package es.uc3m.android.a1percent.data
 
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
-import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import java.util.Calendar
 
@@ -20,7 +19,7 @@ object XpManager {
         } else 0
         val total = base + bonus
 
-        TaskRespository.updateTask(task.copy(xpAwarded = total))
+        TaskRespository.updateXpAwarded(task.id, total)
 
         val today = startOfDay()
         val yesterday = today - 86_400_000L
@@ -43,9 +42,10 @@ object XpManager {
             ?: return Result.failure(IllegalStateException("No logged-in user"))
         if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
 
-        val xpToRevoke = task.xpAwarded ?: return Result.success(Unit)
+        val freshTask = TaskRespository.getTask(task.id).getOrNull() ?: task
+        val xpToRevoke = freshTask.xpAwarded ?: return Result.success(Unit)
 
-        TaskRespository.updateTask(task.copy(xpAwarded = null))
+        TaskRespository.updateXpAwarded(task.id, null)
 
         val updated = profile.copy(
             currentXp = (profile.currentXp - xpToRevoke).coerceAtLeast(0),

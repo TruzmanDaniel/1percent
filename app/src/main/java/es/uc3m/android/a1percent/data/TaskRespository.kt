@@ -152,6 +152,25 @@ object TaskRespository {
         }
     }
 
+    suspend fun updateXpAwarded(taskId: String, xpAwarded: Int?): Result<Unit> {
+        return try {
+            val value: Any = xpAwarded ?: FieldValue.delete()
+            tasksCollection.document(taskId).update("xpAwarded", value).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getTask(taskId: String): Result<Task?> {
+        return try {
+            val doc = tasksCollection.document(taskId).get().await()
+            Result.success(doc.toObjectSerializable<Task>())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun shareTask(taskId: String, friendUserId: String): Result<Unit> {
         return try {
             tasksCollection.document(taskId)

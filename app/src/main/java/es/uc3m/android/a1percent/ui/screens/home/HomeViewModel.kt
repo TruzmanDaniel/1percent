@@ -181,7 +181,7 @@ class HomeViewModel : ViewModel() {
                 if (goal.deadline != null) {
                     val totalWeeks = ((goal.deadline - goal.createdAt) / SEVEN_DAYS_MILLIS).toInt().coerceAtLeast(1)
                     val newProgress = ((weekNumber * 100) / totalWeeks).coerceIn(0, 100)
-                    if (newProgress >= 100) {
+                    if (newProgress >= 100 && goal.progress < 100) {
                         XpManager.awardGoalCompletionBonus(userId, goal)
                     }
                     GoalRepository.updateGoal(goal.copy(progress = newProgress))
