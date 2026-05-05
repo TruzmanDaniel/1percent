@@ -117,6 +117,7 @@ fun GoalDetailScreen(
                             parentGoalTitle = goal.title,
                             friends = uiState.friends,
                             currentUserId = SessionRepository.currentUser.value?.id ?: "",
+                            currentUserProfile = SessionRepository.currentUser.value,
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
                             onTaskEdit = { viewModel.onTaskEdit(mission) },

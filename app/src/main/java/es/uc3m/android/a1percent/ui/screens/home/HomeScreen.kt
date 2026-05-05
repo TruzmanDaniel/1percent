@@ -112,6 +112,7 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
             sharedProfiles = uiState.sharedUserProfilesById,
             currentUserId = uiState.currentUserId,
             onClose = { viewModel.dismissTaskDetail() },
+            onComplete = { viewModel.onTaskChecked(uiState.selectedTask!!.id) },
             onProfileClicked = { userId ->
                 navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
             }

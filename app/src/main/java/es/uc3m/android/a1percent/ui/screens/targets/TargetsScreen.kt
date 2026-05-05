@@ -307,6 +307,7 @@ private fun TasksTabContent(
                 parentGoalTitle = task.goalId?.let { uiState.goalTitleById[it] },
                 friends = uiState.friends,
                 currentUserId = SessionRepository.currentUser.value?.id ?: "",
+                currentUserProfile = uiState.currentUserProfile,
                 onTaskDetail = { onTaskClicked(task) },
                 onTaskComplete = { onTaskComplete(task.id) },
                 onTaskDelete = { onTaskDelete(task.id) },
@@ -370,6 +371,7 @@ internal fun TaskRowWithActions(
     parentGoalTitle: String? = null,
     friends: List<UserProfile> = emptyList(),
     currentUserId: String = "",
+    currentUserProfile: UserProfile? = null,
     onTaskDetail: () -> Unit = {},
     onTaskComplete: () -> Unit,
     onTaskDelete: () -> Unit,
@@ -392,6 +394,8 @@ internal fun TaskRowWithActions(
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            val isCompletedByMe = currentUserId in task.completedBy
+
             // Title + XP pill badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -447,7 +451,6 @@ internal fun TaskRowWithActions(
                 } else {
                     Spacer(modifier = Modifier.weight(1f))
                 }
-                val isCompletedByMe = currentUserId in task.completedBy
                 val statusColor = if (isCompletedByMe) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -486,7 +489,7 @@ internal fun TaskRowWithActions(
                     CollaboratorAvatars(
                         sharedWith = task.completedBy,
                         currentUserId = "",
-                        friends = friends
+                        friends = friends + listOfNotNull(currentUserProfile)
                     )
                 }
             }
@@ -500,6 +503,7 @@ internal fun TaskRowWithActions(
             ) {
                 AssistChip(
                     onClick = onTaskComplete,
+                    enabled = !isCompletedByMe,
                     label = { Icon(Icons.Default.Check, contentDescription = "Complete", modifier = Modifier.size(16.dp)) },
                     modifier = Modifier.weight(1f)
                 )
@@ -839,6 +843,7 @@ internal fun TaskDetailModal(
             Spacer(modifier = Modifier.height(16.dp))
 
             // ── ACTION BUTTONS ───────────────────────────────────────
+            val isCompletedByMe = currentUserId in task.completedBy
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -847,11 +852,12 @@ internal fun TaskDetailModal(
             ) {
                 FilledTonalButton(
                     onClick = { onComplete(); onClose() },
+                    enabled = !isCompletedByMe,
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Complete")
+                    Text(if (isCompletedByMe) "Completed" else "Complete")
                 }
                 OutlinedButton(
                     onClick = { onDelete(); onClose() },

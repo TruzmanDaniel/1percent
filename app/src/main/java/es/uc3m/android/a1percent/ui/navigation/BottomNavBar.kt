@@ -58,7 +58,7 @@ fun BottomNavBar(
                 )
             }
 
-            val selected = currentRoute == screen.route
+            val selected = currentRoute?.substringBefore("?") == screen.route
             NavigationBarItem(
                 selected = selected,
                 onClick = { onNavigate(screen.route) },

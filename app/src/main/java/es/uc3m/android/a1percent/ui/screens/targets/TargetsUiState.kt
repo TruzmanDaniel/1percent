@@ -32,6 +32,7 @@ data class TargetsUiState(
     val shareTargetTask: Task? = null,
     val shareTargetGoal: Goal? = null,
     val friends: List<es.uc3m.android.a1percent.data.model.UserProfile> = emptyList(),
+    val currentUserProfile: es.uc3m.android.a1percent.data.model.UserProfile? = null,
     val showDeleteGoalConfirm: String? = null,
     val sharedUserProfilesById: Map<String, es.uc3m.android.a1percent.data.model.UserProfile> = emptyMap(),
     val currentUserId: String = "",

@@ -41,6 +41,7 @@ class TargetsViewModel : ViewModel() {
                     allTasks = emptyList()
                     _uiState.value = TargetsUiState()
                 } else {
+                    _uiState.update { it.copy(currentUserProfile = user) }
                     startObservingData(user.id)
                 }
             }
