@@ -305,12 +305,16 @@ class TargetsViewModel : ViewModel() {
     }
 
     private fun reduceTargetsState(base: TargetsUiState): TargetsUiState {
+        val syncedSelectedTask = base.selectedTask?.let { selected ->
+            allTasks.find { it.id == selected.id }
+        }
         return base.copy(
             tasks = applyTaskFiltersAndSort(base.taskFilters),
             goals = applyGoalFiltersAndSort(base.goalFilters),
             goalTitleById = allGoals.associate { it.id to it.title },
             taskFilterItems = buildTaskFilterUiItems(base.taskFilters),
-            goalFilterItems = buildGoalFilterUiItems(base.goalFilters)
+            goalFilterItems = buildGoalFilterUiItems(base.goalFilters),
+            selectedTask = syncedSelectedTask
         )
     }
 

@@ -11,7 +11,6 @@ import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
-import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -186,6 +185,7 @@ class GoalDetailViewModel : ViewModel() {
 
     private fun applyLocalToggleCompletion(taskId: String, userId: String) {
         _uiState.update { current ->
+            var updatedSelectedMission = current.selectedMission
             current.copy(
                 missions = current.missions.map { mission ->
                     if (mission.id == taskId) {
@@ -194,9 +194,14 @@ class GoalDetailViewModel : ViewModel() {
                         } else {
                             mission.completedBy + userId
                         }
-                        mission.copy(completedBy = updated)
+                        mission.copy(completedBy = updated).also { updatedMission ->
+                            if (updatedSelectedMission?.id == taskId) {
+                                updatedSelectedMission = updatedMission
+                            }
+                        }
                     } else mission
-                }
+                },
+                selectedMission = updatedSelectedMission
             )
         }
     }

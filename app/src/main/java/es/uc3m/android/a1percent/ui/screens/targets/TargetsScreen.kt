@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Loop
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -72,7 +73,6 @@ import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
-import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
@@ -503,8 +503,25 @@ internal fun TaskRowWithActions(
             ) {
                 AssistChip(
                     onClick = onTaskComplete,
-                    enabled = !isCompletedByMe,
-                    label = { Icon(Icons.Default.Check, contentDescription = "Complete", modifier = Modifier.size(16.dp)) },
+                    label = {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = if (isCompletedByMe) "Mark pending" else "Complete",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (isCompletedByMe) {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        },
+                        labelColor = if (isCompletedByMe) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        }
+                    ),
                     modifier = Modifier.weight(1f)
                 )
                 AssistChip(
@@ -646,16 +663,18 @@ internal fun TaskDetailModal(
                             )
                         }
 
-                        val statusColor = when (task.status) {
-                            TaskStatus.PENDING   -> MaterialTheme.colorScheme.tertiary
-                            TaskStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                        val isCompletedByMe = currentUserId in task.completedBy
+                        val statusColor = if (isCompletedByMe) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
                         }
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = statusColor.copy(alpha = 0.18f)
                         ) {
                             Text(
-                                text = task.status.displayName,
+                                text = if (isCompletedByMe) "Completed" else "Pending",
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = statusColor,
@@ -851,11 +870,26 @@ internal fun TaskDetailModal(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilledTonalButton(
-                    onClick = { onComplete(); onClose() },
-                    enabled = !isCompletedByMe,
-                    modifier = Modifier.weight(1f)
+                    onClick = onComplete,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = if (isCompletedByMe) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer
+                        },
+                        contentColor = if (isCompletedByMe) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        }
+                    )
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(if (isCompletedByMe) "Completed" else "Complete")
                 }

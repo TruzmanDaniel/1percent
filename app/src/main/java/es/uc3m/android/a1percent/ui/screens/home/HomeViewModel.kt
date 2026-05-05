@@ -367,9 +367,13 @@ class HomeViewModel : ViewModel() {
     private fun reduceHomeState(base: HomeUiState): HomeUiState {
         val visibleTasks = applyFiltersAndSort(base.tasks, base.filters)
         val filterItems = buildHomeFilterUiItems(base.filters)
+        val syncedSelectedTask = base.selectedTask?.let { selected ->
+            base.tasks.find { it.id == selected.id }
+        }
         return base.copy(
             visibleTasks = visibleTasks,
-            filterItems = filterItems
+            filterItems = filterItems,
+            selectedTask = syncedSelectedTask
         )
     }
 
