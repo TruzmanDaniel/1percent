@@ -8,6 +8,7 @@ import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.TaskDeadlineResolver
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.UserRepository
+import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -198,12 +199,16 @@ class TargetsViewModel : ViewModel() {
 
     fun onTaskComplete(taskId: String) {
         val userId = SessionRepository.currentUser.value?.id ?: return
+        val task = allTasks.find { it.id == taskId } ?: return
+        val wasCompleted = userId in task.completedBy
         viewModelScope.launch {
             TaskRespository.toggleTaskCompletion(taskId, userId).onFailure { error ->
                 _uiState.update { current ->
                     current.copy(errorMessage = "Error completing task: ${error.message ?: "unknown error"}")
                 }
             }
+            if (wasCompleted) XpManager.revokeTaskXp(userId, task)
+            else XpManager.awardTaskXp(userId, task.copy(completedAt = System.currentTimeMillis()))
         }
     }
 

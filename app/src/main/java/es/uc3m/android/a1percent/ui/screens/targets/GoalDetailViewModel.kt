@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
+import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
@@ -99,9 +100,13 @@ class GoalDetailViewModel : ViewModel() {
 
     fun onTaskComplete(taskId: String) {
         val userId = SessionRepository.currentUser.value?.id ?: return
+        val task = _uiState.value.missions.find { it.id == taskId } ?: return
+        val wasCompleted = userId in task.completedBy
         viewModelScope.launch {
             TaskRespository.toggleTaskCompletion(taskId, userId).onSuccess {
                 applyLocalToggleCompletion(taskId, userId)
+                if (wasCompleted) XpManager.revokeTaskXp(userId, task)
+                else XpManager.awardTaskXp(userId, task.copy(completedAt = System.currentTimeMillis()))
             }
         }
     }
