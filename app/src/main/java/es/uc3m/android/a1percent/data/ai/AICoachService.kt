@@ -5,10 +5,7 @@ import es.uc3m.android.a1percent.data.CreditManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.WeeklySummary
-import es.uc3m.android.a1percent.data.model.enums.GoalType
-import es.uc3m.android.a1percent.data.model.isFinite
 import es.uc3m.android.a1percent.data.model.weeksRemaining
-import es.uc3m.android.a1percent.data.model.nextMilestone
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -38,7 +35,8 @@ object AICoachService {
         isWeekend: Boolean,
         userFeedback: String?,
         userId: String,
-        weekNumber: Int
+        weekNumber: Int,
+        isDeadlineWeek: Boolean = false
     ): Result<List<Task>> {
         val creditResult = CreditManager.deductCredit(userId)
         if (creditResult.isFailure) {
@@ -46,7 +44,7 @@ object AICoachService {
         }
 
         return try {
-            val prompt = buildPrompt(goal, weeklySummary, isWeekend, userFeedback)
+            val prompt = buildPrompt(goal, weeklySummary, isWeekend, userFeedback, isDeadlineWeek)
             val request = ChatCompletionRequest(
                 model = "gpt-4o-mini",
                 messages = listOf(ChatMessage(role = "user", content = prompt))
@@ -76,7 +74,8 @@ object AICoachService {
         goal: Goal,
         weeklySummary: WeeklySummary?,
         isWeekend: Boolean,
-        userFeedback: String?
+        userFeedback: String?,
+        isDeadlineWeek: Boolean
     ): String {
         val timeContext = if (isWeekend) {
             "Es fin de semana: propón tareas que requieran más tiempo pero menos recursos técnicos."
@@ -103,22 +102,31 @@ object AICoachService {
 
         val goalTypeContext = buildGoalTypeContext(goal)
 
-        return """
-            Eres un coach personal basado en la filosofía del 1% de mejora diaria.
-            Genera exactamente 7 misiones diarias para el siguiente objetivo:
+        val missionRules = if (isDeadlineWeek) {
+            """
+            REGLAS (SEMANA FINAL):
+            - Esta es la ÚLTIMA SEMANA del proyecto. El deadline es inminente.
+            - Genera entre 4 y 5 misiones diarias enfocadas en cerrar lo pendiente
+            - Añade 1 MISIÓN ÉPICA FINAL que represente la culminación del proyecto
+            - La misión épica debe ser el ÚLTIMO dayIndex y tener difficulty = ${goal.difficulty}
+            - Total: entre 5 y 6 misiones (dayIndex consecutivos empezando en 1)
+            - Las tareas deben ser concretas, accionables y medibles
+            - Adapta la dificultad al nivel de intensidad proporcionado
 
-            Objetivo: ${goal.title}
-            Categoría: ${goal.category.displayName}
-            Nivel de intensidad actual: ${goal.currentIntensity}
-
-            $goalTypeContext
-
-            $timeContext
-
-            $summaryContext
-
-            $feedbackContext
-
+            Responde SOLO con JSON válido, sin markdown, sin texto extra.
+            Usa este formato exacto:
+            {
+              "tasks": [
+                {"title": "...", "description": "...", "difficulty": 2, "dayIndex": 1},
+                {"title": "...", "description": "...", "difficulty": 3, "dayIndex": 2},
+                {"title": "...", "description": "...", "difficulty": 3, "dayIndex": 3},
+                {"title": "...", "description": "...", "difficulty": 3, "dayIndex": 4},
+                {"title": "MISIÓN ÉPICA FINAL: ...", "description": "...", "difficulty": ${goal.difficulty}, "dayIndex": 5}
+              ]
+            }
+            """.trimIndent()
+        } else {
+            """
             REGLAS:
             - Genera exactamente 7 tareas con dayIndex de 1 a 7
             - Los días 1-6 son misiones normales
@@ -140,44 +148,44 @@ object AICoachService {
                 {"title": "MISIÓN ÉPICA: ...", "description": "...", "difficulty": 5, "dayIndex": 7}
               ]
             }
+            """.trimIndent()
+        }
+
+        return """
+            Eres un coach personal basado en la filosofía del 1% de mejora diaria.
+            Genera exactamente 7 misiones diarias para el siguiente objetivo:
+
+            Objetivo: ${goal.title}
+            Categoría: ${goal.category.displayName}
+            Nivel de intensidad actual: ${goal.currentIntensity}
+
+            $goalTypeContext
+
+            $timeContext
+
+            $summaryContext
+
+            $feedbackContext
+
+            $missionRules
         """.trimIndent()
     }
 
     private fun buildGoalTypeContext(goal: Goal): String {
-        return when (goal.goalType) {
-            GoalType.FINITE -> {
-                val weeksLeft = goal.weeksRemaining() ?: 0
-                val totalWeeks = if (goal.deadline != null) {
-                    ((goal.deadline - goal.createdAt) / (7L * 24 * 3600 * 1000)).toInt().coerceAtLeast(1)
-                } else 0
-                """
-                CONTEXTO DEL PROYECTO:
-                - Tipo: Proyecto finito con fecha límite
-                - Semanas restantes: $weeksLeft de $totalWeeks
-                - Progreso actual: ${goal.progress}%
-                - Extensiones usadas: ${goal.extensionCount}
+        val weeksLeft = goal.weeksRemaining()
+        val totalWeeks = ((goal.deadline - goal.createdAt) / (7L * 24 * 3600 * 1000)).toInt().coerceAtLeast(1)
+        return """
+            CONTEXTO DEL PROYECTO:
+            - Tipo: Proyecto con fecha límite
+            - Semanas restantes: $weeksLeft de $totalWeeks
+            - Progreso actual: ${goal.progress}%
+            - Extensiones usadas: ${goal.extensionCount}
 
-                DIRECTRIZ: Este es un proyecto con fecha de examen. Diseña las misiones
-                para un progreso lineal que se intensifique gradualmente hacia el deadline.
-                Si quedan pocas semanas, prioriza las tareas más críticas para el objetivo
-                final. La misión épica debe simular un "ensayo general" del reto final.
-                """.trimIndent()
-            }
-            GoalType.INFINITE -> {
-                val nextMilestone = goal.nextMilestone()
-                """
-                CONTEXTO DEL HÁBITO:
-                - Tipo: Hábito de por vida (sin fecha límite)
-                - Racha actual: ${goal.weeklyStreak} semanas consecutivas
-                - Próximo hito de constancia: ${nextMilestone ?: "N/A"} semanas
-
-                DIRECTRIZ: Este es un hábito para toda la vida. Prioriza la variedad y
-                la sostenibilidad a largo plazo. Evita la monotonía rotando tipos de
-                actividad. La misión épica debe ser un pico de motivación y diversión,
-                no un examen. ${if (goal.weeklyStreak > 12) "La racha es larga: introduce retos creativos para mantener el interés fresco." else ""}
-                """.trimIndent()
-            }
-        }
+            DIRECTRIZ: Este es un proyecto con fecha de examen. Diseña las misiones
+            para un progreso lineal que se intensifique gradualmente hacia el deadline.
+            Si quedan pocas semanas, prioriza las tareas más críticas para el objetivo
+            final. La misión épica debe simular un "ensayo general" del reto final.
+        """.trimIndent()
     }
 
     fun calculateNewIntensity(
@@ -187,14 +195,10 @@ object AICoachService {
     ): Float {
         if (!epicPassed) return goal.currentIntensity
 
-        val maxIntensity = if (goal.goalType == GoalType.FINITE) {
-            goal.difficulty * 2.0f
-        } else {
-            goal.difficulty * 1.5f
-        }
+        val maxIntensity = goal.difficulty * 2.0f
 
         val weeksLeft = goal.weeksRemaining()
-        val growthMultiplier = if (goal.isFinite && weeksLeft != null && weeksLeft <= 4) {
+        val growthMultiplier = if (weeksLeft <= 4) {
             1.0 + (4.0 - weeksLeft) / 4.0
         } else {
             1.0
@@ -215,12 +219,7 @@ object AICoachService {
         goal: Goal,
         feedback: String?
     ): Float {
-        val maxIntensity = if (goal.isFinite) {
-            goal.difficulty * 2.0f
-        } else {
-            goal.difficulty * 1.5f
-        }
-
+        val maxIntensity = goal.difficulty * 2.0f
         val reduced = goal.currentIntensity * 0.85f
 
         val adjusted = when (feedback) {
