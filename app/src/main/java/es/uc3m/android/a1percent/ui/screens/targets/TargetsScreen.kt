@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,10 +58,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.DropdownMenuItem
+import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -114,6 +119,7 @@ fun TargetsScreen(
             onTabSelected = viewModel::onTabSelected,
             onTaskStatusFilterClicked = viewModel::onTaskStatusFilterClicked,
             onTaskFilterClicked = viewModel::onTaskFilterClicked,
+            onTaskCategoryClick = viewModel::onTaskCategoryClick,
             onGoalFilterClicked = viewModel::onGoalFilterClicked,
             onGoalClicked = { goalId ->
                 navController.navigate("targets/goal/$goalId")
@@ -177,6 +183,67 @@ fun TargetsScreen(
                 }
             )
         }
+        // Category selector dialog
+        if (uiState.showCategorySelector) {
+            CategorySelectorDialog(
+                uiState = uiState,
+                onCategorySelected = { label -> viewModel.onCategorySelected(label) },
+                onDismiss = { viewModel.onCategorySelectorDismissed() }
+            )
+        }
+    }
+}
+
+// Category selector dialog (glass style) shown when TargetsUiState.showCategorySelector == true
+@Composable
+private fun CategorySelectorDialog(
+    uiState: TargetsUiState,
+    onCategorySelected: (String?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    // Collect categories
+    val customCategories by TaskCategoryRepository.customCategories.collectAsStateWithLifecycle()
+    val predefined = TaskCategoryRepository.predefinedCategories
+
+    Dialog(onDismissRequest = onDismiss) {
+        val glassShape = RoundedCornerShape(20.dp)
+        val glassGradient = Brush.verticalGradient(
+            colors = listOf(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.38f),
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f)
+            )
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(0.9f),
+            shape = glassShape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+        ) {
+            Column(modifier = Modifier
+                .background(brush = glassGradient)
+                .padding(12.dp)
+                .verticalScroll(rememberScrollState())
+            ) {
+                Text("Select Category", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+
+                // All option
+                DropdownMenuItem(text = { Text("All") }, onClick = { onCategorySelected(null) })
+
+                // Predefined
+                predefined.forEach { cat ->
+                    DropdownMenuItem(text = { Text(cat.displayName) }, onClick = { onCategorySelected(cat.displayName) })
+                }
+
+                if (customCategories.isNotEmpty()) {
+                    HorizontalDivider()
+                    customCategories.forEach { custom ->
+                        DropdownMenuItem(text = { Text(custom) }, onClick = { onCategorySelected(custom) })
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -188,6 +255,7 @@ private fun TargetsBodyContent(
     onTabSelected: (TargetsTab) -> Unit,
     onTaskStatusFilterClicked: () -> Unit,
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
+    onTaskCategoryClick: () -> Unit,
     onGoalFilterClicked: (GoalFilterKey) -> Unit,
     onGoalClicked: (String) -> Unit,
     onTaskClicked: (Task) -> Unit,
@@ -220,6 +288,7 @@ private fun TargetsBodyContent(
                 uiState = uiState,
                 onTaskStatusFilterClicked = onTaskStatusFilterClicked,
                 onTaskFilterClicked = onTaskFilterClicked,
+                onTaskCategoryClick = onTaskCategoryClick,
                 onTaskClicked = onTaskClicked,
                 onTaskComplete = onTaskComplete,
                 onTaskDelete = onTaskDelete,
@@ -259,6 +328,7 @@ private fun TasksTabContent(
     uiState: TargetsUiState,
     onTaskStatusFilterClicked: () -> Unit,
     onTaskFilterClicked: (TaskFilterKey) -> Unit,
+    onTaskCategoryClick: () -> Unit,
     onTaskClicked: (Task) -> Unit,
     onTaskComplete: (String) -> Unit,
     onTaskDelete: (String) -> Unit,
@@ -298,9 +368,9 @@ private fun TasksTabContent(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(
-                        onClick = { onTaskFilterClicked(TaskFilterKey.CATEGORY) },
+                        onClick = { onTaskCategoryClick() },
                         label = { Text(uiState.taskFilters.categoryLabel) },
-                        selected = false
+                        selected = uiState.taskFilters.categoryLabel != "Category"
                     )
                     FilterChip(
                         onClick = { onTaskFilterClicked(TaskFilterKey.SORT) },

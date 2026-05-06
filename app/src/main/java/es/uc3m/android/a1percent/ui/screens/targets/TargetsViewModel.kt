@@ -123,12 +123,26 @@ class TargetsViewModel : ViewModel() {
             }
         }
 
+        // Apply category filter if a specific category is selected
+        val categoryFiltered = if (filters.categoryLabel == "Category") {
+            filtered
+        } else {
+            filtered.filter { task ->
+                val label = filters.categoryLabel
+                if (task.customCategoryName != null) {
+                    task.customCategoryName.equals(label, ignoreCase = true)
+                } else {
+                    task.category.displayName.equals(label, ignoreCase = true)
+                }
+            }
+        }
+
         return when (filters.sort) {
-            TaskSort.NONE -> filtered
-            TaskSort.DEADLINE_ASC -> filtered.sortedBy { task ->
+            TaskSort.NONE -> categoryFiltered
+            TaskSort.DEADLINE_ASC -> categoryFiltered.sortedBy { task ->
                 TaskDeadlineResolver.toSortKey(task.deadline)
             }
-            TaskSort.XP_DESC -> filtered.sortedByDescending { it.xp }
+            TaskSort.XP_DESC -> categoryFiltered.sortedByDescending { it.xp }
         }
     }
 
@@ -148,14 +162,34 @@ class TargetsViewModel : ViewModel() {
     // FILTERING
     fun onTaskFilterClicked(filterKey: TaskFilterKey) {
         _uiState.update { current ->
-            val updatedTaskFilters = when (filterKey) {
-                TaskFilterKey.MISSIONS -> toggleMissionsQuickFilter(current.taskFilters)
-                TaskFilterKey.SHARED -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.SHARED)
-                TaskFilterKey.CATEGORY -> current.taskFilters
-                TaskFilterKey.SORT -> current.taskFilters.copy(sort = nextTaskSort(current.taskFilters.sort))
+            if (filterKey == TaskFilterKey.CATEGORY) {
+                // Open category selector dialog
+                reduceTargetsState(current.copy(showCategorySelector = true))
+            } else {
+                val updatedTaskFilters = when (filterKey) {
+                    TaskFilterKey.MISSIONS -> toggleMissionsQuickFilter(current.taskFilters)
+                    TaskFilterKey.SHARED -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.SHARED)
+                    TaskFilterKey.CATEGORY -> current.taskFilters
+                    TaskFilterKey.SORT -> current.taskFilters.copy(sort = nextTaskSort(current.taskFilters.sort))
+                }
+                reduceTargetsState(current.copy(taskFilters = updatedTaskFilters))
             }
-            reduceTargetsState(current.copy(taskFilters = updatedTaskFilters))
         }
+    }
+
+    fun onTaskCategoryClick() {
+        _uiState.update { it.copy(showCategorySelector = true) }
+    }
+
+    fun onCategorySelected(categoryLabel: String?) {
+        _uiState.update { current ->
+            val updated = current.taskFilters.copy(categoryLabel = categoryLabel ?: "Category")
+            reduceTargetsState(current.copy(taskFilters = updated, showCategorySelector = false))
+        }
+    }
+
+    fun onCategorySelectorDismissed() {
+        _uiState.update { it.copy(showCategorySelector = false) }
     }
 
     fun onTaskStatusFilterClicked() {
@@ -175,10 +209,6 @@ class TargetsViewModel : ViewModel() {
         }
     }
 
-    @Suppress("unused")
-    fun onTaskCategoryClick() {
-        // TODO: open category selector and apply advanced category filter.
-    }
 
     fun onTaskClicked(task: Task) {
         _uiState.update { it.copy(selectedTask = task) }

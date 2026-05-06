@@ -7,9 +7,9 @@ data class HomeFilters(
 )
 
 enum class HomeStatusFilter(val label: String) {
-    ALL("All"),
-    PENDING("Pending"),
-    COMPLETED("Completed")
+    ALL("Status: All"),
+    PENDING("Status: Pending"),
+    COMPLETED("Status: Completed")
 }
 
 enum class HomeFilterKey {

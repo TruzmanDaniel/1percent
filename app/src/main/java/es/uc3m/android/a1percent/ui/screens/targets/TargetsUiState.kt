@@ -23,6 +23,7 @@ data class TargetsUiState(
     val goalFilters: GoalFilters = GoalFilters(),
     val taskFilterItems: List<TaskFilterUiItem> = buildTaskFilterUiItems(TaskFilters()),
     val goalFilterItems: List<GoalFilterUiItem> = buildGoalFilterUiItems(GoalFilters()),
+    val showCategorySelector: Boolean = false,
 
     val goalTitleById: Map<String, String> = emptyMap(),
     val goalProgressById: Map<String, Float> = emptyMap(),
