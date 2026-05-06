@@ -51,8 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import es.uc3m.android.a1percent.data.model.isFinite
-import es.uc3m.android.a1percent.data.model.weekLabel
+import es.uc3m.android.a1percent.data.model.totalWeeks
 import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,7 +100,6 @@ fun RitualScreen(
                     onFeedback = viewModel::onFeedbackSelected
                 )
                 RitualStep.INTENSITY_CHANGE -> IntensityChangeStep(uiState, onNext = viewModel::onNextStep)
-                RitualStep.MILESTONE -> MilestoneStep(uiState, onNext = viewModel::onNextStep)
                 RitualStep.GENERATING -> {
                     LaunchedEffect(Unit) { viewModel.onStartGeneration() }
                     GeneratingStep(uiState)
@@ -158,7 +156,8 @@ private fun SummaryStep(uiState: RitualUiState, onNext: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         Text(goal.title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(4.dp))
-        Text(goal.weekLabel(uiState.weekNumber), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("Semana ${uiState.weekNumber} de ${goal.totalWeeks()}", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("${uiState.goalProgress}% completado • ${uiState.weeksRemaining} semanas restantes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(32.dp))
 
         if (uiState.isCatchUp) {
@@ -309,35 +308,6 @@ private fun IntensityChangeStep(uiState: RitualUiState, onNext: () -> Unit) {
 }
 
 @Composable
-private fun MilestoneStep(uiState: RitualUiState, onNext: () -> Unit) {
-    val milestone = uiState.milestoneReached ?: return
-    val name = when (milestone) {
-        4 -> "Primer Mes"
-        12 -> "Trimestre de Hierro"
-        26 -> "Medio Año Imparable"
-        52 -> "Un Año Legendario"
-        else -> "$milestone Semanas"
-    }
-    Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("🏆", fontSize = 64.sp)
-        Spacer(Modifier.height(16.dp))
-        Text("¡Hito alcanzado!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
-        Spacer(Modifier.height(8.dp))
-        Text(name, style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(16.dp))
-        Text("${uiState.newWeeklyStreak} semanas consecutivas", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(Modifier.height(48.dp))
-        Button(onClick = onNext, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Continuar")
-        }
-    }
-}
-
-@Composable
 private fun GeneratingStep(uiState: RitualUiState) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -364,9 +334,7 @@ private fun CompleteStep(uiState: RitualUiState, onFinished: () -> Unit) {
         if (uiState.newIntensity != null) {
             Text("Nivel: ${"%.1f".format(uiState.newIntensity)}", style = MaterialTheme.typography.titleMedium)
         }
-        if (uiState.newWeeklyStreak > 0) {
-            Text("Racha: ${uiState.newWeeklyStreak} semanas", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))
-        }
+        Text("${uiState.goalProgress}% completado", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))
         Spacer(Modifier.height(48.dp))
         Button(onClick = onFinished, modifier = Modifier.fillMaxWidth(0.7f)) {
             Text("Ver misiones")
