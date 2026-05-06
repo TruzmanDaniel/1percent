@@ -14,7 +14,6 @@ data class RitualUiState(
     val selectedFeedback: EnergyFeedback? = null,
     val newIntensity: Float? = null,
     val oldIntensity: Float? = null,
-    val milestoneReached: Int? = null,
     val newDeadline: Long? = null,
     val isGenerating: Boolean = false,
     val generationComplete: Boolean = false,
@@ -22,7 +21,8 @@ data class RitualUiState(
     val goalCompleted: Boolean = false,
     val showDatePicker: Boolean = false,
     val weekNumber: Int = 0,
-    val newWeeklyStreak: Int = 0
+    val goalProgress: Int = 0,
+    val weeksRemaining: Int = 0
 ) {
     val currentStep: RitualStep?
         get() = visibleSteps.getOrNull(currentStepIndex)

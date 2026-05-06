@@ -14,9 +14,8 @@ import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
-import es.uc3m.android.a1percent.data.model.isFinite
-import es.uc3m.android.a1percent.data.model.isInfinite
-import es.uc3m.android.a1percent.data.model.justReachedMilestone
+import es.uc3m.android.a1percent.data.model.isDeadlineWeek
+import es.uc3m.android.a1percent.data.model.weeksRemaining
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,7 +40,7 @@ class RitualViewModel : ViewModel() {
             val goalTasks = tasks.filter { it.goalId == goalId && it.isAiGenerated }
 
             val completed = goalTasks.count { it.status == TaskStatus.COMPLETED }
-            val epicTask = goalTasks.find { it.dayIndex == 7 }
+            val epicTask = goalTasks.maxByOrNull { it.dayIndex ?: 0 }
             val epicPassed = epicTask?.status == TaskStatus.COMPLETED
             val xpEarned = goalTasks.filter { it.status == TaskStatus.COMPLETED }
                 .sumOf { it.xpAwarded ?: it.xp }
@@ -52,15 +51,7 @@ class RitualViewModel : ViewModel() {
             val latestSummary = WeeklySummaryRepository.getLatestSummary(goal.id).getOrNull()
             val weekNumber = (latestSummary?.weekNumber ?: 0) + 1
 
-            val newStreak = if (isCatchUp) {
-                goal.weeklyStreak
-            } else if (completed > 0) {
-                goal.weeklyStreak + 1
-            } else {
-                0
-            }
-
-            val steps = computeVisibleSteps(goal, isCatchUp, newStreak)
+            val steps = computeVisibleSteps(goal, isCatchUp)
 
             _uiState.update {
                 RitualUiState(
@@ -73,13 +64,14 @@ class RitualViewModel : ViewModel() {
                     oldIntensity = goal.currentIntensity,
                     isCatchUp = isCatchUp,
                     weekNumber = weekNumber,
-                    newWeeklyStreak = newStreak
+                    goalProgress = goal.progress,
+                    weeksRemaining = goal.weeksRemaining()
                 )
             }
         }
     }
 
-    private fun computeVisibleSteps(goal: Goal, isCatchUp: Boolean, newStreak: Int): List<RitualStep> {
+    private fun computeVisibleSteps(goal: Goal, isCatchUp: Boolean): List<RitualStep> {
         if (isCatchUp) {
             return listOf(
                 RitualStep.SUMMARY,
@@ -95,22 +87,13 @@ class RitualViewModel : ViewModel() {
             RitualStep.EPIC_RESULT
         )
 
-        if (goal.isFinite && goal.deadline != null) {
-            val now = System.currentTimeMillis()
-            if (goal.deadline in now..(now + SEVEN_DAYS_MILLIS)) {
-                steps.add(RitualStep.DEADLINE_CHECK)
-            }
+        val now = System.currentTimeMillis()
+        if (goal.deadline in now..(now + SEVEN_DAYS_MILLIS)) {
+            steps.add(RitualStep.DEADLINE_CHECK)
         }
 
         steps.add(RitualStep.FEEDBACK)
         steps.add(RitualStep.INTENSITY_CHANGE)
-
-        val tempGoal = goal.copy(weeklyStreak = newStreak)
-        if (tempGoal.isInfinite && tempGoal.justReachedMilestone() != null) {
-            steps.add(RitualStep.MILESTONE)
-            _uiState.update { it.copy(milestoneReached = tempGoal.justReachedMilestone()) }
-        }
-
         steps.add(RitualStep.GENERATING)
         steps.add(RitualStep.COMPLETE)
         return steps
@@ -190,8 +173,6 @@ class RitualViewModel : ViewModel() {
         val newIntensity = _uiState.value.newIntensity ?: return
         val isCatchUp = _uiState.value.isCatchUp
         val weekNumber = _uiState.value.weekNumber
-        val newStreak = _uiState.value.newWeeklyStreak
-        val milestoneReached = _uiState.value.milestoneReached
 
         viewModelScope.launch {
             _uiState.update { it.copy(isGenerating = true) }
@@ -215,32 +196,16 @@ class RitualViewModel : ViewModel() {
                     XpManager.awardEpicWeeklyBonus(userId, goal)
                 }
 
-                if (goal.isFinite && goal.deadline != null) {
-                    val totalWeeks = ((goal.deadline - goal.createdAt) / SEVEN_DAYS_MILLIS).toInt().coerceAtLeast(1)
-                    val newProgress = ((weekNumber * 100) / totalWeeks).coerceIn(0, 100)
-                    GoalRepository.updateGoal(goal.copy(progress = newProgress))
-                }
-
-                if (milestoneReached != null) {
-                    XpManager.awardMilestoneBonus(userId, goal.copy(weeklyStreak = newStreak), milestoneReached)
-                }
+                val totalWeeks = ((goal.deadline - goal.createdAt) / SEVEN_DAYS_MILLIS).toInt().coerceAtLeast(1)
+                val newProgress = ((weekNumber * 100) / totalWeeks).coerceIn(0, 100)
+                GoalRepository.updateGoal(goal.copy(progress = newProgress))
             }
 
-            var updatedGoal = goal.copy(
-                currentIntensity = newIntensity,
-                weeklyStreak = newStreak,
-                streakStartDate = if (newStreak == 1 && goal.weeklyStreak == 0) {
-                    System.currentTimeMillis()
-                } else if (newStreak == 0) {
-                    null
-                } else {
-                    goal.streakStartDate
-                }
-            )
+            var updatedGoal = goal.copy(currentIntensity = newIntensity)
 
             if (_uiState.value.newDeadline != null) {
                 updatedGoal = updatedGoal.copy(
-                    deadline = _uiState.value.newDeadline,
+                    deadline = _uiState.value.newDeadline!!,
                     extensionCount = goal.extensionCount + 1
                 )
             }
@@ -249,13 +214,20 @@ class RitualViewModel : ViewModel() {
                 it.get(Calendar.DAY_OF_WEEK) in listOf(Calendar.SATURDAY, Calendar.SUNDAY)
             }
 
+            val nextWeekIsDeadline = run {
+                val nextWeekStart = System.currentTimeMillis() + SEVEN_DAYS_MILLIS
+                val nextWeekEnd = nextWeekStart + SEVEN_DAYS_MILLIS
+                updatedGoal.deadline in nextWeekStart..nextWeekEnd
+            }
+
             val result = AICoachService.generateWeeklyTasks(
                 goal = updatedGoal,
                 weeklySummary = if (isCatchUp) null else latestSummary,
                 isWeekend = isWeekend,
                 userFeedback = feedback.name,
                 userId = userId,
-                weekNumber = weekNumber
+                weekNumber = weekNumber,
+                isDeadlineWeek = nextWeekIsDeadline
             )
 
             result.onSuccess { tasks ->

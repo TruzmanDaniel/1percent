@@ -6,7 +6,6 @@ enum class RitualStep {
     DEADLINE_CHECK,
     FEEDBACK,
     INTENSITY_CHANGE,
-    MILESTONE,
     GENERATING,
     COMPLETE
 }
