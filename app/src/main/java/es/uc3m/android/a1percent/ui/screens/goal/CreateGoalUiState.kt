@@ -5,7 +5,6 @@ import es.uc3m.android.a1percent.data.model.Task
 data class CreateGoalUiState(
     val goalName: String = "",
     val difficulty: Float = 3f,
-    val hasDeadline: Boolean = false,
     val deadlineEpochMillis: Long? = null,
     val showDatePicker: Boolean = false,
     val isLoading: Boolean = false,
@@ -16,12 +15,14 @@ data class CreateGoalUiState(
     val availableCredits: Int = 5
 ) {
     val canCreateGoal: Boolean
-        get() = goalName.isNotBlank() && !isLoading && aiState != AiNegotiationState.GENERATING
+        get() = goalName.isNotBlank() && deadlineEpochMillis != null
+            && !isLoading && aiState != AiNegotiationState.GENERATING
 
     val canNegotiate: Boolean
         get() = negotiationCount < 3 && aiState == AiNegotiationState.PROPOSAL_READY
 
     val canGenerateAi: Boolean
-        get() = goalName.isNotBlank() && !isLoading && availableCredits > 0
+        get() = goalName.isNotBlank() && deadlineEpochMillis != null
+            && !isLoading && availableCredits > 0
             && aiState != AiNegotiationState.GENERATING
 }

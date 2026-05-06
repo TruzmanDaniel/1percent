@@ -26,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -142,11 +141,11 @@ fun CreateGoalCard(
                         ) {
                             Column {
                                 Text(
-                                    text = if (uiState.hasDeadline) "Proyecto con fecha límite" else "Hábito de por vida",
+                                    text = "Fecha límite",
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 val deadlineMs = uiState.deadlineEpochMillis
-                                if (uiState.hasDeadline && deadlineMs != null) {
+                                if (deadlineMs != null) {
                                     val formatted = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
                                         .format(Date(deadlineMs))
                                     Text(
@@ -154,17 +153,16 @@ fun CreateGoalCard(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
+                                } else {
+                                    Text(
+                                        text = "Selecciona una fecha",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
                                 }
                             }
-                            Switch(
-                                checked = uiState.hasDeadline,
-                                onCheckedChange = { viewModel.onToggleDeadline(it) }
-                            )
-                        }
-
-                        if (uiState.hasDeadline && uiState.deadlineEpochMillis != null) {
                             TextButton(onClick = { viewModel.onShowDatePicker() }) {
-                                Text("Cambiar fecha")
+                                Text(if (uiState.deadlineEpochMillis != null) "Cambiar fecha" else "Seleccionar fecha")
                             }
                         }
 
