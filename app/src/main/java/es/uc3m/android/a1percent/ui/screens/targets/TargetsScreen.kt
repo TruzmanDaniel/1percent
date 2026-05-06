@@ -354,6 +354,7 @@ private fun GoalsTabContent(
         items(items = uiState.goals, key = { it.id }) { goal ->
             GoalCompactItem(
                 goal = goal,
+                progress = uiState.goalProgressById[goal.id] ?: (goal.progress / 100f),
                 friends = uiState.friends,
                 currentUserId = uiState.currentUserId,
                 onClick = { onGoalClicked(goal.id) },
@@ -605,6 +606,7 @@ internal fun TaskRowWithActions(
 @Composable
 private fun GoalCompactItem(
     goal: Goal,
+    progress: Float,
     friends: List<UserProfile>,
     currentUserId: String,
     onClick: () -> Unit,
@@ -625,7 +627,7 @@ private fun GoalCompactItem(
         ) {
             Text(text = goal.title, style = MaterialTheme.typography.bodyLarge)
             Text(
-                text = "${goal.progress}% progress",
+                text = "${(progress * 100).toInt()}% progress",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

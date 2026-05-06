@@ -25,6 +25,7 @@ data class TargetsUiState(
     val goalFilterItems: List<GoalFilterUiItem> = buildGoalFilterUiItems(GoalFilters()),
 
     val goalTitleById: Map<String, String> = emptyMap(),
+    val goalProgressById: Map<String, Float> = emptyMap(),
 
     val selectedTask: Task? = null,
     val editingTask: Task? = null,

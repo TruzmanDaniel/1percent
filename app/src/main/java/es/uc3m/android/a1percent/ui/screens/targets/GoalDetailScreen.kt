@@ -93,10 +93,18 @@ fun GoalDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
+                    val currentUserId = SessionRepository.currentUser.value?.id ?: ""
+                    val aiMissions = missions.filter { it.isAiGenerated }
+                    val missionProgress = if (aiMissions.isNotEmpty()) {
+                        aiMissions.count { currentUserId in it.completedBy }.toFloat() / aiMissions.size
+                    } else {
+                        goal.progress / 100f
+                    }
                     GoalHeaderCard(
                         goal = goal,
+                        missionProgress = missionProgress,
                         friends = uiState.friends,
-                        currentUserId = SessionRepository.currentUser.value?.id ?: "",
+                        currentUserId = currentUserId,
                         onProfileClicked = { userId ->
                             navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
                         }
@@ -187,6 +195,7 @@ fun GoalDetailScreen(
 @Composable
 private fun GoalHeaderCard(
     goal: Goal,
+    missionProgress: Float,
     friends: List<UserProfile>,
     currentUserId: String,
     onProfileClicked: (String) -> Unit
@@ -246,10 +255,10 @@ private fun GoalHeaderCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "Progress", style = MaterialTheme.typography.labelSmall)
-                    Text(text = "${goal.progress}%", style = MaterialTheme.typography.labelSmall)
+                    Text(text = "${(missionProgress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall)
                 }
                 LinearProgressIndicator(
-                    progress = { goal.progress / 100f },
+                    progress = { missionProgress },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)

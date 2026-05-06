@@ -308,10 +308,21 @@ class TargetsViewModel : ViewModel() {
         val syncedSelectedTask = base.selectedTask?.let { selected ->
             allTasks.find { it.id == selected.id }
         }
+        val userId = base.currentUserId
+        val goalProgressById = allGoals.associate { goal ->
+            val missionTasks = allTasks.filter { it.goalId == goal.id && it.isAiGenerated }
+            val progress = if (missionTasks.isNotEmpty()) {
+                missionTasks.count { userId in it.completedBy }.toFloat() / missionTasks.size
+            } else {
+                goal.progress / 100f
+            }
+            goal.id to progress
+        }
         return base.copy(
             tasks = applyTaskFiltersAndSort(base.taskFilters),
             goals = applyGoalFiltersAndSort(base.goalFilters),
             goalTitleById = allGoals.associate { it.id to it.title },
+            goalProgressById = goalProgressById,
             taskFilterItems = buildTaskFilterUiItems(base.taskFilters),
             goalFilterItems = buildGoalFilterUiItems(base.goalFilters),
             selectedTask = syncedSelectedTask

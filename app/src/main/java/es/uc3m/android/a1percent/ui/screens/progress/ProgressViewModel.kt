@@ -10,6 +10,7 @@ import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
+import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,8 @@ class ProgressViewModel : ViewModel() {
     private var tasksJob: Job? = null
     private var goalsJob: Job? = null
     private var observedUserId: String? = null
+    private var cachedTasks: List<Task> = emptyList()
+    private var cachedGoals: List<Goal> = emptyList()
 
     init {
         SessionRepository.currentUser
@@ -66,12 +69,17 @@ class ProgressViewModel : ViewModel() {
         goalsJob?.cancel()
 
         tasksJob = TaskRespository.observeTasks(userId)
-            .onEach { tasks -> recomputeTaskStats(tasks, userId) }
+            .onEach { tasks ->
+                cachedTasks = tasks
+                recomputeTaskStats(tasks, userId)
+                recomputeGoalStats(cachedGoals, tasks, userId)
+            }
             .launchIn(viewModelScope)
 
         goalsJob = GoalRepository.observeGoals(userId)
             .onEach { goals ->
-                recomputeGoalStats(goals)
+                cachedGoals = goals
+                recomputeGoalStats(goals, cachedTasks, userId)
                 loadWeeklySummaries(goals)
             }
             .launchIn(viewModelScope)
@@ -80,6 +88,8 @@ class ProgressViewModel : ViewModel() {
     private fun stopObservingData() {
         tasksJob?.cancel()
         goalsJob?.cancel()
+        cachedTasks = emptyList()
+        cachedGoals = emptyList()
     }
 
     private fun recomputeTaskStats(tasks: List<Task>, userId: String) {
@@ -90,7 +100,10 @@ class ProgressViewModel : ViewModel() {
         val dailyXp = FloatArray(30)
         tasks.forEach { task ->
             val ca = task.completedAt
-            if (ca != null && ca >= thirtyDaysAgo && userId in task.completedBy) {
+            // Legacy tasks (completed before completedBy tracking) only have status=COMPLETED
+            val isCompletedByUser = userId in task.completedBy ||
+                (task.completedBy.isEmpty() && task.status == TaskStatus.COMPLETED && task.ownerId == userId)
+            if (ca != null && ca >= thirtyDaysAgo && isCompletedByUser) {
                 val day = ((ca - thirtyDaysAgo) / (24 * 3600 * 1000)).toInt().coerceIn(0, 29)
                 dailyXp[day] += (task.xpAwarded ?: task.xp)
             }
@@ -104,7 +117,11 @@ class ProgressViewModel : ViewModel() {
         val thisWeek = IntArray(7)
         val lastWeek = IntArray(7)
         tasks
-            .filter { userId in it.completedBy && it.completedAt != null }
+            .filter { task ->
+                val completedByUser = userId in task.completedBy ||
+                    (task.completedBy.isEmpty() && task.status == TaskStatus.COMPLETED && task.ownerId == userId)
+                completedByUser && task.completedAt != null
+            }
             .forEach { task ->
                 val ca = task.completedAt!!
                 // Calendar.DAY_OF_WEEK: Sun=1..Sat=7 → Mon=0..Sun=6
@@ -118,7 +135,10 @@ class ProgressViewModel : ViewModel() {
 
         // Chart 4: completed tasks grouped by category
         val counts = tasks
-            .filter { userId in it.completedBy }
+            .filter { task ->
+                userId in task.completedBy ||
+                    (task.completedBy.isEmpty() && task.status == TaskStatus.COMPLETED && task.ownerId == userId)
+            }
             .groupBy { it.category }
             .mapValues { it.value.size }
         val total = counts.values.sum().toFloat().coerceAtLeast(1f)
@@ -137,13 +157,19 @@ class ProgressViewModel : ViewModel() {
         }
     }
 
-    private fun recomputeGoalStats(goals: List<Goal>) {
+    private fun recomputeGoalStats(goals: List<Goal>, tasks: List<Task>, userId: String) {
         val items = goals
             .filter { it.status == GoalStatus.ACTIVE }
             .map { goal ->
+                val missionTasks = tasks.filter { it.goalId == goal.id && it.isAiGenerated }
+                val progress = if (missionTasks.isNotEmpty()) {
+                    missionTasks.count { userId in it.completedBy }.toFloat() / missionTasks.size
+                } else {
+                    goal.progress / 100f
+                }
                 GoalProgressItem(
                     title = goal.title,
-                    progress = goal.progress / 100f,
+                    progress = progress,
                     category = goal.category
                 )
             }
