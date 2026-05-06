@@ -39,6 +39,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.layout.PaddingValues
 import es.uc3m.android.a1percent.navigation.AppScreens
+import androidx.compose.material3.Switch
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,6 +66,7 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
             onFriendAction = { viewModel.onFriendAction(uiState.user?.id ?: return@ProfileBodyContent) },
             onAcceptRequest = { viewModel.onAcceptRequest(uiState.user?.id ?: return@ProfileBodyContent) },
             onRejectRequest = { viewModel.onRejectRequest(uiState.user?.id ?: return@ProfileBodyContent) },
+            onVacationToggle = { viewModel.onToggleVacationMode() },
             modifier = innerPadding
         )
     }
@@ -78,6 +80,7 @@ fun ProfileBodyContent(
     onFriendAction: () -> Unit = {},
     onAcceptRequest: () -> Unit = {},
     onRejectRequest: () -> Unit = {},
+    onVacationToggle: () -> Unit = {},
     modifier: PaddingValues = PaddingValues(0.dp)
 ) {
     val user = uiState.user
@@ -259,6 +262,38 @@ fun ProfileBodyContent(
             StatRow(label = "Tasks Completed", value = user.totalTasksCompleted.toString())
             if (isOwn) {
                 StatRow(label = "Credits", value = user.availableCredits.toString())
+            }
+        }
+
+        if (isOwn) {
+            val isVacation = user.isVacationMode == true
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isVacation) MaterialTheme.colorScheme.tertiaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerLow
+                )
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            if (isVacation) "Modo Vacaciones activo" else "Modo Vacaciones",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (isVacation && user.vacationStartDate != null) {
+                            val days = ((System.currentTimeMillis() - user.vacationStartDate) / (24 * 3600 * 1000)).toInt()
+                            Text("Desde hace $days días", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Switch(
+                        checked = isVacation,
+                        onCheckedChange = { onVacationToggle() }
+                    )
+                }
             }
         }
 

@@ -3,6 +3,7 @@ package es.uc3m.android.a1percent.ui.screens.profile
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.UserRepository
@@ -103,6 +104,27 @@ class ProfileViewModel : ViewModel() {
                     _uiState.update { it.copy(isUploadingAvatar = false, uploadError = e.message) }
                 }
             )
+        }
+    }
+
+    fun onToggleVacationMode() {
+        val user = uiState.value.user ?: return
+        val currentUser = SessionRepository.currentUser.value ?: return
+        if (user.id != currentUser.id) return
+
+        viewModelScope.launch {
+            if (currentUser.isVacationMode) {
+                GoalRepository.deactivateVacationMode(currentUser.id)
+                val updated = currentUser.copy(isVacationMode = false, vacationStartDate = null)
+                SessionRepository.updateUserProfile(updated)
+            } else {
+                GoalRepository.activateVacationMode(currentUser.id)
+                val updated = currentUser.copy(
+                    isVacationMode = true,
+                    vacationStartDate = System.currentTimeMillis()
+                )
+                SessionRepository.updateUserProfile(updated)
+            }
         }
     }
 }
