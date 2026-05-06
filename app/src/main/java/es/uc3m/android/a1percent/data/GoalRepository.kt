@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.enums.PausedBy
 import es.uc3m.android.a1percent.data.remote.encodeToMap
 import es.uc3m.android.a1percent.data.remote.toObjectSerializable
@@ -126,6 +127,7 @@ object GoalRepository {
 
     suspend fun pauseGoal(goal: Goal): Result<Unit> {
         val paused = goal.copy(
+            status = GoalStatus.PAUSED,
             aiRoadmapStatus = AiRoadmapStatus.PAUSED,
             pausedBy = PausedBy.USER
         )
@@ -134,6 +136,7 @@ object GoalRepository {
 
     suspend fun resumeGoal(goal: Goal): Result<Unit> {
         val resumed = goal.copy(
+            status = GoalStatus.ACTIVE,
             aiRoadmapStatus = AiRoadmapStatus.READY,
             pausedBy = null,
             nextGenerationDate = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
@@ -148,6 +151,7 @@ object GoalRepository {
 
             goals.filter { it.aiRoadmapStatus == AiRoadmapStatus.READY }.forEach { goal ->
                 val paused = goal.copy(
+                    status = GoalStatus.PAUSED,
                     aiRoadmapStatus = AiRoadmapStatus.PAUSED,
                     pausedBy = PausedBy.VACATION
                 )
@@ -169,6 +173,7 @@ object GoalRepository {
 
             goals.filter { it.pausedBy == PausedBy.VACATION }.forEach { goal ->
                 val resumed = goal.copy(
+                    status = GoalStatus.ACTIVE,
                     aiRoadmapStatus = AiRoadmapStatus.READY,
                     pausedBy = null,
                     nextGenerationDate = now + 7L * 24 * 60 * 60 * 1000
