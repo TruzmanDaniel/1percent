@@ -713,8 +713,23 @@ private fun GoalCompactItem(
                         containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 )
-                if (isPaused) {
-                    Text("Pausado", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val statusColor = when (goal.status) {
+                    GoalStatus.COMPLETED -> MaterialTheme.colorScheme.primary
+                    GoalStatus.PAUSED -> MaterialTheme.colorScheme.onSurfaceVariant
+                    GoalStatus.ARCHIVED -> MaterialTheme.colorScheme.outline
+                    else -> MaterialTheme.colorScheme.tertiary
+                }
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = statusColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = goal.status.displayName,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = statusColor,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))

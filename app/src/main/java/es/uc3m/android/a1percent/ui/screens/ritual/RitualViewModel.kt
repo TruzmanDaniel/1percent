@@ -13,7 +13,6 @@ import es.uc3m.android.a1percent.data.model.WeeklySummary
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
-import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 import es.uc3m.android.a1percent.data.model.isDeadlineWeek
 import es.uc3m.android.a1percent.data.model.weeksRemaining
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,10 +38,10 @@ class RitualViewModel : ViewModel() {
             val tasks = TaskRespository.getTasks(userId).getOrNull() ?: emptyList()
             val goalTasks = tasks.filter { it.goalId == goalId && it.isAiGenerated }
 
-            val completed = goalTasks.count { it.status == TaskStatus.COMPLETED }
+            val completed = goalTasks.count { userId in it.completedBy }
             val epicTask = goalTasks.maxByOrNull { it.dayIndex ?: 0 }
-            val epicPassed = epicTask?.status == TaskStatus.COMPLETED
-            val xpEarned = goalTasks.filter { it.status == TaskStatus.COMPLETED }
+            val epicPassed = epicTask != null && userId in epicTask.completedBy
+            val xpEarned = goalTasks.filter { userId in it.completedBy }
                 .sumOf { it.xpAwarded ?: it.xp }
 
             val now = System.currentTimeMillis()
@@ -248,7 +247,13 @@ class RitualViewModel : ViewModel() {
             }
 
             result.onFailure {
-                _uiState.update { it.copy(isGenerating = false) }
+                _uiState.update {
+                    it.copy(
+                        isGenerating = false,
+                        generationComplete = true,
+                        currentStepIndex = it.currentStepIndex + 1
+                    )
+                }
             }
         }
     }
