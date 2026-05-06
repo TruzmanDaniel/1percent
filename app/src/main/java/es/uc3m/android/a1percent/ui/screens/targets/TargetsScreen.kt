@@ -76,10 +76,6 @@ import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
-import es.uc3m.android.a1percent.data.model.intensityDisplay
-import es.uc3m.android.a1percent.data.model.isFinite
-import es.uc3m.android.a1percent.data.model.nextMilestone
-import es.uc3m.android.a1percent.data.model.streakDisplay
 import es.uc3m.android.a1percent.data.model.weeksRemaining
 import androidx.compose.material3.LinearProgressIndicator
 import es.uc3m.android.a1percent.data.SessionRepository
@@ -644,8 +640,7 @@ private fun GoalCompactItem(
                     onClick = {},
                     label = { Text(goal.category.displayName, style = MaterialTheme.typography.labelSmall) },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (goal.isFinite) MaterialTheme.colorScheme.tertiaryContainer
-                        else MaterialTheme.colorScheme.primaryContainer
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
                     )
                 )
                 if (isPaused) {
@@ -658,64 +653,27 @@ private fun GoalCompactItem(
 
             Text(goal.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
 
-            if (goal.isFinite) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text("Progreso", style = MaterialTheme.typography.labelSmall)
-                        Text("${goal.progress}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
-                    }
-                    LinearProgressIndicator(
-                        progress = { goal.progress / 100f },
-                        modifier = Modifier.fillMaxWidth().height(6.dp),
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-
-                val weeksLeft = goal.weeksRemaining()
-                if (weeksLeft != null) {
-                    Text(
-                        "$weeksLeft semanas restantes",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            } else {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column {
-                        Text("Nivel", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            goal.intensityDisplay() ?: "1",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text("Racha", style = MaterialTheme.typography.labelSmall)
-                        Text(
-                            goal.streakDisplay() ?: "0 sem",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFFFFD700)
-                        )
-                    }
+                    Text("Progreso", style = MaterialTheme.typography.labelSmall)
+                    Text("${goal.progress}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                 }
-
-                val nextMs = goal.nextMilestone()
-                if (nextMs != null) {
-                    Text(
-                        "Próximo hito: $nextMs semanas",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                LinearProgressIndicator(
+                    progress = { goal.progress / 100f },
+                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    color = MaterialTheme.colorScheme.tertiary
+                )
             }
+
+            val weeksLeft = goal.weeksRemaining()
+            Text(
+                "$weeksLeft semanas restantes",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary
+            )
         }
     }
 }
