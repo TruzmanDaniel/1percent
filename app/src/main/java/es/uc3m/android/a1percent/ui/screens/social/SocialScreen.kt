@@ -310,7 +310,7 @@ private fun GroupsSection() {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("Fitness Crew", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Track habits and challenge streaks together.",
+                    "Track goals and challenge progress together.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
