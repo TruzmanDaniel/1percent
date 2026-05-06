@@ -10,6 +10,7 @@ import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 // TASKS
 enum class TaskQuickFilter(val label: String) {
     MISSIONS("Missions"),
+    TASKS("Tasks"),
     SHARED("Shared with me")
 }
 
@@ -53,8 +54,8 @@ fun buildTaskFilterUiItems(filters: TaskFilters): List<TaskFilterUiItem> {
     val items = listOf(
         TaskFilterUiItem(
             key = TaskFilterKey.MISSIONS,
-            label = TaskQuickFilter.MISSIONS.label,
-            isSelected = filters.quickFilters.contains(TaskQuickFilter.MISSIONS),
+            label = taskMissionsFilterLabel(filters.quickFilters),
+            isSelected = filters.quickFilters.contains(TaskQuickFilter.MISSIONS) || filters.quickFilters.contains(TaskQuickFilter.TASKS),
             order = 0
         ),
         TaskFilterUiItem(
@@ -66,6 +67,15 @@ fun buildTaskFilterUiItems(filters: TaskFilters): List<TaskFilterUiItem> {
     )
 
     return items.sortedWith(compareByDescending<TaskFilterUiItem> { it.isSelected }.thenBy { it.order })
+}
+
+// Returns a label reflecting the current missions/tasks quick filter state.
+fun taskMissionsFilterLabel(quickFilters: Set<TaskQuickFilter>): String {
+    return when {
+        quickFilters.contains(TaskQuickFilter.MISSIONS) -> TaskQuickFilter.MISSIONS.label
+        quickFilters.contains(TaskQuickFilter.TASKS) -> TaskQuickFilter.TASKS.label
+        else -> "All"
+    }
 }
 
 

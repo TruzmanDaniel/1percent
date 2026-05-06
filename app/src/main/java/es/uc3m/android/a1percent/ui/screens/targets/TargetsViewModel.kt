@@ -116,6 +116,7 @@ class TargetsViewModel : ViewModel() {
                 filters.quickFilters.all { filter ->
                     when (filter) {
                         TaskQuickFilter.MISSIONS -> task.goalId != null
+                        TaskQuickFilter.TASKS -> task.goalId == null
                         TaskQuickFilter.SHARED -> task.ownerId != currentUserId
                     }
                 }
@@ -148,7 +149,7 @@ class TargetsViewModel : ViewModel() {
     fun onTaskFilterClicked(filterKey: TaskFilterKey) {
         _uiState.update { current ->
             val updatedTaskFilters = when (filterKey) {
-                TaskFilterKey.MISSIONS -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.MISSIONS)
+                TaskFilterKey.MISSIONS -> toggleMissionsQuickFilter(current.taskFilters)
                 TaskFilterKey.SHARED -> toggleQuickFilter(current.taskFilters, TaskQuickFilter.SHARED)
                 TaskFilterKey.CATEGORY -> current.taskFilters
                 TaskFilterKey.SORT -> current.taskFilters.copy(sort = nextTaskSort(current.taskFilters.sort))
@@ -342,6 +343,19 @@ class TargetsViewModel : ViewModel() {
             filters.quickFilters - filter
         } else {
             filters.quickFilters + filter
+        }
+        return filters.copy(quickFilters = updated)
+    }
+
+    // Cycle missions/tasks filter: All -> Missions -> Tasks -> All
+    private fun toggleMissionsQuickFilter(filters: TaskFilters): TaskFilters {
+        val hasMissions = filters.quickFilters.contains(TaskQuickFilter.MISSIONS)
+        val hasTasks = filters.quickFilters.contains(TaskQuickFilter.TASKS)
+        val updated = when {
+            !hasMissions && !hasTasks -> filters.quickFilters + TaskQuickFilter.MISSIONS
+            hasMissions -> (filters.quickFilters - TaskQuickFilter.MISSIONS) + TaskQuickFilter.TASKS
+            hasTasks -> filters.quickFilters - TaskQuickFilter.TASKS
+            else -> filters.quickFilters
         }
         return filters.copy(quickFilters = updated)
     }

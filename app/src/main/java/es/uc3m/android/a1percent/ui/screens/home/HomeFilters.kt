@@ -1,7 +1,7 @@
 package es.uc3m.android.a1percent.ui.screens.home
 
 data class HomeFilters(
-    val showOnlyMissions: Boolean = false,
+    val missionsFilter: HomeMissionsFilter = HomeMissionsFilter.ALL,
     val sortBy: HomeSort = HomeSort.NONE,
     val statusFilter: HomeStatusFilter = HomeStatusFilter.PENDING
 )
@@ -35,8 +35,8 @@ fun buildHomeFilterUiItems(filters: HomeFilters): List<HomeFilterUiItem> {
         ),
         HomeFilterUiItem(
             key = HomeFilterKey.MISSIONS,
-            label = "Missions",
-            isSelected = filters.showOnlyMissions,
+            label = filters.missionsFilter.label,
+            isSelected = filters.missionsFilter != HomeMissionsFilter.ALL,
             order = 1
         ),
         HomeFilterUiItem(
@@ -53,3 +53,10 @@ enum class HomeSort {
     NONE,
     DATE_ASC
 }
+
+enum class HomeMissionsFilter(val label: String) {
+    ALL("All"),
+    MISSIONS("Missions"),
+    TASKS("Tasks")
+}
+

@@ -114,7 +114,12 @@ class HomeViewModel : ViewModel() {
 
     fun onMissionsFilterToggled() {
         _uiState.update { current ->
-            val updatedFilters = current.filters.copy(showOnlyMissions = !current.filters.showOnlyMissions)
+            val next = when (current.filters.missionsFilter) {
+                HomeMissionsFilter.ALL -> HomeMissionsFilter.MISSIONS
+                HomeMissionsFilter.MISSIONS -> HomeMissionsFilter.TASKS
+                HomeMissionsFilter.TASKS -> HomeMissionsFilter.ALL
+            }
+            val updatedFilters = current.filters.copy(missionsFilter = next)
             reduceHomeState(current.copy(filters = updatedFilters))
         }
     }
@@ -245,10 +250,10 @@ class HomeViewModel : ViewModel() {
             HomeStatusFilter.ALL -> tasks
         }
 
-        val filtered = if (filters.showOnlyMissions) {
-            statusFiltered.filter { it.goalId != null }
-        } else {
-            statusFiltered
+        val filtered = when (filters.missionsFilter) {
+            HomeMissionsFilter.ALL -> statusFiltered
+            HomeMissionsFilter.MISSIONS -> statusFiltered.filter { it.goalId != null }
+            HomeMissionsFilter.TASKS -> statusFiltered.filter { it.goalId == null }
         }
 
         return when (filters.sortBy) {
