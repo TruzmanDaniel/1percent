@@ -1,16 +1,14 @@
 package es.uc3m.android.a1percent.data.model
 
 import es.uc3m.android.a1percent.data.model.enums.Category
-import es.uc3m.android.a1percent.data.model.enums.GoalType
 import org.junit.Assert.*
 import org.junit.Test
+import java.util.Calendar
 
 class GoalExtensionsTest {
 
-    private fun finiteGoal(
+    private fun goal(
         deadline: Long = System.currentTimeMillis() + 52 * 7 * 24 * 3600 * 1000L,
-        weeklyStreak: Int = 0,
-        currentIntensity: Float = 3.0f,
         progress: Int = 35,
         extensionCount: Int = 0
     ) = Goal(
@@ -20,116 +18,69 @@ class GoalExtensionsTest {
         xp = 100,
         deadline = deadline,
         progress = progress,
-        currentIntensity = currentIntensity,
-        weeklyStreak = weeklyStreak,
         extensionCount = extensionCount
     )
 
-    private fun infiniteGoal(
-        weeklyStreak: Int = 0,
-        currentIntensity: Float = 3.5f
-    ) = Goal(
-        title = "Run better",
-        category = Category.FITNESS,
-        difficulty = 3,
-        xp = 100,
-        deadline = null,
-        currentIntensity = currentIntensity,
-        weeklyStreak = weeklyStreak
-    )
-
     @Test
-    fun `finite goal has FINITE type`() {
-        assertEquals(GoalType.FINITE, finiteGoal().goalType)
-        assertTrue(finiteGoal().isFinite)
-        assertFalse(finiteGoal().isInfinite)
-    }
-
-    @Test
-    fun `infinite goal has INFINITE type`() {
-        assertEquals(GoalType.INFINITE, infiniteGoal().goalType)
-        assertTrue(infiniteGoal().isInfinite)
-        assertFalse(infiniteGoal().isFinite)
-    }
-
-    @Test
-    fun `weekLabel shows total weeks for finite goals`() {
-        assertEquals("Semana 8 de 52", finiteGoal().weekLabel(8))
-    }
-
-    @Test
-    fun `weekLabel omits total for infinite goals`() {
-        assertEquals("Semana 8", infiniteGoal().weekLabel(8))
-    }
-
-    @Test
-    fun `progressDisplay returns value for finite, null for infinite`() {
-        assertEquals(35, finiteGoal(progress = 35).progressDisplay())
-        assertNull(infiniteGoal().progressDisplay())
-    }
-
-    @Test
-    fun `intensityDisplay returns formatted string for infinite, null for finite`() {
-        assertEquals("3.5", infiniteGoal(currentIntensity = 3.5f).intensityDisplay())
-        assertNull(finiteGoal().intensityDisplay())
-    }
-
-    @Test
-    fun `streakDisplay returns formatted string for infinite, null for finite`() {
-        assertEquals("12 sem", infiniteGoal(weeklyStreak = 12).streakDisplay())
-        assertNull(finiteGoal().streakDisplay())
-    }
-
-    @Test
-    fun `weeksRemaining returns weeks for finite, null for infinite`() {
+    fun `weeksRemaining returns weeks until deadline`() {
         val fourWeeksFromNow = System.currentTimeMillis() + 4 * 7 * 24 * 3600 * 1000L
-        val goal = finiteGoal(deadline = fourWeeksFromNow)
-        val remaining = goal.weeksRemaining()
-        assertNotNull(remaining)
-        assertTrue(remaining!! in 3..5)
-        assertNull(infiniteGoal().weeksRemaining())
+        val g = goal(deadline = fourWeeksFromNow)
+        val remaining = g.weeksRemaining()
+        assertTrue(remaining in 3..5)
     }
 
     @Test
-    fun `nextMilestone returns correct next milestone for infinite goals`() {
-        assertEquals(4, infiniteGoal(weeklyStreak = 0).nextMilestone())
-        assertEquals(4, infiniteGoal(weeklyStreak = 2).nextMilestone())
-        assertEquals(12, infiniteGoal(weeklyStreak = 4).nextMilestone())
-        assertEquals(12, infiniteGoal(weeklyStreak = 8).nextMilestone())
-        assertEquals(26, infiniteGoal(weeklyStreak = 12).nextMilestone())
-        assertEquals(52, infiniteGoal(weeklyStreak = 26).nextMilestone())
-        assertEquals(56, infiniteGoal(weeklyStreak = 52).nextMilestone())
-        assertNull(finiteGoal().nextMilestone())
+    fun `weeksRemaining returns 0 when deadline has passed`() {
+        val pastDeadline = System.currentTimeMillis() - 7 * 24 * 3600 * 1000L
+        assertEquals(0, goal(deadline = pastDeadline).weeksRemaining())
     }
 
     @Test
-    fun `justReachedMilestone detects correct milestone`() {
-        assertNull(infiniteGoal(weeklyStreak = 3).justReachedMilestone())
-        assertEquals(4, infiniteGoal(weeklyStreak = 4).justReachedMilestone())
-        assertEquals(12, infiniteGoal(weeklyStreak = 12).justReachedMilestone())
-        assertEquals(26, infiniteGoal(weeklyStreak = 26).justReachedMilestone())
-        assertEquals(52, infiniteGoal(weeklyStreak = 52).justReachedMilestone())
+    fun `totalWeeks calculates from creation to deadline`() {
+        val now = System.currentTimeMillis()
+        val g = Goal(
+            title = "Test",
+            category = Category.FITNESS,
+            difficulty = 3,
+            xp = 100,
+            deadline = now + 10 * 7 * 24 * 3600 * 1000L,
+            createdAt = now
+        )
+        assertEquals(10, g.totalWeeks())
     }
 
     @Test
-    fun `justReachedMilestone prioritizes larger milestone`() {
-        assertEquals(52, infiniteGoal(weeklyStreak = 52).justReachedMilestone())
-        assertEquals(12, infiniteGoal(weeklyStreak = 12).justReachedMilestone())
+    fun `totalWeeks returns at least 1`() {
+        val now = System.currentTimeMillis()
+        val g = Goal(
+            title = "Test",
+            category = Category.FITNESS,
+            difficulty = 3,
+            xp = 100,
+            deadline = now + 1000L,
+            createdAt = now
+        )
+        assertEquals(1, g.totalWeeks())
     }
 
     @Test
-    fun `justReachedMilestone works in second cycle`() {
-        assertEquals(4, infiniteGoal(weeklyStreak = 56).justReachedMilestone())
-        assertEquals(12, infiniteGoal(weeklyStreak = 60).justReachedMilestone())
+    fun `weekLabel shows current week and total`() {
+        assertEquals("Semana 8 de 52", goal().weekLabel(8))
     }
 
     @Test
-    fun `justReachedMilestone returns null for finite goals`() {
-        assertNull(finiteGoal(weeklyStreak = 4).justReachedMilestone())
+    fun `isDeadlineWeek returns true when deadline is this week`() {
+        val cal = Calendar.getInstance()
+        cal.firstDayOfWeek = Calendar.MONDAY
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.WEDNESDAY)
+        cal.set(Calendar.HOUR_OF_DAY, 12)
+        val midWeek = cal.timeInMillis
+        assertTrue(goal(deadline = midWeek).isDeadlineWeek())
     }
 
     @Test
-    fun `justReachedMilestone returns null for zero streak`() {
-        assertNull(infiniteGoal(weeklyStreak = 0).justReachedMilestone())
+    fun `isDeadlineWeek returns false when deadline is next week`() {
+        val nextWeek = System.currentTimeMillis() + 10 * 24 * 3600 * 1000L
+        assertFalse(goal(deadline = nextWeek).isDeadlineWeek())
     }
 }
