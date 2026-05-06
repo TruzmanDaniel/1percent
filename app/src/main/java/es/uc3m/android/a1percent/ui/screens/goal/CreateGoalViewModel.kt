@@ -32,16 +32,6 @@ class CreateGoalViewModel : ViewModel() {
         currentIntensity = newValue
     }
 
-    fun onToggleDeadline(enabled: Boolean) {
-        _uiState.update {
-            it.copy(
-                hasDeadline = enabled,
-                deadlineEpochMillis = if (enabled) it.deadlineEpochMillis else null,
-                showDatePicker = if (enabled && it.deadlineEpochMillis == null) true else false
-            )
-        }
-    }
-
     fun onDeadlineSelected(epochMillis: Long) {
         _uiState.update { it.copy(deadlineEpochMillis = epochMillis, showDatePicker = false) }
     }
@@ -51,10 +41,7 @@ class CreateGoalViewModel : ViewModel() {
     }
 
     fun onDismissDatePicker() {
-        _uiState.update {
-            val keepToggle = it.deadlineEpochMillis != null
-            it.copy(showDatePicker = false, hasDeadline = keepToggle)
-        }
+        _uiState.update { it.copy(showDatePicker = false) }
     }
 
     fun generateProposal() {
@@ -72,7 +59,9 @@ class CreateGoalViewModel : ViewModel() {
                 category = Category.PERSONAL,
                 difficulty = _uiState.value.difficulty.toInt(),
                 xp = _uiState.value.difficulty.toInt() * 50,
-                currentIntensity = currentIntensity
+                currentIntensity = currentIntensity,
+                deadline = _uiState.value.deadlineEpochMillis
+                    ?: (System.currentTimeMillis() + 30L * 24 * 3600 * 1000)
             )
 
             val result = AICoachService.generateWeeklyTasks(
@@ -137,7 +126,8 @@ class CreateGoalViewModel : ViewModel() {
                     difficulty = _uiState.value.difficulty.toInt(),
                     xp = _uiState.value.difficulty.toInt() * 50,
                     currentIntensity = currentIntensity,
-                    deadline = _uiState.value.deadlineEpochMillis,
+                    deadline = _uiState.value.deadlineEpochMillis
+                        ?: (System.currentTimeMillis() + 30L * 24 * 3600 * 1000),
                     nextGenerationDate = now + sevenDaysMillis,
                     aiRoadmapStatus = AiRoadmapStatus.READY
                 )
@@ -178,6 +168,7 @@ class CreateGoalViewModel : ViewModel() {
                     difficulty = _uiState.value.difficulty.toInt(),
                     xp = _uiState.value.difficulty.toInt() * 50,
                     deadline = _uiState.value.deadlineEpochMillis
+                        ?: (System.currentTimeMillis() + 30L * 24 * 3600 * 1000)
                 )
 
                 val result = GoalRepository.saveGoal(userId, goal)
