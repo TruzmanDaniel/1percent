@@ -1,7 +1,6 @@
 package es.uc3m.android.a1percent.data
 
 import es.uc3m.android.a1percent.data.model.Goal
-import es.uc3m.android.a1percent.data.model.MilestoneRecord
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.UserProfile
 import java.util.Calendar
@@ -66,33 +65,13 @@ object XpManager {
     }
 
     suspend fun awardGoalCompletionBonus(userId: String, goal: Goal): Result<Unit> {
+        if (goal.deadline == null) return Result.success(Unit)
+
         val profile = SessionRepository.currentUser.value
             ?: return Result.failure(IllegalStateException("No logged-in user"))
         if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
 
         val bonus = goal.difficulty * 50
-        val updated = applyXpGain(profile, bonus)
-        return SessionRepository.updateUserProfile(updated)
-    }
-
-    suspend fun awardMilestoneBonus(userId: String, goal: Goal, milestone: Int): Result<Unit> {
-        val profile = SessionRepository.currentUser.value
-            ?: return Result.failure(IllegalStateException("No logged-in user"))
-        if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
-
-        val multiplier = when (milestone) {
-            4 -> 1; 12 -> 2; 26 -> 3; 52 -> 5
-            else -> 1
-        }
-        val bonus = goal.difficulty * 40 * multiplier
-
-        val record = MilestoneRecord(
-            milestone = milestone,
-            weeklyStreak = goal.weeklyStreak,
-            xpAwarded = bonus
-        )
-        MilestoneRepository.saveMilestone(goal.id, record)
-
         val updated = applyXpGain(profile, bonus)
         return SessionRepository.updateUserProfile(updated)
     }
