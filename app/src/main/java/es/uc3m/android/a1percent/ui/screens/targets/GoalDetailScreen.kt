@@ -43,10 +43,10 @@ import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
-import es.uc3m.android.a1percent.data.model.intensityDisplay
-import es.uc3m.android.a1percent.data.model.isFinite
-import es.uc3m.android.a1percent.data.model.streakDisplay
+import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.weeksRemaining
+import androidx.compose.material3.Button
+import androidx.compose.ui.text.style.TextAlign
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
@@ -115,6 +115,17 @@ fun GoalDetailScreen(
                             navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
                         }
                     )
+                }
+
+                item {
+                    if (goal.status != GoalStatus.COMPLETED && goal.status != GoalStatus.ARCHIVED) {
+                        Button(
+                            onClick = { viewModel.onCompleteGoal() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Completar objetivo")
+                        }
+                    }
                 }
 
                 if (missions.isNotEmpty()) {
@@ -226,28 +237,31 @@ private fun GoalHeaderCard(
 
             HorizontalDivider()
 
-            if (goal.isFinite) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(text = "Progreso", style = MaterialTheme.typography.labelSmall)
-                        Text(text = "${goal.progress}%", style = MaterialTheme.typography.labelSmall)
-                    }
-                    LinearProgressIndicator(
-                        progress = { goal.progress / 100f },
-                        modifier = Modifier.fillMaxWidth().height(8.dp)
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = "Progreso", style = MaterialTheme.typography.labelSmall)
+                    Text(text = "${goal.progress}%", style = MaterialTheme.typography.labelSmall)
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    StatColumn("Progreso", "${goal.progress}%")
-                    StatColumn("Semanas", "${goal.weeksRemaining() ?: 0}")
-                    StatColumn("Intensidad", "%.1f".format(goal.currentIntensity))
-                }
-            } else {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    StatColumn("Nivel", goal.intensityDisplay() ?: "1")
-                    StatColumn("Racha", goal.streakDisplay() ?: "0 sem")
-                    StatColumn("Misiones", "—")
-                }
+                LinearProgressIndicator(
+                    progress = { goal.progress / 100f },
+                    modifier = Modifier.fillMaxWidth().height(8.dp)
+                )
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                StatColumn("Progreso", "${goal.progress}%")
+                StatColumn("Semanas", "${goal.weeksRemaining()}")
+                StatColumn("Intensidad", "%.1f".format(goal.currentIntensity))
+            }
+
+            if (goal.status == GoalStatus.COMPLETED) {
+                Text(
+                    text = "COMPLETADO",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

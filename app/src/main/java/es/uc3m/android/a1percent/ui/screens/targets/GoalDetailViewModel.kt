@@ -9,6 +9,7 @@ import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -194,6 +195,18 @@ class GoalDetailViewModel : ViewModel() {
 
     fun clearSnackbarMessage() {
         _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    fun onCompleteGoal() {
+        val goal = _uiState.value.goal ?: return
+        val userId = SessionRepository.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            val completed = goal.copy(status = GoalStatus.COMPLETED, progress = 100)
+            GoalRepository.updateGoal(completed)
+            XpManager.awardGoalCompletionBonus(userId, goal)
+            loadGoalForUser(userId, goal.id)
+            _uiState.update { it.copy(snackbarMessage = "¡Objetivo completado!") }
+        }
     }
 
     fun onTogglePause() {
