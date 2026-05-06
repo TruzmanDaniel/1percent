@@ -71,6 +71,14 @@ import java.util.Locale
 fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    val ritualGoalId = uiState.navigateToRitual
+    LaunchedEffect(ritualGoalId) {
+        if (ritualGoalId != null) {
+            viewModel.onRitualNavigated()
+            navController.navigate(AppScreens.RitualScreen.route + "/$ritualGoalId")
+        }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { }
@@ -79,26 +87,6 @@ fun HomeScreen(navController: NavController, viewModel: HomeViewModel = viewMode
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
-    }
-
-    if (uiState.showWeeklyRitual && uiState.ritualGoal != null) {
-        WeeklyRitualDialog(
-            goalTitle = uiState.ritualGoal!!.title,
-            tasksCompleted = uiState.ritualTasksCompleted,
-            totalTasks = uiState.ritualTotalTasks,
-            epicPassed = uiState.ritualEpicPassed,
-            xpEarned = uiState.ritualXpEarned,
-            onFeedback = { viewModel.onWeeklyFeedback(it) },
-            onDismiss = { viewModel.dismissRitual() }
-        )
-    }
-
-    if (uiState.showCatchUp && uiState.ritualGoal != null) {
-        CatchUpDialog(
-            goalTitle = uiState.ritualGoal!!.title,
-            onFeedback = { viewModel.onWeeklyFeedback(it) },
-            onDismiss = { viewModel.dismissRitual() }
-        )
     }
 
     HomeBodyContent(
