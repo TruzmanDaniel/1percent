@@ -4,6 +4,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material3.Icon
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -106,6 +110,9 @@ private fun ProgressBodyContent(uiState: ProgressUiState) {
 
         // Chart 6 — Weekly sparklines
         item { GoalSparklinesCard(uiState.goalSparklines) }
+
+        // Chart 7 — Milestones achieved
+        item { MilestonesCard(uiState.milestones) }
     }
 }
 
@@ -151,6 +158,60 @@ private fun GoalSparklineRow(sparkline: GoalSparkline) {
                 .fillMaxWidth()
                 .height(80.dp)
         )
+    }
+}
+
+@Composable
+private fun MilestonesCard(milestones: List<GoalMilestoneItem>) {
+    ProgressCard(title = "Hitos conseguidos", subtitle = "Badges desbloqueados por objetivo") {
+        if (milestones.isEmpty()) {
+            Text(
+                text = "Mantén rachas semanales para desbloquear hitos",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                milestones.forEach { milestone ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.EmojiEvents,
+                                contentDescription = null,
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Column {
+                                Text(
+                                    milestone.milestoneName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    milestone.goalTitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        Text(
+                            "${milestone.weekThreshold} sem",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

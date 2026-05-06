@@ -3,6 +3,7 @@ package es.uc3m.android.a1percent.ui.screens.progress
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import es.uc3m.android.a1percent.data.GoalRepository
+import es.uc3m.android.a1percent.data.MilestoneRepository
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.WeeklySummaryRepository
@@ -81,6 +82,7 @@ class ProgressViewModel : ViewModel() {
                 cachedGoals = goals
                 recomputeGoalStats(goals, cachedTasks, userId)
                 loadWeeklySummaries(goals)
+                loadMilestones(goals)
             }
             .launchIn(viewModelScope)
     }
@@ -190,6 +192,30 @@ class ProgressViewModel : ViewModel() {
                     GoalSparkline(goalTitle = goal.title, weeklyCompletionRates = rates)
                 }
             _uiState.update { it.copy(goalSparklines = sparklines) }
+        }
+    }
+
+    private fun loadMilestones(goals: List<Goal>) {
+        viewModelScope.launch {
+            val items = goals.flatMap { goal ->
+                val records = MilestoneRepository.getMilestones(goal.id).getOrNull() ?: emptyList()
+                records.map { record ->
+                    val name = when (record.milestone) {
+                        4 -> "Primer Mes"
+                        12 -> "Trimestre de Hierro"
+                        26 -> "Medio Año Imparable"
+                        52 -> "Un Año Legendario"
+                        else -> "${record.milestone} Semanas"
+                    }
+                    GoalMilestoneItem(
+                        goalTitle = goal.title,
+                        weekThreshold = record.milestone,
+                        milestoneName = name,
+                        unlockedAt = record.unlockedAt
+                    )
+                }
+            }.sortedByDescending { it.unlockedAt }
+            _uiState.update { it.copy(milestones = items) }
         }
     }
 
