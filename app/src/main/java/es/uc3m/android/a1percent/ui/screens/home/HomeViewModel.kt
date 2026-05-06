@@ -163,6 +163,19 @@ class HomeViewModel : ViewModel() {
                 val now = System.currentTimeMillis()
                 XpManager.awardTaskXp(userId, task.copy(completedAt = now))
             }
+            task.goalId?.let { goalId -> recalculateGoalProgress(goalId, userId) }
+        }
+    }
+
+    private suspend fun recalculateGoalProgress(goalId: String, userId: String) {
+        val allTasks = _uiState.value.tasks
+        val goalTasks = allTasks.filter { it.goalId == goalId }
+        if (goalTasks.isEmpty()) return
+        val completed = goalTasks.count { userId in it.completedBy }
+        val progress = (completed * 100) / goalTasks.size
+        val goal = _uiState.value.goals.find { it.id == goalId } ?: return
+        if (goal.progress != progress) {
+            GoalRepository.updateGoal(goal.copy(progress = progress))
         }
     }
 

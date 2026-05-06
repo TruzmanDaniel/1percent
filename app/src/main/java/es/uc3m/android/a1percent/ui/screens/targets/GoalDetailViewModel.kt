@@ -107,7 +107,19 @@ class GoalDetailViewModel : ViewModel() {
                 applyLocalToggleCompletion(taskId, userId)
                 if (wasCompleted) XpManager.revokeTaskXp(userId, task)
                 else XpManager.awardTaskXp(userId, task.copy(completedAt = System.currentTimeMillis()))
+                recalculateGoalProgress(userId)
             }
+        }
+    }
+
+    private suspend fun recalculateGoalProgress(userId: String) {
+        val goal = _uiState.value.goal ?: return
+        val missions = _uiState.value.missions
+        if (missions.isEmpty()) return
+        val completed = missions.count { userId in it.completedBy }
+        val progress = (completed * 100) / missions.size
+        if (goal.progress != progress) {
+            GoalRepository.updateGoal(goal.copy(progress = progress))
         }
     }
 
