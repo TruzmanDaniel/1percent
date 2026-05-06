@@ -11,7 +11,7 @@ import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 enum class TaskQuickFilter(val label: String) {
     MISSIONS("Missions"),
     TASKS("Tasks"),
-    SHARED("Shared with me")
+    SHARED("Shared")
 }
 
 enum class TaskFilterKey {

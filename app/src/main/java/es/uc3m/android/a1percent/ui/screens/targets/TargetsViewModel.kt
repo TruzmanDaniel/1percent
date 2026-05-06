@@ -117,7 +117,14 @@ class TargetsViewModel : ViewModel() {
                     when (filter) {
                         TaskQuickFilter.MISSIONS -> task.goalId != null
                         TaskQuickFilter.TASKS -> task.goalId == null
-                        TaskQuickFilter.SHARED -> task.ownerId != currentUserId
+                        TaskQuickFilter.SHARED -> run {
+                            // Consider a task "Shared" only if it involves other users.
+                            // - If I'm the owner, it must be shared with at least one other user.
+                            // - If I'm in sharedWith, it counts as shared when the owner is someone else.
+                            val othersInShared = task.sharedWith.any { it != currentUserId }
+                            (task.ownerId == currentUserId && othersInShared) ||
+                                (currentUserId in task.sharedWith && task.ownerId != currentUserId)
+                        }
                     }
                 }
             }
