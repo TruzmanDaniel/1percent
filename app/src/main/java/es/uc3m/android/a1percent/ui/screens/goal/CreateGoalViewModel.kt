@@ -32,6 +32,31 @@ class CreateGoalViewModel : ViewModel() {
         currentIntensity = newValue
     }
 
+    fun onToggleDeadline(enabled: Boolean) {
+        _uiState.update {
+            it.copy(
+                hasDeadline = enabled,
+                deadlineEpochMillis = if (enabled) it.deadlineEpochMillis else null,
+                showDatePicker = if (enabled && it.deadlineEpochMillis == null) true else false
+            )
+        }
+    }
+
+    fun onDeadlineSelected(epochMillis: Long) {
+        _uiState.update { it.copy(deadlineEpochMillis = epochMillis, showDatePicker = false) }
+    }
+
+    fun onShowDatePicker() {
+        _uiState.update { it.copy(showDatePicker = true) }
+    }
+
+    fun onDismissDatePicker() {
+        _uiState.update {
+            val keepToggle = it.deadlineEpochMillis != null
+            it.copy(showDatePicker = false, hasDeadline = keepToggle)
+        }
+    }
+
     fun generateProposal() {
         val userId = SessionRepository.currentUser.value?.id ?: return
 
@@ -112,6 +137,7 @@ class CreateGoalViewModel : ViewModel() {
                     difficulty = _uiState.value.difficulty.toInt(),
                     xp = _uiState.value.difficulty.toInt() * 50,
                     currentIntensity = currentIntensity,
+                    deadline = _uiState.value.deadlineEpochMillis,
                     nextGenerationDate = now + sevenDaysMillis,
                     aiRoadmapStatus = AiRoadmapStatus.READY
                 )
@@ -150,7 +176,8 @@ class CreateGoalViewModel : ViewModel() {
                     title = _uiState.value.goalName,
                     category = Category.PERSONAL,
                     difficulty = _uiState.value.difficulty.toInt(),
-                    xp = _uiState.value.difficulty.toInt() * 50
+                    xp = _uiState.value.difficulty.toInt() * 50,
+                    deadline = _uiState.value.deadlineEpochMillis
                 )
 
                 val result = GoalRepository.saveGoal(userId, goal)

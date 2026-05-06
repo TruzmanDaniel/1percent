@@ -18,12 +18,18 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,7 +40,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateGoalCard(
     onDismiss: () -> Unit,
@@ -123,6 +133,63 @@ fun CreateGoalCard(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (uiState.hasDeadline) "Proyecto con fecha límite" else "Hábito de por vida",
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                val deadlineMs = uiState.deadlineEpochMillis
+                                if (uiState.hasDeadline && deadlineMs != null) {
+                                    val formatted = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
+                                        .format(Date(deadlineMs))
+                                    Text(
+                                        text = "Deadline: $formatted",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                            }
+                            Switch(
+                                checked = uiState.hasDeadline,
+                                onCheckedChange = { viewModel.onToggleDeadline(it) }
+                            )
+                        }
+
+                        if (uiState.hasDeadline && uiState.deadlineEpochMillis != null) {
+                            TextButton(onClick = { viewModel.onShowDatePicker() }) {
+                                Text("Cambiar fecha")
+                            }
+                        }
+
+                        if (uiState.showDatePicker) {
+                            val datePickerState = rememberDatePickerState(
+                                initialSelectedDateMillis = uiState.deadlineEpochMillis
+                                    ?: (System.currentTimeMillis() + 30L * 24 * 3600 * 1000)
+                            )
+                            DatePickerDialog(
+                                onDismissRequest = { viewModel.onDismissDatePicker() },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        datePickerState.selectedDateMillis?.let {
+                                            viewModel.onDeadlineSelected(it)
+                                        }
+                                    }) { Text("OK") }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { viewModel.onDismissDatePicker() }) {
+                                        Text("Cancel")
+                                    }
+                                }
+                            ) {
+                                DatePicker(state = datePickerState)
+                            }
                         }
 
                         if (uiState.availableCredits > 0) {

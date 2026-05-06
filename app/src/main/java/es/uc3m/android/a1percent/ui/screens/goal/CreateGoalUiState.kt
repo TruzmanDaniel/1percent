@@ -5,6 +5,9 @@ import es.uc3m.android.a1percent.data.model.Task
 data class CreateGoalUiState(
     val goalName: String = "",
     val difficulty: Float = 3f,
+    val hasDeadline: Boolean = false,
+    val deadlineEpochMillis: Long? = null,
+    val showDatePicker: Boolean = false,
     val isLoading: Boolean = false,
     val aiState: AiNegotiationState = AiNegotiationState.IDLE,
     val proposedTasks: List<Task> = emptyList(),
