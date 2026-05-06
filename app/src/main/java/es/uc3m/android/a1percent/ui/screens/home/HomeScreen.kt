@@ -163,11 +163,11 @@ fun HomeBodyContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Modo Vacaciones activo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text("Vacation Mode active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             val days = if (user.vacationStartDate != null) {
                                 ((System.currentTimeMillis() - user.vacationStartDate) / (24 * 3600 * 1000)).toInt()
                             } else 0
-                            Text("Desde hace $days días", style = MaterialTheme.typography.bodySmall)
+                            Text("Since $days days", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }

@@ -421,12 +421,12 @@ fun ProfileBodyContent(
                 ) {
                     Column {
                         Text(
-                            if (isVacation) "Modo Vacaciones activo" else "Modo Vacaciones",
+                            if (isVacation) "Vacation Mode active" else "Vacation Mode",
                             style = MaterialTheme.typography.titleMedium
                         )
                         if (isVacation && user.vacationStartDate != null) {
                             val days = ((System.currentTimeMillis() - user.vacationStartDate) / (24 * 3600 * 1000)).toInt()
-                            Text("Desde hace $days días", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Since $days days", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     Switch(

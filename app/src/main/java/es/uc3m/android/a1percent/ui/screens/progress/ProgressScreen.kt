@@ -163,10 +163,10 @@ private fun GoalSparklineRow(sparkline: GoalSparkline) {
 
 @Composable
 private fun MilestonesCard(milestones: List<GoalMilestoneItem>) {
-    ProgressCard(title = "Hitos conseguidos", subtitle = "Badges desbloqueados por objetivo") {
+    ProgressCard(title = "Milestones Achieved", subtitle = "Badges Unlocked by Goa") {
         if (milestones.isEmpty()) {
             Text(
-                text = "Mantén rachas semanales para desbloquear hitos",
+                text = "Maintain weekly Streaks to unlock Milestones",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
