@@ -1,3 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">1percent</string>
+
+    <!-- Login Screen -->
+    <string name="login_title">Welcome to 1%</string>
+    <string name="login_field_email">Email</string>
+    <string name="login_field_password">Password</string>
+    <string name="login_password_hide">Hide password</string>
+    <string name="login_password_show">Show password</string>
+    <string name="login_error_invalid_credentials">Invalid email or password</string>
+    <string name="login_error_fill_all_fields">Please fill in all fields</string>
+    <string name="login_button_logging_in">Logging in…</string>
+    <string name="login_button_login">Login</string>
+    <string name="login_no_account">Don\'t have an account? Sign Up</string>
+
+    <!-- Register Screen -->
+    <string name="register_title">Create your account</string>
+    <string name="register_field_username">Username</string>
+    <string name="register_error_fill_all_fields">Please fill in all fields</string>
+    <string name="register_success">Account created successfully! Please log in.</string>
+    <string name="register_button_registering">Registering…</string>
+    <string name="register_button_register">Register</string>
+    <string name="register_have_account">Already have an account? Login</string>
+
+    <!-- Splash Screen -->
+    <string name="splash_logo_content_description">App logo</string>
+    <string name="splash_tagline">Earn your 1%\nStay Consistent</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_not_available">Profile not available</string>
+    <string name="profile_viewing_public">Viewing Public Profile</string>
+    <string name="profile_avatar_content_description">Profile avatar</string>
+    <string name="profile_change_photo_content_description">Change photo</string>
+    <string name="profile_section_stats">Stats</string>
+    <string name="profile_stat_level">Level</string>
+    <string name="profile_stat_xp">XP</string>
+    <string name="profile_stat_streak">Streak</string>
+    <string name="profile_stat_tasks_completed">Tasks Completed</string>
+    <string name="profile_stat_credits">Credits</string>
+    <string name="profile_vacation_mode_active">Vacation Mode active</string>
+    <string name="profile_vacation_mode">Vacation Mode</string>
+    <string name="profile_accept_request_content_description">Accept request</string>
+    <string name="profile_reject_request_content_description">Reject request</string>
+    <string name="profile_button_add_friend">Add Friend</string>
+    <string name="profile_button_request_pending">Request Pending</string>
+    <string name="profile_button_friends">Friends</string>
+    <string name="profile_button_change_username">Change Username</string>
+    <string name="profile_button_change_password">Change Password</string>
+    <string name="profile_button_logout">Logout</string>
+    <string name="profile_button_back">Back</string>
+    <string name="profile_dialog_change_username_title">Change Username</string>
+    <string name="profile_dialog_new_username_label">New username</string>
+    <string name="profile_dialog_save">Save</string>
+    <string name="profile_dialog_cancel">Cancel</string>
+    <string name="profile_dialog_change_password_title">Change Password</string>
+    <string name="profile_dialog_current_password_label">Current password</string>
+    <string name="profile_dialog_new_password_label">New password</string>
+    <string name="profile_dialog_confirm_password_label">Confirm new password</string>
+    <string name="profile_error_passwords_no_match">Passwords do not match</string>
+    <string name="profile_dialog_change_picture_title">Change Profile Picture</string>
+    <string name="profile_picture_take_photo">Take Photo</string>
+    <string name="profile_picture_choose_gallery">Choose from Gallery</string>
+
+    <!-- Profile Top Bar -->
+    <string name="profile_topbar_back_content_description">Back</string>
+
+    <!-- Home Screen -->
+    <string name="home_focus_mode_label">Focus mode</string>
+    <string name="home_vacation_mode_active">Vacation Mode active</string>
+    <string name="home_today_missions">Today\'s missions</string>
+    <string name="home_disable_focus_mode">Disable focus mode</string>
+    <string name="home_enable_focus_mode">Enable focus mode</string>
+    <string name="home_no_tasks_today">No tasks for today</string>
+    <string name="home_progress_title">Your 1% progress</string>
+    <string name="home_progress_chart_coming_soon">📈 Progress chart coming soon</string>
+    <string name="home_progress_tagline">1% better every day = 37x better in a year</string>
+    <string name="home_task_deadline_overdue">Overdue</string>
+    <string name="home_task_deadline_due">Due</string>
+
+    <!-- Home Filters -->
+    <string name="home_filter_status_all">Status: All</string>
+    <string name="home_filter_status_pending">Status: Pending</string>
+    <string name="home_filter_status_completed">Status: Completed</string>
+    <string name="home_filter_sort_by_date">Sort by Date</string>
+    <string name="home_filter_all">All</string>
+    <string name="home_filter_missions">Missions</string>
+    <string name="home_filter_tasks">Tasks</string>
+
+    <!-- Social Screen -->
+    <string name="social_section_friends">Friends</string>
+    <string name="social_section_groups">Groups</string>
+    <string name="social_search_placeholder">Find people by name…</string>
+    <string name="social_search_hint">Type at least 2 characters to search users.</string>
+    <string name="social_already_friends_content_description">Already friends</string>
+    <string name="social_accept_request_content_description">Accept request</string>
+    <string name="social_reject_request_content_description">Reject request</string>
+    <string name="social_pending_label">Pending</string>
+    <string name="social_send_friend_request_content_description">Send friend request</string>
+    <string name="social_accept_content_description">Accept</string>
+    <string name="social_reject_content_description">Reject</string>
+    <string name="social_my_friends">My Friends</string>
+    <string name="social_no_friends_yet">You don\'t have friends yet. Search users to discover people.</string>
+    <string name="social_groups_title">Groups</string>
+    <string name="social_group_study_sprint_title">Study Sprint</string>
+    <string name="social_group_study_sprint_description">Shared goals and weekly check-ins.</string>
+    <string name="social_group_fitness_crew_title">Fitness Crew</string>
+    <string name="social_group_fitness_crew_description">Track goals and challenge progress together.</string>
+
+    <!-- Targets Screen -->
+    <string name="targets_goal_progress_label">Progress</string>
+    <string name="targets_goal_weeks_remaining">%1$d weeks remaining</string>
+    <string name="targets_tab_tasks">Tasks</string>
+    <string name="targets_tab_goals">Goals</string>
+    <string name="targets_tasks_browse_subtitle">Browse all your tasks and missions</string>
+    <string name="targets_goals_browse_subtitle">Browse and manage all goals</string>
+    <string name="targets_delete_goal_title">Delete Goal</string>
+    <string name="targets_delete_goal_message">This will delete the goal and all its missions. This action cannot be undone.</string>
+    <string name="targets_delete_goal_confirm">Delete</string>
+    <string name="targets_category_selector_title">Select Category</string>
+    <string name="targets_category_all">All</string>
+    <string name="targets_task_badge_mission">Mission</string>
+    <string name="targets_task_badge_task">Task</string>
+    <string name="targets_task_status_completed">Completed</string>
+    <string name="targets_task_status_pending">Pending</string>
+    <string name="targets_task_completed_by">Completed by</string>
+    <string name="targets_task_complete_content_description">Complete</string>
+    <string name="targets_task_mark_pending_content_description">Mark pending</string>
+    <string name="targets_task_edit_content_description">Edit</string>
+    <string name="targets_task_share_content_description">Share</string>
+    <string name="targets_task_delete_content_description">Delete</string>
+    <string name="targets_goal_delete_content_description">Delete</string>
+    <string name="targets_task_detail_xp_reward">XP Reward</string>
+    <string name="targets_task_detail_difficulty">Difficulty</string>
+    <string name="targets_task_detail_energy">Energy</string>
+    <string name="targets_task_detail_type">Type</string>
+    <string name="targets_task_detail_description">Description</string>
+    <string name="targets_task_detail_deadline">Deadline</string>
+    <string name="targets_task_detail_category">Category</string>
+    <string name="targets_task_detail_button_complete">Complete</string>
+    <string name="targets_task_detail_button_delete">Delete</string>
+    <string name="targets_cancel">Cancel</string>
+
+    <!-- Targets Filters -->
+    <string name="targets_filter_status_pending">Status: Pending</string>
+    <string name="targets_filter_status_completed">Status: Completed</string>
+    <string name="targets_filter_status_all">Status: All</string>
+    <string name="targets_filter_missions_label">Missions</string>
+    <string name="targets_filter_tasks_label">Tasks</string>
+    <string name="targets_filter_shared_label">Shared</string>
+    <string name="targets_filter_all_label">All</string>
+    <string name="targets_sort_none">Sort</string>
+    <string name="targets_sort_date">Sort: Date</string>
+    <string name="targets_sort_xp">Sort: XP</string>
+    <string name="targets_goal_sort_none">Sort</string>
+    <string name="targets_goal_sort_progress">Sort: Progress</string>
+
+    <!-- Goal Detail Screen -->
+    <string name="goal_detail_title_fallback">Goal Details</string>
+    <string name="goal_detail_back_content_description">Back</string>
+    <string name="goal_detail_share_content_description">Share goal</string>
+    <string name="goal_detail_pause_content_description">Pause</string>
+    <string name="goal_detail_resume_content_description">Resume</string>
+    <string name="goal_detail_complete_button">Complete goal</string>
+    <string name="goal_detail_missions_header">Missions (%1$d)</string>
+    <string name="goal_detail_no_missions">No missions yet</string>
+    <string name="goal_detail_not_found">Goal not found</string>
+    <string name="goal_detail_completed_label">COMPLETED</string>
+    <string name="goal_detail_progress_label">Progress</string>
+    <string name="goal_detail_weeks_label">Weeks</string>
+    <string name="goal_detail_intensity_label">Intensity</string>
+    <string name="goal_detail_category_label">Category</string>
+    <string name="goal_detail_status_label">Status</string>
+
+    <!-- Progress Screen -->
+    <string name="progress_title">Progress</string>
+    <string name="progress_level_xp_title">Level &amp; XP</string>
+    <string name="progress_level_xp_subtitle">Your growth at a glance</string>
+    <string name="progress_goals_title">Goals Progress</string>
+    <string name="progress_goals_subtitle">Active goals completion</string>
+    <string name="progress_goals_empty">No active goals yet</string>
+    <string name="progress_xp_curve_title">1% Curve</string>
+    <string name="progress_xp_curve_subtitle">Cumulative XP — last 30 days</string>
+    <string name="progress_xp_curve_empty">Complete tasks to see your growth curve</string>
+    <string name="progress_weekly_rhythm_title">Weekly Rhythm</string>
+    <string name="progress_weekly_rhythm_subtitle">This week vs last week</string>
+    <string name="progress_weekly_rhythm_empty">Complete tasks to track your weekly rhythm</string>
+    <string name="progress_weekly_this_week">This week</string>
+    <string name="progress_weekly_last_week">Last week</string>
+    <string name="progress_category_breakdown_title">Category Breakdown</string>
+    <string name="progress_category_breakdown_subtitle">Completed tasks by area</string>
+    <string name="progress_category_breakdown_empty">Complete tasks to see the breakdown</string>
+    <string name="progress_category_donut_tasks_label">tasks</string>
+    <string name="progress_goal_sparklines_title">Goal Weekly Trend</string>
+    <string name="progress_goal_sparklines_subtitle">Completion rate per week</string>
+    <string name="progress_goal_sparklines_empty">Complete weekly cycles to see the trend</string>
+    <string name="progress_stat_streak">Streak</string>
+    <string name="progress_stat_completed">Completed</string>
+
+    <!-- Ritual Screen -->
+    <string name="ritual_skip_content_description">Skip</string>
+    <string name="ritual_date_confirm">Confirm</string>
+    <string name="ritual_date_cancel">Cancel</string>
+    <string name="ritual_summary_week_complete">Week complete!</string>
+    <string name="ritual_summary_catch_up">You\'re back!</string>
+    <string name="ritual_summary_missions_completed">missions completed</string>
+    <string name="ritual_summary_catch_up_message">You\'ve been away for a while.\nLet\'s get back on track!</string>
+    <string name="ritual_button_continue">Continue</string>
+    <string name="ritual_epic_passed">Epic Mission completed!</string>
+    <string name="ritual_epic_failed">The Epic resisted this week</string>
+    <string name="ritual_deadline_title">Your deadline has arrived</string>
+    <string name="ritual_deadline_extend_button">Extend deadline</string>
+    <string name="ritual_deadline_complete_button">Complete goal</string>
+    <string name="ritual_feedback_question_normal">How did you feel this week?</string>
+    <string name="ritual_feedback_question_catch_up">How do you feel about coming back?</string>
+    <string name="ritual_feedback_energy_high">Energized</string>
+    <string name="ritual_feedback_energy_high_desc">I\'m ready to come back strong</string>
+    <string name="ritual_feedback_normal">Normal</string>
+    <string name="ritual_feedback_normal_desc">Let\'s get back on track</string>
+    <string name="ritual_feedback_tired">Tired</string>
+    <string name="ritual_feedback_tired_desc">I need to take it easy</string>
+    <string name="ritual_feedback_sobrado">Too easy</string>
+    <string name="ritual_feedback_sobrado_desc">I had energy to spare</string>
+    <string name="ritual_feedback_perfecto">Perfect</string>
+    <string name="ritual_feedback_perfecto_desc">Just right</string>
+    <string name="ritual_feedback_agotado">Exhausted</string>
+    <string name="ritual_feedback_agotado_desc">It was too much</string>
+    <string name="ritual_intensity_title">Intensity Level</string>
+    <string name="ritual_generating_message">Preparing your next week…</string>
+    <string name="ritual_complete_title">Your week is ready!</string>
+    <string name="ritual_complete_view_missions">View missions</string>
+
+    <!-- Create Goal Card -->
+    <string name="create_goal_title">Create Goal</string>
+    <string name="create_goal_close_content_description">Close</string>
+    <string name="create_goal_field_name">Goal Name</string>
+    <string name="create_goal_deadline_label">Deadline</string>
+    <string name="create_goal_deadline_select">Select a date</string>
+    <string name="create_goal_deadline_change">Change date</string>
+    <string name="create_goal_deadline_select_button">Select date</string>
+    <string name="create_goal_date_ok">OK</string>
+    <string name="create_goal_date_cancel">Cancel</string>
+    <string name="create_goal_button_cancel">Cancel</string>
+    <string name="create_goal_button_create_no_ai">Create (No AI)</string>
+    <string name="create_goal_button_create_with_ai">Create with AI</string>
+
+    <!-- AI Proposal Card -->
+    <string name="ai_proposal_generating">Generating your weekly missions…</string>
+    <string name="ai_proposal_title">Your AI-generated missions</string>
+    <string name="ai_proposal_button_easier">Too easy</string>
+    <string name="ai_proposal_button_accept">Looks good</string>
+    <string name="ai_proposal_button_harder">Too hard</string>
+    <string name="ai_proposal_error_fallback">Error generating missions</string>
+    <string name="ai_proposal_button_retry">Retry</string>
+
+    <!-- Create Task Card -->
+    <string name="create_task_title">Create Task</string>
+    <string name="create_task_close_content_description">Close</string>
+    <string name="create_task_field_name">Task Name</string>
+    <string name="create_task_field_description">Description</string>
+    <string name="create_task_field_category">Category</string>
+    <string name="create_task_delete_category_content_description">Delete category</string>
+    <string name="create_task_create_category_menu_item">Create a Category</string>
+    <string name="create_task_set_deadline">Set deadline</string>
+    <string name="create_task_deadline_this_week">This Week</string>
+    <string name="create_task_deadline_specific_date">Specific date</string>
+    <string name="create_task_deadline_date_label">Deadline date</string>
+    <string name="create_task_date_confirm">Confirm</string>
+    <string name="create_task_date_cancel">Cancel</string>
+    <string name="create_task_button_creating">Creating…</string>
+    <string name="create_task_button_create">Create Task</string>
+    <string name="create_task_dialog_create_category_title">Create a Category</string>
+    <string name="create_task_dialog_category_name_label">Category name</string>
+    <string name="create_task_dialog_create_button">Create</string>
+    <string name="create_task_dialog_cancel_button">Cancel</string>
 </resources>

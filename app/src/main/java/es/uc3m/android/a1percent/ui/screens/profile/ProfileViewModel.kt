@@ -9,6 +9,7 @@ import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.UserRepository
 import es.uc3m.android.a1percent.data.model.UserRelationship
 import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -17,7 +18,11 @@ class ProfileViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    private var userObserverJob: Job? = null
+
     fun loadUser(userId: String?) {
+        userObserverJob?.cancel()
+
         val sessionUser = SessionRepository.currentUser.value ?: run {
             _uiState.update { it.copy(user = null) }
             return
@@ -26,21 +31,25 @@ class ProfileViewModel : ViewModel() {
         if (userId == null || userId == "placeholder" || userId == sessionUser.id) {
             _uiState.update { it.copy(user = sessionUser, isOwnProfile = true, relationshipStatus = null, relationship = null, currentUserId = sessionUser.id) }
         } else {
-            val targetUser = UserRepository.findUserById(userId)
-            val relationship = getRelationship(sessionUser.id, userId)
-            if (targetUser != null) {
-                _uiState.update {
-                    it.copy(
-                        user = targetUser,
-                        isOwnProfile = false,
-                        relationshipStatus = relationship?.status,
-                        relationship = relationship,
-                        currentUserId = sessionUser.id
-                    )
+            userObserverJob = UserRepository.allUsers
+                .onEach { users ->
+                    val targetUser = users.find { it.id == userId }
+                    val relationship = getRelationship(sessionUser.id, userId)
+                    if (targetUser != null) {
+                        _uiState.update {
+                            it.copy(
+                                user = targetUser,
+                                isOwnProfile = false,
+                                relationshipStatus = relationship?.status,
+                                relationship = relationship,
+                                currentUserId = sessionUser.id
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(user = null, isOwnProfile = false, relationshipStatus = null, relationship = null, currentUserId = sessionUser.id) }
+                    }
                 }
-            } else {
-                _uiState.update { it.copy(user = null, isOwnProfile = false, relationshipStatus = null, relationship = null, currentUserId = sessionUser.id) }
-            }
+                .launchIn(viewModelScope)
         }
     }
 

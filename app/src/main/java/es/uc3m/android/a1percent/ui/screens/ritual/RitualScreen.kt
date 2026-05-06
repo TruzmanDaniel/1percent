@@ -45,12 +45,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.totalWeeks
 import es.uc3m.android.a1percent.data.model.enums.EnergyFeedback
 
@@ -116,7 +118,7 @@ fun RitualScreen(
                     .align(Alignment.TopEnd)
                     .padding(16.dp)
             ) {
-                Icon(Icons.Default.SkipNext, contentDescription = "Saltar", tint = Color.White.copy(alpha = 0.6f))
+                Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.ritual_skip_content_description), tint = Color.White.copy(alpha = 0.6f))
             }
         }
 
@@ -127,10 +129,10 @@ fun RitualScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         datePickerState.selectedDateMillis?.let { viewModel.onExtendDeadline(it) }
-                    }) { Text("Confirmar") }
+                    }) { Text(stringResource(R.string.ritual_date_confirm)) }
                 },
                 dismissButton = {
-                    TextButton(onClick = viewModel::onDismissDatePicker) { Text("Cancelar") }
+                    TextButton(onClick = viewModel::onDismissDatePicker) { Text(stringResource(R.string.ritual_date_cancel)) }
                 }
             ) {
                 DatePicker(state = datePickerState)
@@ -148,7 +150,7 @@ private fun SummaryStep(uiState: RitualUiState, onNext: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (uiState.isCatchUp) "¡Has vuelto!" else "¡Semana completada!",
+            text = if (uiState.isCatchUp) stringResource(R.string.ritual_summary_catch_up) else stringResource(R.string.ritual_summary_week_complete),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
@@ -161,12 +163,12 @@ private fun SummaryStep(uiState: RitualUiState, onNext: () -> Unit) {
         Spacer(Modifier.height(32.dp))
 
         if (uiState.isCatchUp) {
-            Text("Llevas un tiempo sin entrar.\n¡Vamos a retomar el ritmo!", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.ritual_summary_catch_up_message), textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyLarge)
         } else {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${uiState.tasksCompleted}/${uiState.totalTasks}", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    Text("misiones completadas", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.ritual_summary_missions_completed), style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(8.dp))
                     Text("+${uiState.xpEarned} XP", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.tertiary)
                 }
@@ -175,7 +177,7 @@ private fun SummaryStep(uiState: RitualUiState, onNext: () -> Unit) {
 
         Spacer(Modifier.height(48.dp))
         Button(onClick = onNext, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Continuar")
+            Text(stringResource(R.string.ritual_button_continue))
         }
     }
 }
@@ -195,14 +197,14 @@ private fun EpicResultStep(uiState: RitualUiState, onNext: () -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
         Text(
-            text = if (uiState.epicMissionPassed) "¡Misión Épica superada!" else "La Épica se resistió esta semana",
+            text = if (uiState.epicMissionPassed) stringResource(R.string.ritual_epic_passed) else stringResource(R.string.ritual_epic_failed),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(48.dp))
         Button(onClick = onNext, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Continuar")
+            Text(stringResource(R.string.ritual_button_continue))
         }
     }
 }
@@ -219,7 +221,7 @@ private fun DeadlineCheckStep(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Tu deadline ha llegado", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.ritual_deadline_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
         Text("Progreso alcanzado: ${goal.progress}%", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
         if (goal.extensionCount > 0) {
@@ -227,11 +229,11 @@ private fun DeadlineCheckStep(
         }
         Spacer(Modifier.height(48.dp))
         Button(onClick = onExtend, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Extender deadline")
+            Text(stringResource(R.string.ritual_deadline_extend_button))
         }
         Spacer(Modifier.height(12.dp))
         OutlinedButton(onClick = onComplete, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Completar objetivo")
+            Text(stringResource(R.string.ritual_deadline_complete_button))
         }
     }
 }
@@ -244,7 +246,7 @@ private fun FeedbackStep(isCatchUp: Boolean, onFeedback: (EnergyFeedback) -> Uni
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (isCatchUp) "¿Cómo te sientes para volver?" else "¿Cómo te has sentido esta semana?",
+            text = if (isCatchUp) stringResource(R.string.ritual_feedback_question_catch_up) else stringResource(R.string.ritual_feedback_question_normal),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -253,15 +255,15 @@ private fun FeedbackStep(isCatchUp: Boolean, onFeedback: (EnergyFeedback) -> Uni
 
         val options = if (isCatchUp) {
             listOf(
-                Triple(EnergyFeedback.SOBRADO, "Con energía", "Estoy listo para volver fuerte"),
-                Triple(EnergyFeedback.PERFECTO, "Normal", "Vamos a retomar el ritmo"),
-                Triple(EnergyFeedback.AGOTADO, "Cansado", "Necesito ir suave")
+                Triple(EnergyFeedback.SOBRADO, stringResource(R.string.ritual_feedback_energy_high), stringResource(R.string.ritual_feedback_energy_high_desc)),
+                Triple(EnergyFeedback.PERFECTO, stringResource(R.string.ritual_feedback_normal), stringResource(R.string.ritual_feedback_normal_desc)),
+                Triple(EnergyFeedback.AGOTADO, stringResource(R.string.ritual_feedback_tired), stringResource(R.string.ritual_feedback_tired_desc))
             )
         } else {
             listOf(
-                Triple(EnergyFeedback.SOBRADO, "Sobrado", "Me sobró energía"),
-                Triple(EnergyFeedback.PERFECTO, "Perfecto", "Justo en el punto"),
-                Triple(EnergyFeedback.AGOTADO, "Agotado", "Fue demasiado")
+                Triple(EnergyFeedback.SOBRADO, stringResource(R.string.ritual_feedback_sobrado), stringResource(R.string.ritual_feedback_sobrado_desc)),
+                Triple(EnergyFeedback.PERFECTO, stringResource(R.string.ritual_feedback_perfecto), stringResource(R.string.ritual_feedback_perfecto_desc)),
+                Triple(EnergyFeedback.AGOTADO, stringResource(R.string.ritual_feedback_agotado), stringResource(R.string.ritual_feedback_agotado_desc))
             )
         }
 
@@ -293,7 +295,7 @@ private fun IntensityChangeStep(uiState: RitualUiState, onNext: () -> Unit) {
     ) {
         Icon(Icons.Default.TrendingUp, contentDescription = null, modifier = Modifier.size(64.dp), tint = if (isIncrease) Color(0xFF4CAF50) else Color(0xFFFF5722))
         Spacer(Modifier.height(24.dp))
-        Text("Nivel de Intensidad", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.ritual_intensity_title), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("%.1f".format(old), fontSize = 36.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -302,7 +304,7 @@ private fun IntensityChangeStep(uiState: RitualUiState, onNext: () -> Unit) {
         }
         Spacer(Modifier.height(48.dp))
         Button(onClick = onNext, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Continuar")
+            Text(stringResource(R.string.ritual_button_continue))
         }
     }
 }
@@ -316,7 +318,7 @@ private fun GeneratingStep(uiState: RitualUiState) {
     ) {
         CircularProgressIndicator(modifier = Modifier.size(64.dp))
         Spacer(Modifier.height(24.dp))
-        Text("Preparando tu próxima semana...", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+        Text(stringResource(R.string.ritual_generating_message), style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
     }
 }
 
@@ -329,7 +331,7 @@ private fun CompleteStep(uiState: RitualUiState, onFinished: () -> Unit) {
     ) {
         Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(80.dp), tint = Color(0xFF4CAF50))
         Spacer(Modifier.height(24.dp))
-        Text("¡Tu semana está lista!", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.ritual_complete_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(16.dp))
         if (uiState.newIntensity != null) {
             Text("Nivel: ${"%.1f".format(uiState.newIntensity)}", style = MaterialTheme.typography.titleMedium)
@@ -337,7 +339,7 @@ private fun CompleteStep(uiState: RitualUiState, onFinished: () -> Unit) {
         Text("${uiState.goalProgress}% completado", style = MaterialTheme.typography.titleMedium, color = Color(0xFFFFD700))
         Spacer(Modifier.height(48.dp))
         Button(onClick = onFinished, modifier = Modifier.fillMaxWidth(0.7f)) {
-            Text("Ver misiones")
+            Text(stringResource(R.string.ritual_complete_view_missions))
         }
     }
 }

@@ -139,12 +139,15 @@ class ProgressViewModel : ViewModel() {
                 userId in task.completedBy ||
                     (task.completedBy.isEmpty() && task.status == TaskStatus.COMPLETED && task.ownerId == userId)
             }
-            .groupBy { it.category }
+            .groupBy { Pair(it.category, it.customCategoryName) }
             .mapValues { it.value.size }
         val total = counts.values.sum().toFloat().coerceAtLeast(1f)
         val breakdown = counts.entries
             .sortedByDescending { it.value }
-            .map { (cat, count) -> CategorySlice(cat, count, count / total) }
+            .map { (key, count) ->
+                val (cat, customName) = key
+                CategorySlice(cat, customName ?: cat.displayName, count, count / total)
+            }
 
         _uiState.update {
             it.copy(

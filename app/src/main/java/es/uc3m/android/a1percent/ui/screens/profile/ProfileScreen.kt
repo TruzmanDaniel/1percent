@@ -29,12 +29,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -124,7 +126,7 @@ fun ProfileBodyContent(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Profile not available")
+            Text(stringResource(R.string.profile_not_available))
         }
         return
     }
@@ -151,13 +153,13 @@ fun ProfileBodyContent(
         LaunchedEffect(showUsernameDialog) { newUsernameInput = user.name }
         AlertDialog(
             onDismissRequest = { showUsernameDialog = false },
-            title = { Text("Change Username") },
+            title = { Text(stringResource(R.string.profile_dialog_change_username_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = newUsernameInput,
                         onValueChange = { newUsernameInput = it },
-                        label = { Text("New username") },
+                        label = { Text(stringResource(R.string.profile_dialog_new_username_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -177,11 +179,11 @@ fun ProfileBodyContent(
                     enabled = !uiState.isUpdatingUsername
                 ) {
                     if (uiState.isUpdatingUsername) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    else Text("Save")
+                    else Text(stringResource(R.string.profile_dialog_save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showUsernameDialog = false }) { Text(stringResource(R.string.profile_dialog_cancel)) }
             }
         )
     }
@@ -196,13 +198,13 @@ fun ProfileBodyContent(
         }
         AlertDialog(
             onDismissRequest = { showPasswordDialog = false },
-            title = { Text("Change Password") },
+            title = { Text(stringResource(R.string.profile_dialog_change_password_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = currentPasswordInput,
                         onValueChange = { currentPasswordInput = it },
-                        label = { Text("Current password") },
+                        label = { Text(stringResource(R.string.profile_dialog_current_password_label)) },
                         singleLine = true,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -210,7 +212,7 @@ fun ProfileBodyContent(
                     OutlinedTextField(
                         value = newPasswordInput,
                         onValueChange = { newPasswordInput = it },
-                        label = { Text("New password") },
+                        label = { Text(stringResource(R.string.profile_dialog_new_password_label)) },
                         singleLine = true,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -218,7 +220,7 @@ fun ProfileBodyContent(
                     OutlinedTextField(
                         value = confirmPasswordInput,
                         onValueChange = { confirmPasswordInput = it; confirmPasswordError = null },
-                        label = { Text("Confirm new password") },
+                        label = { Text(stringResource(R.string.profile_dialog_confirm_password_label)) },
                         singleLine = true,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -235,7 +237,7 @@ fun ProfileBodyContent(
                 TextButton(
                     onClick = {
                         if (newPasswordInput != confirmPasswordInput) {
-                            confirmPasswordError = "Passwords do not match"
+                            confirmPasswordError = context.getString(R.string.profile_error_passwords_no_match)
                         } else if (currentPasswordInput.isNotBlank() && newPasswordInput.isNotBlank()) {
                             onUpdatePassword(currentPasswordInput, newPasswordInput)
                             showPasswordDialog = false
@@ -244,11 +246,11 @@ fun ProfileBodyContent(
                     enabled = !uiState.isUpdatingPassword
                 ) {
                     if (uiState.isUpdatingPassword) CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    else Text("Save")
+                    else Text(stringResource(R.string.profile_dialog_save))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showPasswordDialog = false }) { Text("Cancel") }
+                TextButton(onClick = { showPasswordDialog = false }) { Text(stringResource(R.string.profile_dialog_cancel)) }
             }
         )
     }
@@ -256,7 +258,7 @@ fun ProfileBodyContent(
     if (showImagePickerDialog) {
         AlertDialog(
             onDismissRequest = { showImagePickerDialog = false },
-            title = { Text("Change Profile Picture") },
+            title = { Text(stringResource(R.string.profile_dialog_change_picture_title)) },
             text = {
                 Column {
                     TextButton(
@@ -270,7 +272,7 @@ fun ProfileBodyContent(
                     ) {
                         Icon(Icons.Default.CameraAlt, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Take Photo")
+                        Text(stringResource(R.string.profile_picture_take_photo))
                     }
                     TextButton(
                         onClick = {
@@ -279,14 +281,14 @@ fun ProfileBodyContent(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Choose from Gallery")
+                        Text(stringResource(R.string.profile_picture_choose_gallery))
                     }
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showImagePickerDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.profile_dialog_cancel))
                 }
             }
         )
@@ -316,7 +318,7 @@ fun ProfileBodyContent(
                 } else if (!user.avatarUrl.isNullOrEmpty()) {
                     AsyncImage(
                         model = user.avatarUrl,
-                        contentDescription = "Profile avatar",
+                        contentDescription = stringResource(R.string.profile_avatar_content_description),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(100.dp)
@@ -330,7 +332,7 @@ fun ProfileBodyContent(
                 } else {
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Profile avatar",
+                        contentDescription = stringResource(R.string.profile_avatar_content_description),
                         modifier = Modifier
                             .size(100.dp)
                             .then(
@@ -353,7 +355,7 @@ fun ProfileBodyContent(
                     ) {
                         Icon(
                             imageVector = Icons.Default.CameraAlt,
-                            contentDescription = "Change photo",
+                            contentDescription = stringResource(R.string.profile_change_photo_content_description),
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
@@ -368,7 +370,7 @@ fun ProfileBodyContent(
 
             if (!isOwn) {
                 Text(
-                    text = "Viewing Public Profile",
+                    text = stringResource(R.string.profile_viewing_public),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary
                 )
@@ -391,17 +393,17 @@ fun ProfileBodyContent(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "Stats",
+                text = stringResource(R.string.profile_section_stats),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            StatRow(label = "Level", value = user.level.toString())
-            StatRow(label = "XP", value = "${user.currentXp} / ${user.xpToNextLevel}")
-            StatRow(label = "Streak", value = "${user.streakDays} days")
-            StatRow(label = "Tasks Completed", value = user.totalTasksCompleted.toString())
+            StatRow(label = stringResource(R.string.profile_stat_level), value = user.level.toString())
+            StatRow(label = stringResource(R.string.profile_stat_xp), value = "${user.currentXp} / ${user.xpToNextLevel}")
+            StatRow(label = stringResource(R.string.profile_stat_streak), value = "${user.streakDays} days")
+            StatRow(label = stringResource(R.string.profile_stat_tasks_completed), value = user.totalTasksCompleted.toString())
             if (isOwn) {
-                StatRow(label = "Credits", value = user.availableCredits.toString())
+                StatRow(label = stringResource(R.string.profile_stat_credits), value = user.availableCredits.toString())
             }
         }
 
@@ -421,7 +423,7 @@ fun ProfileBodyContent(
                 ) {
                     Column {
                         Text(
-                            if (isVacation) "Vacation Mode active" else "Vacation Mode",
+                            if (isVacation) stringResource(R.string.profile_vacation_mode_active) else stringResource(R.string.profile_vacation_mode),
                             style = MaterialTheme.typography.titleMedium
                         )
                         if (isVacation && user.vacationStartDate != null) {
@@ -449,34 +451,34 @@ fun ProfileBodyContent(
                         onClick = onAcceptRequest,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Accept request", tint = Color(0xFF4CAF50))
+                        Icon(Icons.Default.Check, contentDescription = stringResource(R.string.profile_accept_request_content_description), tint = Color(0xFF4CAF50))
                     }
                     IconButton(
                         onClick = onRejectRequest,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Reject request", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.profile_reject_request_content_description), tint = MaterialTheme.colorScheme.error)
                     }
                 }
                 relationship == null -> Button(
                     onClick = onFriendAction,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Add Friend")
+                    Text(stringResource(R.string.profile_button_add_friend))
                 }
                 relationship.status == RelationshipStatus.PENDING -> OutlinedButton(
                     onClick = {},
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false
                 ) {
-                    Text("Request Pending")
+                    Text(stringResource(R.string.profile_button_request_pending))
                 }
                 relationship.status == RelationshipStatus.FRIENDS -> OutlinedButton(
                     onClick = {},
                     modifier = Modifier.fillMaxWidth(),
                     enabled = false
                 ) {
-                    Text("Friends")
+                    Text(stringResource(R.string.profile_button_friends))
                 }
                 else -> {}
             }
@@ -490,13 +492,13 @@ fun ProfileBodyContent(
                 onClick = { showUsernameDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Change Username")
+                Text(stringResource(R.string.profile_button_change_username))
             }
             OutlinedButton(
                 onClick = { showPasswordDialog = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Change Password")
+                Text(stringResource(R.string.profile_button_change_password))
             }
             Button(
                 onClick = {
@@ -512,14 +514,14 @@ fun ProfileBodyContent(
                     contentColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             ) {
-                Text("Logout")
+                Text(stringResource(R.string.profile_button_logout))
             }
         } else {
             Button(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Back")
+                Text(stringResource(R.string.profile_button_back))
             }
         }
     }

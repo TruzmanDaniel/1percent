@@ -22,23 +22,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.data.model.enums.RelationshipStatus
 
-private enum class SocialSection(val label: String) {
-    // COMMUNITY("Community"),
-    FRIENDS("Friends"),
-    GROUPS("Groups")
+private enum class SocialSection(@StringRes val labelRes: Int) {
+    // COMMUNITY(R.string.social_section_community),
+    FRIENDS(R.string.social_section_friends),
+    GROUPS(R.string.social_section_groups)
 }
 
 @Composable
@@ -99,7 +102,7 @@ private fun SectionSelector(
             FilterChip(
                 selected = selected == section,
                 onClick = { onSelect(section) },
-                label = { Text(section.label) }
+                label = { Text(stringResource(section.labelRes)) }
             )
         }
     }
@@ -126,7 +129,7 @@ private fun FriendsSection(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
-                placeholder = { Text("Find people by name...") },
+                placeholder = { Text(stringResource(R.string.social_search_placeholder)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp),
@@ -139,7 +142,7 @@ private fun FriendsSection(
         if (searchQuery.length < 2) {
             item {
                 Text(
-                    text = "Type at least 2 characters to search users.",
+                    text = stringResource(R.string.social_search_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -184,7 +187,7 @@ private fun FriendsSection(
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = "Already friends",
+                                        contentDescription = stringResource(R.string.social_already_friends_content_description),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -192,10 +195,10 @@ private fun FriendsSection(
                         } else if (isIncomingRequest) {
                             Row {
                                 IconButton(onClick = { onAcceptRequest(user.id) }) {
-                                    Icon(Icons.Default.Check, contentDescription = "Accept request", tint = Color(0xFF4CAF50))
+                                    Icon(Icons.Default.Check, contentDescription = stringResource(R.string.social_accept_request_content_description), tint = Color(0xFF4CAF50))
                                 }
                                 IconButton(onClick = { onRejectRequest(user.id) }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Reject request", tint = MaterialTheme.colorScheme.error)
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.social_reject_request_content_description), tint = MaterialTheme.colorScheme.error)
                                 }
                             }
                         } else if (isOutgoingRequest) {
@@ -209,7 +212,7 @@ private fun FriendsSection(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "Pending",
+                                        text = stringResource(R.string.social_pending_label),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -219,7 +222,7 @@ private fun FriendsSection(
                             IconButton(onClick = { onSendFriendRequest(user.id) }) {
                                 Icon(
                                     Icons.Default.PersonAdd,
-                                    contentDescription = "Send friend request",
+                                    contentDescription = stringResource(R.string.social_send_friend_request_content_description),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -245,10 +248,10 @@ private fun FriendsSection(
                     trailingIcon = {
                         Row {
                             IconButton(onClick = { onAcceptRequest(requester.id) }) {
-                                Icon(Icons.Default.Check, contentDescription = "Accept", tint = Color(0xFF4CAF50))
+                                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.social_accept_content_description), tint = Color(0xFF4CAF50))
                             }
                             IconButton(onClick = { onRejectRequest(requester.id) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Reject", tint = MaterialTheme.colorScheme.error)
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.social_reject_content_description), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -259,7 +262,7 @@ private fun FriendsSection(
 
         item {
             Text(
-                text = "My Friends",
+                text = stringResource(R.string.social_my_friends),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -268,7 +271,7 @@ private fun FriendsSection(
         if (friends.isEmpty() && pendingRequests.isEmpty()) {
             item {
                 Text(
-                    text = "You don't have friends yet. Search users to discover people.",
+                    text = stringResource(R.string.social_no_friends_yet),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 24.dp)
                 )
@@ -288,7 +291,7 @@ private fun FriendsSection(
 @Composable
 private fun GroupsSection() {
     Text(
-        text = "Groups",
+        text = stringResource(R.string.social_groups_title),
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.padding(bottom = 12.dp)
     )
@@ -298,9 +301,9 @@ private fun GroupsSection() {
     ) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Study Sprint", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.social_group_study_sprint_title), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Shared goals and weekly check-ins.",
+                    stringResource(R.string.social_group_study_sprint_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -308,9 +311,9 @@ private fun GroupsSection() {
         }
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("Fitness Crew", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.social_group_fitness_crew_title), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Track goals and challenge progress together.",
+                    stringResource(R.string.social_group_fitness_crew_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

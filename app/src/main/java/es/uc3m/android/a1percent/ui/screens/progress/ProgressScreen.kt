@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -48,6 +49,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import es.uc3m.android.a1percent.R
 
 private val donutColors = listOf(
     Color(0xFF818CF8), // indigo
@@ -84,7 +86,7 @@ private fun ProgressBodyContent(uiState: ProgressUiState) {
     ) {
         item {
             Text(
-                text = "Progress",
+                text = stringResource(R.string.progress_title),
                 style = MaterialTheme.typography.headlineSmall
             )
         }
@@ -111,10 +113,10 @@ private fun ProgressBodyContent(uiState: ProgressUiState) {
 
 @Composable
 private fun GoalSparklinesCard(sparklines: List<GoalSparkline>) {
-    ProgressCard(title = "Goal Weekly Trend", subtitle = "Completion rate per week") {
+    ProgressCard(title = stringResource(R.string.progress_goal_sparklines_title), subtitle = stringResource(R.string.progress_goal_sparklines_subtitle)) {
         if (sparklines.isEmpty()) {
             Text(
-                text = "Complete weekly cycles to see the trend",
+                text = stringResource(R.string.progress_goal_sparklines_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -156,10 +158,10 @@ private fun GoalSparklineRow(sparkline: GoalSparkline) {
 
 @Composable
 private fun WeeklyRhythmCard(thisWeek: List<Int>, lastWeek: List<Int>) {
-    ProgressCard(title = "Weekly Rhythm", subtitle = "This week vs last week") {
+    ProgressCard(title = stringResource(R.string.progress_weekly_rhythm_title), subtitle = stringResource(R.string.progress_weekly_rhythm_subtitle)) {
         if (thisWeek.none { it > 0 } && lastWeek.none { it > 0 }) {
             Text(
-                text = "Complete tasks to track your weekly rhythm",
+                text = stringResource(R.string.progress_weekly_rhythm_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -191,12 +193,12 @@ private fun WeeklyRhythmCard(thisWeek: List<Int>, lastWeek: List<Int>) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             LegendItem(
                 color = MaterialTheme.colorScheme.primary,
-                label = "This week",
+                label = stringResource(R.string.progress_weekly_this_week),
                 percent = ""
             )
             LegendItem(
                 color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
-                label = "Last week",
+                label = stringResource(R.string.progress_weekly_last_week),
                 percent = ""
             )
         }
@@ -205,10 +207,10 @@ private fun WeeklyRhythmCard(thisWeek: List<Int>, lastWeek: List<Int>) {
 
 @Composable
 private fun XpCurveCard(points: List<Float>) {
-    ProgressCard(title = "1% Curve", subtitle = "Cumulative XP — last 30 days") {
+    ProgressCard(title = stringResource(R.string.progress_xp_curve_title), subtitle = stringResource(R.string.progress_xp_curve_subtitle)) {
         if (points.none { it > 0f }) {
             Text(
-                text = "Complete tasks to see your growth curve",
+                text = stringResource(R.string.progress_xp_curve_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -230,10 +232,10 @@ private fun XpCurveCard(points: List<Float>) {
 
 @Composable
 private fun CategoryDonutCard(breakdown: List<CategorySlice>) {
-    ProgressCard(title = "Category Breakdown", subtitle = "Completed tasks by area") {
+    ProgressCard(title = stringResource(R.string.progress_category_breakdown_title), subtitle = stringResource(R.string.progress_category_breakdown_subtitle)) {
         if (breakdown.isEmpty()) {
             Text(
-                text = "Complete tasks to see the breakdown",
+                text = stringResource(R.string.progress_category_breakdown_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -256,7 +258,7 @@ private fun CategoryDonutCard(breakdown: List<CategorySlice>) {
                     breakdown.forEachIndexed { index, slice ->
                         LegendItem(
                             color = donutColors[index % donutColors.size],
-                            label = slice.category.displayName,
+                            label = slice.label,
                             percent = "${(slice.fraction * 100).toInt()}%"
                         )
                     }
@@ -300,7 +302,7 @@ private fun DonutChart(
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                text = "tasks",
+                text = stringResource(R.string.progress_category_donut_tasks_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -337,10 +339,10 @@ private fun LegendItem(color: Color, label: String, percent: String) {
 
 @Composable
 private fun GoalsProgressCard(goals: List<GoalProgressItem>) {
-    ProgressCard(title = "Goals Progress", subtitle = "Active goals completion") {
+    ProgressCard(title = stringResource(R.string.progress_goals_title), subtitle = stringResource(R.string.progress_goals_subtitle)) {
         if (goals.isEmpty()) {
             Text(
-                text = "No active goals yet",
+                text = stringResource(R.string.progress_goals_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -397,7 +399,7 @@ private fun GoalProgressRow(goal: GoalProgressItem) {
 
 @Composable
 private fun LevelXpStatCard(uiState: ProgressUiState) {
-    ProgressCard(title = "Level & XP", subtitle = "Your growth at a glance") {
+    ProgressCard(title = stringResource(R.string.progress_level_xp_title), subtitle = stringResource(R.string.progress_level_xp_subtitle)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -460,12 +462,12 @@ private fun LevelXpStatCard(uiState: ProgressUiState) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatItem(
-                label = "Streak",
+                label = stringResource(R.string.progress_stat_streak),
                 value = "${uiState.streakDays} days",
                 color = MaterialTheme.colorScheme.tertiary
             )
             StatItem(
-                label = "Completed",
+                label = stringResource(R.string.progress_stat_completed),
                 value = "${uiState.totalTasksCompleted} tasks",
                 color = MaterialTheme.colorScheme.secondary
             )

@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.Task
 
 @Composable
@@ -45,7 +47,7 @@ fun AiProposalCard(
                 ) {
                     CircularProgressIndicator()
                     Text(
-                        text = "Generando tus misiones semanales...",
+                        text = stringResource(R.string.ai_proposal_generating),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -53,7 +55,7 @@ fun AiProposalCard(
 
             AiNegotiationState.PROPOSAL_READY -> {
                 Text(
-                    text = "Tus misiones generadas por IA",
+                    text = stringResource(R.string.ai_proposal_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -75,14 +77,14 @@ fun AiProposalCard(
                         enabled = canNegotiate,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Muy fácil")
+                        Text(stringResource(R.string.ai_proposal_button_easier))
                     }
 
                     Button(
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Me gusta")
+                        Text(stringResource(R.string.ai_proposal_button_accept))
                     }
 
                     OutlinedButton(
@@ -90,7 +92,7 @@ fun AiProposalCard(
                         enabled = canNegotiate,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Muy difícil")
+                        Text(stringResource(R.string.ai_proposal_button_harder))
                     }
                 }
             }
@@ -102,12 +104,12 @@ fun AiProposalCard(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = errorMessage ?: "Error al generar misiones",
+                        text = errorMessage ?: stringResource(R.string.ai_proposal_error_fallback),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
                     Button(onClick = onRetry) {
-                        Text("Reintentar")
+                        Text(stringResource(R.string.ai_proposal_button_retry))
                     }
                 }
             }

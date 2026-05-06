@@ -69,12 +69,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
@@ -169,13 +171,13 @@ fun TargetsScreen(
         if (deleteGoalId != null) {
             AlertDialog(
                 onDismissRequest = { viewModel.onGoalDeleteDismissed() },
-                title = { Text("Delete Goal") },
-                text = { Text("This will delete the goal and all its missions. This action cannot be undone.") },
+                title = { Text(stringResource(R.string.targets_delete_goal_title)) },
+                text = { Text(stringResource(R.string.targets_delete_goal_message)) },
                 confirmButton = {
-                    TextButton(onClick = { viewModel.onGoalDeleteConfirmed() }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                    TextButton(onClick = { viewModel.onGoalDeleteConfirmed() }) { Text(stringResource(R.string.targets_delete_goal_confirm), color = MaterialTheme.colorScheme.error) }
                 },
                 dismissButton = {
-                    TextButton(onClick = { viewModel.onGoalDeleteDismissed() }) { Text("Cancel") }
+                    TextButton(onClick = { viewModel.onGoalDeleteDismissed() }) { Text(stringResource(R.string.targets_cancel)) }
                 }
             )
         }
@@ -222,10 +224,10 @@ private fun CategorySelectorDialog(
                 .padding(12.dp)
                 .verticalScroll(rememberScrollState())
             ) {
-                Text("Select Category", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+                Text(stringResource(R.string.targets_category_selector_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
 
                 // All option
-                DropdownMenuItem(text = { Text("All") }, onClick = { onCategorySelected(null) })
+                DropdownMenuItem(text = { Text(stringResource(R.string.targets_category_all)) }, onClick = { onCategorySelected(null) })
 
                 // Predefined
                 predefined.forEach { cat ->
@@ -270,12 +272,12 @@ private fun TargetsBodyContent(
             Tab(
                 selected = uiState.selectedTab == TargetsTab.TASKS,
                 onClick = { onTabSelected(TargetsTab.TASKS) },
-                text = { Text("Tasks") }
+                text = { Text(stringResource(R.string.targets_tab_tasks)) }
             )
             Tab(
                 selected = uiState.selectedTab == TargetsTab.GOALS,
                 onClick = { onTabSelected(TargetsTab.GOALS) },
-                text = { Text("Goals") }
+                text = { Text(stringResource(R.string.targets_tab_goals)) }
             )
         }
 
@@ -338,7 +340,7 @@ private fun TasksTabContent(
     ) {
         item {
             Text(
-                text = "Browse all your tasks and missions",
+                text = stringResource(R.string.targets_tasks_browse_subtitle),
                 style = MaterialTheme.typography.titleSmall
             )
         }
@@ -347,7 +349,7 @@ private fun TasksTabContent(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     onClick = onTaskStatusFilterClicked,
-                    label = { Text(statusFilterLabel(uiState.taskFilters.selectedStatus)) },
+                    label = { Text(stringResource(statusFilterLabel(uiState.taskFilters.selectedStatus))) },
                     selected = uiState.taskFilters.selectedStatus != null
                 )
 
@@ -356,7 +358,7 @@ private fun TasksTabContent(
                     uiState.taskFilterItems.forEach { filter ->
                         FilterChip(
                             onClick = { onTaskFilterClicked(filter.key) },
-                            label = { Text(filter.label) },
+                            label = { Text(stringResource(filter.labelRes)) },
                             selected = filter.isSelected
                         )
                     }
@@ -370,7 +372,7 @@ private fun TasksTabContent(
                     )
                     FilterChip(
                         onClick = { onTaskFilterClicked(TaskFilterKey.SORT) },
-                        label = { Text(uiState.taskFilters.sort.label) },
+                        label = { Text(stringResource(uiState.taskFilters.sort.labelRes)) },
                         selected = uiState.taskFilters.sort != TaskSort.NONE
                     )
                 }
@@ -408,7 +410,7 @@ private fun GoalsTabContent(
     ) {
         item {
             Text(
-                text = "Browse and manage all goals",
+                text = stringResource(R.string.targets_goals_browse_subtitle),
                 style = MaterialTheme.typography.titleSmall
             )
         }
@@ -418,7 +420,7 @@ private fun GoalsTabContent(
             uiState.goalFilterItems.forEach { filter ->
                 FilterChip(
                     onClick = { onGoalFilterClicked(filter.key) },
-                    label = { Text(filter.label) },
+                    label = { Text(stringResource(filter.labelRes)) },
                     selected = filter.isSelected
                 )
             }
@@ -514,7 +516,7 @@ internal fun TaskRowWithActions(
                             color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
                             Text(
-                                text = "Mission",
+                                text = stringResource(R.string.targets_task_badge_mission),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -530,7 +532,7 @@ internal fun TaskRowWithActions(
                             )
                         ) {
                             Text(
-                                text = "Task",
+                                text = stringResource(R.string.targets_task_badge_task),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
@@ -560,7 +562,7 @@ internal fun TaskRowWithActions(
                         color = statusColor.copy(alpha = 0.15f)
                     ) {
                         Text(
-                            text = if (isCompletedByMe) "Completed" else "Pending",
+                            text = if (isCompletedByMe) stringResource(R.string.targets_task_status_completed) else stringResource(R.string.targets_task_status_pending),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = statusColor,
@@ -581,7 +583,7 @@ internal fun TaskRowWithActions(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "Completed by",
+                            text = stringResource(R.string.targets_task_completed_by),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -605,7 +607,7 @@ internal fun TaskRowWithActions(
                         label = {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = if (isCompletedByMe) "Mark pending" else "Complete",
+                                contentDescription = if (isCompletedByMe) stringResource(R.string.targets_task_mark_pending_content_description) else stringResource(R.string.targets_task_complete_content_description),
                                 modifier = Modifier.size(16.dp)
                             )
                         },
@@ -628,7 +630,7 @@ internal fun TaskRowWithActions(
                         label = {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = "Edit",
+                                contentDescription = stringResource(R.string.targets_task_edit_content_description),
                                 modifier = Modifier.size(16.dp)
                             )
                         },
@@ -640,7 +642,7 @@ internal fun TaskRowWithActions(
                             label = {
                                 Icon(
                                     Icons.Default.Share,
-                                    contentDescription = "Share",
+                                    contentDescription = stringResource(R.string.targets_task_share_content_description),
                                     modifier = Modifier.size(16.dp)
                                 )
                             },
@@ -652,7 +654,7 @@ internal fun TaskRowWithActions(
                         label = {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete",
+                                contentDescription = stringResource(R.string.targets_task_delete_content_description),
                                 modifier = Modifier.size(16.dp)
                             )
                         },
@@ -732,7 +734,7 @@ private fun GoalCompactItem(
                     )
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.targets_goal_delete_content_description), modifier = Modifier.size(16.dp))
                 }
             }
 
@@ -743,7 +745,7 @@ private fun GoalCompactItem(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Progreso", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.targets_goal_progress_label), style = MaterialTheme.typography.labelSmall)
                     Text("${goal.progress}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                 }
                 LinearProgressIndicator(
@@ -755,7 +757,7 @@ private fun GoalCompactItem(
 
             val weeksLeft = goal.weeksRemaining()
             Text(
-                "$weeksLeft semanas restantes",
+                stringResource(R.string.targets_goal_weeks_remaining, weeksLeft),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.tertiary
             )
@@ -818,7 +820,7 @@ internal fun TaskDetailModal(
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
                         ) {
                             Text(
-                                text = if (parentGoalTitle != null) "Mission" else "Task",
+                                text = if (parentGoalTitle != null) stringResource(R.string.targets_task_badge_mission) else stringResource(R.string.targets_task_badge_task),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -837,7 +839,7 @@ internal fun TaskDetailModal(
                             color = statusColor.copy(alpha = 0.18f)
                         ) {
                             Text(
-                                text = if (isCompletedByMe) "Completed" else "Pending",
+                                text = if (isCompletedByMe) stringResource(R.string.targets_task_status_completed) else stringResource(R.string.targets_task_status_pending),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = statusColor,
@@ -889,7 +891,7 @@ internal fun TaskDetailModal(
                 StatCard(
                     modifier = Modifier.weight(1f),
                     icon = Icons.Default.EmojiEvents,
-                    label = "XP Reward",
+                    label = stringResource(R.string.targets_task_detail_xp_reward),
                     value = "+${task.xp}",
                     valueColor = MaterialTheme.colorScheme.primary
                 )
@@ -909,7 +911,7 @@ internal fun TaskDetailModal(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Difficulty",
+                            text = stringResource(R.string.targets_task_detail_difficulty),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -935,7 +937,7 @@ internal fun TaskDetailModal(
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Bolt,
-                        label = "Energy",
+                        label = stringResource(R.string.targets_task_detail_energy),
                         value = "${task.energyCost}",
                         valueColor = MaterialTheme.colorScheme.tertiary
                     )
@@ -943,7 +945,7 @@ internal fun TaskDetailModal(
                     StatCard(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Default.Loop,
-                        label = "Type",
+                        label = stringResource(R.string.targets_task_detail_type),
                         value = task.type.displayName,
                         valueColor = MaterialTheme.colorScheme.secondary
                     )
@@ -961,7 +963,7 @@ internal fun TaskDetailModal(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Description",
+                        text = stringResource(R.string.targets_task_detail_description),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -984,20 +986,20 @@ internal fun TaskDetailModal(
                 if (task.energyCost != null) {
                     DetailRow(
                         icon = Icons.Default.Loop,
-                        label = "Type",
+                        label = stringResource(R.string.targets_task_detail_type),
                         value = task.type.displayName
                     )
                 }
                 if (task.deadline != null) {
                     DetailRow(
                         icon = Icons.Default.CalendarToday,
-                        label = "Deadline",
+                        label = stringResource(R.string.targets_task_detail_deadline),
                         value = formatDeadline(task.deadline)
                     )
                 }
                 DetailRow(
                     icon = Icons.AutoMirrored.Default.Label,
-                    label = "Category",
+                    label = stringResource(R.string.targets_task_detail_category),
                     value = task.customCategoryName ?: task.category.displayName
                 )
 
@@ -1054,7 +1056,7 @@ internal fun TaskDetailModal(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(if (isCompletedByMe) "Completed" else "Complete")
+                    Text(if (isCompletedByMe) stringResource(R.string.targets_task_status_completed) else stringResource(R.string.targets_task_detail_button_complete))
                 }
                 OutlinedButton(
                     onClick = { onDelete(); onClose() },
@@ -1065,7 +1067,7 @@ internal fun TaskDetailModal(
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Delete")
+                    Text(stringResource(R.string.targets_task_detail_button_delete))
                 }
             }
         }

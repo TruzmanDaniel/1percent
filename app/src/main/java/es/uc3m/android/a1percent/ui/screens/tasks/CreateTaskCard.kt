@@ -50,10 +50,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.enums.Category
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -117,12 +119,12 @@ fun CreateTaskCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Create Task", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.create_task_title), style = MaterialTheme.typography.titleLarge)
                     IconButton(onClick = {
                         viewModel.resetState() // Clear form state when closing
                         onDismiss()
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.create_task_close_content_description))
                     }
                 }
 
@@ -137,14 +139,14 @@ fun CreateTaskCard(
                     OutlinedTextField(
                         value = uiState.taskName,
                         onValueChange = viewModel::onTaskNameChange,
-                        label = { Text("Task Name") },
+                        label = { Text(stringResource(R.string.create_task_field_name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     OutlinedTextField(
                         value = uiState.taskDescription,
                         onValueChange = viewModel::onTaskDescriptionChange,
-                        label = { Text("Description") },
+                        label = { Text(stringResource(R.string.create_task_field_description)) },
                         modifier = Modifier.fillMaxWidth(),
                         minLines = 3
                     )
@@ -209,16 +211,11 @@ fun CreateTaskCard(
                             value = uiState.selectedCategoryLabel,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Category") },
+                            label = { Text(stringResource(R.string.create_task_field_category)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = uiState.isCategoryDropdownExpanded) },
                             modifier = Modifier
                                 .menuAnchor(type = MenuAnchorType.PrimaryNotEditable, enabled = true)
                                 .fillMaxWidth(),
-                                // outlinedtextfield por defecto son transparentes, por lo que se ve el fondo glass de la column
-//                            colors = OutlinedTextFieldDefaults.colors(
-//                                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
-//                                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.12f)
-//                            )
                         )
 
                         ExposedDropdownMenu(
@@ -251,7 +248,7 @@ fun CreateTaskCard(
                                         IconButton(onClick = { viewModel.onDeleteCustomCategory(customCategory) }) {
                                             Icon(
                                                 Icons.Default.Delete,
-                                                contentDescription = "Delete category",
+                                                contentDescription = stringResource(R.string.create_task_delete_category_content_description),
                                                 tint = MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.size(18.dp)
                                             )
@@ -265,7 +262,7 @@ fun CreateTaskCard(
 
                         // CREATE A CUSTOM
                         DropdownMenuItem(
-                            text = { Text("Create a Category") },
+                            text = { Text(stringResource(R.string.create_task_create_category_menu_item)) },
                             onClick = viewModel::onCreateCategoryClicked
                         )
                     }
@@ -281,7 +278,7 @@ fun CreateTaskCard(
                                 checked = uiState.hasDeadline,
                                 onCheckedChange = viewModel::onDeadlineEnabledChange
                             )
-                            Text("Set deadline")
+                            Text(stringResource(R.string.create_task_set_deadline))
                         }
 
                         if (uiState.hasDeadline) {
@@ -294,7 +291,7 @@ fun CreateTaskCard(
                                     selected = uiState.deadlineOption == DeadlineOption.THIS_WEEK,
                                     onClick = { viewModel.onDeadlineOptionSelected(DeadlineOption.THIS_WEEK) }
                                 )
-                                Text("This Week")
+                                Text(stringResource(R.string.create_task_deadline_this_week))
                             }
 
                             // Select Specific Date
@@ -306,7 +303,7 @@ fun CreateTaskCard(
                                     selected = uiState.deadlineOption == DeadlineOption.EXACT_DATE,
                                     onClick = { viewModel.onDeadlineOptionSelected(DeadlineOption.EXACT_DATE) }
                                 )
-                                Text("Specific date")
+                                Text(stringResource(R.string.create_task_deadline_specific_date))
                             }
 
                             if (uiState.deadlineOption == DeadlineOption.EXACT_DATE) {
@@ -328,7 +325,7 @@ fun CreateTaskCard(
                                         onValueChange = {},
                                         readOnly = true,
                                         enabled = false,
-                                        label = { Text("Deadline date") },
+                                        label = { Text(stringResource(R.string.create_task_deadline_date_label)) },
                                         modifier = Modifier.fillMaxWidth(),
                                         colors = OutlinedTextFieldDefaults.colors(
                                             disabledTextColor = MaterialTheme.colorScheme.onSurface,
@@ -363,12 +360,12 @@ fun CreateTaskCard(
                                     }
                                 }
                             ) {
-                                Text("Confirm")
+                                Text(stringResource(R.string.create_task_date_confirm))
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = viewModel::onDatePickerDismissed) {
-                                Text("Cancel")
+                                Text(stringResource(R.string.create_task_date_cancel))
                             }
                         }
                     ) {
@@ -415,7 +412,7 @@ fun CreateTaskCard(
                             enabled = uiState.canCreateTask,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(if (uiState.isLoading) "Creating..." else "Create Task")
+                            Text(if (uiState.isLoading) stringResource(R.string.create_task_button_creating) else stringResource(R.string.create_task_button_create))
                         }
                     }
                 }
@@ -431,12 +428,12 @@ fun CreateTaskCard(
                 viewModel.onCreateCategoryDismissed()
             },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.76f),
-            title = { Text("Create a Category") },
+            title = { Text(stringResource(R.string.create_task_dialog_create_category_title)) },
             text = {
                 OutlinedTextField(
                     value = uiState.newCategoryName,
                     onValueChange = viewModel::onNewCategoryNameChange,
-                    label = { Text("Category name") },
+                    label = { Text(stringResource(R.string.create_task_dialog_category_name_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -447,14 +444,14 @@ fun CreateTaskCard(
                         viewModel.onCreateCategoryConfirmed()
                     },
                     enabled = uiState.newCategoryName.trim().isNotEmpty()
-                ) { Text("Create") }
+                ) { Text(stringResource(R.string.create_task_dialog_create_button)) }
             },
             dismissButton = {
                 TextButton(
                     onClick = {
                         viewModel.onCreateCategoryDismissed()
                     }
-                ) { Text("Cancel") }
+                ) { Text(stringResource(R.string.create_task_dialog_cancel_button)) }
             }
         )
     }

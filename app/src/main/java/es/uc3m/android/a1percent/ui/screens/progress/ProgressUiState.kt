@@ -37,6 +37,7 @@ data class GoalProgressItem(
 
 data class CategorySlice(
     val category: Category,
+    val label: String,
     val count: Int,
     val fraction: Float    // 0f..1f, pre-computed share of total
 )

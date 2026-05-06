@@ -44,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -51,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
@@ -143,7 +145,7 @@ fun HomeBodyContent(
         } else {
             item {
                 Text(
-                    text = "Focus mode",
+                    text = stringResource(R.string.home_focus_mode_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -163,7 +165,7 @@ fun HomeBodyContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Vacation Mode active", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.home_vacation_mode_active), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             val days = if (user.vacationStartDate != null) {
                                 ((System.currentTimeMillis() - user.vacationStartDate) / (24 * 3600 * 1000)).toInt()
                             } else 0
@@ -183,13 +185,13 @@ fun HomeBodyContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Today's missions",
+                    text = stringResource(R.string.home_today_missions),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { isFocusMode = !isFocusMode }) {
                     Icon(
                         imageVector = if (isFocusMode) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (isFocusMode) "Disable focus mode" else "Enable focus mode",
+                        contentDescription = if (isFocusMode) stringResource(R.string.home_disable_focus_mode) else stringResource(R.string.home_enable_focus_mode),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -209,7 +211,7 @@ fun HomeBodyContent(
                         onClick = { onFilterClick(filter.key) },
                         label = {
                             Text(
-                                text = filter.label,
+                                text = stringResource(filter.labelRes),
                                 fontWeight = if (filter.isSelected) FontWeight.SemiBold else FontWeight.Normal
                             )
                         },
@@ -226,7 +228,7 @@ fun HomeBodyContent(
         if (uiState.visibleTasks.isEmpty()) {
             item {
                 Text(
-                    text = "No tasks for today",
+                    text = stringResource(R.string.home_no_tasks_today),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -398,7 +400,7 @@ fun TaskItem(
 
                     task.deadline?.let { deadline ->
                         val deadlineStatus = TaskDeadlineResolver.deadlineStatus(deadline)
-                        val deadlinePrefix = if (deadlineStatus == TaskDeadlineResolver.DeadlineStatus.OVERDUE) "Overdue" else "Due"
+                        val deadlinePrefix = if (deadlineStatus == TaskDeadlineResolver.DeadlineStatus.OVERDUE) stringResource(R.string.home_task_deadline_overdue) else stringResource(R.string.home_task_deadline_due)
                         val deadlineColor = if (deadlineStatus == TaskDeadlineResolver.DeadlineStatus.OVERDUE) {
                             TaskDeadlineColors.Overdue
                         } else {
@@ -465,7 +467,7 @@ private fun ProgressSection() {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "Your 1% progress",
+                text = stringResource(R.string.home_progress_title),
                 style = MaterialTheme.typography.titleMedium
             )
 
@@ -476,13 +478,13 @@ private fun ProgressSection() {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "📈 Progress chart coming soon",
+                    text = stringResource(R.string.home_progress_chart_coming_soon),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             Text(
-                text = "1% better every day = 37x better in a year",
+                text = stringResource(R.string.home_progress_tagline),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

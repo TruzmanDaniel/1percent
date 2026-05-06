@@ -1,5 +1,7 @@
 package es.uc3m.android.a1percent.ui.screens.targets
 
+import androidx.annotation.StringRes
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.enums.TaskStatus
 
 /**
@@ -8,10 +10,10 @@ import es.uc3m.android.a1percent.data.model.enums.TaskStatus
  */
 
 // TASKS
-enum class TaskQuickFilter(val label: String) {
-    MISSIONS("Missions"),
-    TASKS("Tasks"),
-    SHARED("Shared")
+enum class TaskQuickFilter(@StringRes val labelRes: Int) {
+    MISSIONS(R.string.targets_filter_missions_label),
+    TASKS(R.string.targets_filter_tasks_label),
+    SHARED(R.string.targets_filter_shared_label)
 }
 
 enum class TaskFilterKey {
@@ -21,10 +23,10 @@ enum class TaskFilterKey {
     SORT
 }
 
-enum class TaskSort(val label: String) {
-    NONE("Sort"),
-    DEADLINE_ASC("Sort: Date"),
-    XP_DESC("Sort: XP")
+enum class TaskSort(@StringRes val labelRes: Int) {
+    NONE(R.string.targets_sort_none),
+    DEADLINE_ASC(R.string.targets_sort_date),
+    XP_DESC(R.string.targets_sort_xp)
 }
 
 data class TaskFilters(
@@ -35,17 +37,18 @@ data class TaskFilters(
 )
 
 // TASK STATUS FILTER Rotation
-fun statusFilterLabel(selectedStatus: TaskStatus?): String {
+@StringRes
+fun statusFilterLabel(selectedStatus: TaskStatus?): Int {
     return when (selectedStatus) {
-        TaskStatus.PENDING -> "Status: Pending"
-        TaskStatus.COMPLETED -> "Status: Completed"
-        else -> "Status: All"
+        TaskStatus.PENDING -> R.string.targets_filter_status_pending
+        TaskStatus.COMPLETED -> R.string.targets_filter_status_completed
+        else -> R.string.targets_filter_status_all
     }
 }
 
 data class TaskFilterUiItem(
     val key: TaskFilterKey,
-    val label: String,
+    @StringRes val labelRes: Int,
     val isSelected: Boolean,
     val order: Int
 )
@@ -54,13 +57,13 @@ fun buildTaskFilterUiItems(filters: TaskFilters): List<TaskFilterUiItem> {
     val items = listOf(
         TaskFilterUiItem(
             key = TaskFilterKey.MISSIONS,
-            label = taskMissionsFilterLabel(filters.quickFilters),
+            labelRes = taskMissionsFilterLabelRes(filters.quickFilters),
             isSelected = filters.quickFilters.contains(TaskQuickFilter.MISSIONS) || filters.quickFilters.contains(TaskQuickFilter.TASKS),
             order = 0
         ),
         TaskFilterUiItem(
             key = TaskFilterKey.SHARED,
-            label = TaskQuickFilter.SHARED.label,
+            labelRes = TaskQuickFilter.SHARED.labelRes,
             isSelected = filters.quickFilters.contains(TaskQuickFilter.SHARED),
             order = 1
         )
@@ -69,15 +72,15 @@ fun buildTaskFilterUiItems(filters: TaskFilters): List<TaskFilterUiItem> {
     return items.sortedWith(compareByDescending<TaskFilterUiItem> { it.isSelected }.thenBy { it.order })
 }
 
-// Returns a label reflecting the current missions/tasks quick filter state.
-fun taskMissionsFilterLabel(quickFilters: Set<TaskQuickFilter>): String {
+// Returns a string resource ID reflecting the current missions/tasks quick filter state.
+@StringRes
+fun taskMissionsFilterLabelRes(quickFilters: Set<TaskQuickFilter>): Int {
     return when {
-        quickFilters.contains(TaskQuickFilter.MISSIONS) -> TaskQuickFilter.MISSIONS.label
-        quickFilters.contains(TaskQuickFilter.TASKS) -> TaskQuickFilter.TASKS.label
-        else -> "All"
+        quickFilters.contains(TaskQuickFilter.MISSIONS) -> TaskQuickFilter.MISSIONS.labelRes
+        quickFilters.contains(TaskQuickFilter.TASKS) -> TaskQuickFilter.TASKS.labelRes
+        else -> R.string.targets_filter_all_label
     }
 }
-
 
 
 // GOALS
@@ -85,9 +88,9 @@ enum class GoalFilterKey {
     SORT
 }
 
-enum class GoalSort(val label: String) {
-    NONE("Sort"),
-    PROGRESS_DESC("Sort: Progress")
+enum class GoalSort(@StringRes val labelRes: Int) {
+    NONE(R.string.targets_goal_sort_none),
+    PROGRESS_DESC(R.string.targets_goal_sort_progress)
 }
 
 data class GoalFilters(
@@ -96,7 +99,7 @@ data class GoalFilters(
 
 data class GoalFilterUiItem(
     val key: GoalFilterKey,
-    val label: String,
+    @StringRes val labelRes: Int,
     val isSelected: Boolean
 )
 
@@ -104,10 +107,8 @@ fun buildGoalFilterUiItems(filters: GoalFilters): List<GoalFilterUiItem> {
     return listOf(
         GoalFilterUiItem(
             key = GoalFilterKey.SORT,
-            label = filters.sort.label,
+            labelRes = filters.sort.labelRes,
             isSelected = filters.sort != GoalSort.NONE
         )
     )
 }
-
-

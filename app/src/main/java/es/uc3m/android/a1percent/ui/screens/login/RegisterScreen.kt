@@ -6,11 +6,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 import kotlinx.coroutines.launch
@@ -26,6 +29,7 @@ fun RegisterScreen(navController: NavController){
     var successMessage by remember { mutableStateOf<String?>(null)}
 
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -35,7 +39,7 @@ fun RegisterScreen(navController: NavController){
             verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Create your account",
+            text = stringResource(R.string.register_title),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 32.dp)
@@ -48,7 +52,7 @@ fun RegisterScreen(navController: NavController){
                 errorMessage = null
                 successMessage = null
             },
-            label = { Text("Username")},
+            label = { Text(stringResource(R.string.register_field_username))},
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -62,7 +66,7 @@ fun RegisterScreen(navController: NavController){
                 errorMessage = null
                 successMessage = null
             },
-            label = { Text("Email")},
+            label = { Text(stringResource(R.string.login_field_email))},
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true
@@ -77,7 +81,7 @@ fun RegisterScreen(navController: NavController){
                 errorMessage = null
                 successMessage = null
             },
-            label = { Text("Password")},
+            label = { Text(stringResource(R.string.login_field_password))},
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -111,7 +115,7 @@ fun RegisterScreen(navController: NavController){
         Button(
             onClick = {
                 if (username.isBlank() || email.isBlank() || password.isBlank()) {
-                    errorMessage = "Please fill in all fields"
+                    errorMessage = context.getString(R.string.register_error_fill_all_fields)
                     return@Button
                 }
 
@@ -127,7 +131,7 @@ fun RegisterScreen(navController: NavController){
                     )
 
                     result.onSuccess {
-                        successMessage = "Account created successfully! Please log in."
+                        successMessage = context.getString(R.string.register_success)
                         navController.navigate(AppScreens.LoginScreen.route) {
                             popUpTo(AppScreens.RegisterScreen.route) { inclusive = true }
                         }
@@ -146,7 +150,7 @@ fun RegisterScreen(navController: NavController){
             enabled = !isLoading
         )   {
             Text(
-                text = if (isLoading) "Registering..." else "Register",
+                text = if (isLoading) stringResource(R.string.register_button_registering) else stringResource(R.string.register_button_register),
                 fontSize = 18.sp
             )
         }
@@ -157,7 +161,7 @@ fun RegisterScreen(navController: NavController){
             },
             modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text("Already have an account? Login")
+            Text(stringResource(R.string.register_have_account))
         }
     }
 }

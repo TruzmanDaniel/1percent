@@ -35,10 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import es.uc3m.android.a1percent.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -89,12 +91,12 @@ fun CreateGoalCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Create Goal", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.create_goal_title), style = MaterialTheme.typography.titleLarge)
                     IconButton(onClick = {
                         viewModel.resetState()
                         onDismiss()
                     }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.create_goal_close_content_description))
                     }
                 }
 
@@ -109,7 +111,7 @@ fun CreateGoalCard(
                         OutlinedTextField(
                             value = uiState.goalName,
                             onValueChange = viewModel::onGoalNameChange,
-                            label = { Text("Goal Name") },
+                            label = { Text(stringResource(R.string.create_goal_field_name)) },
                             modifier = Modifier.fillMaxWidth()
                         )
 
@@ -141,7 +143,7 @@ fun CreateGoalCard(
                         ) {
                             Column {
                                 Text(
-                                    text = "Fecha límite",
+                                    text = stringResource(R.string.create_goal_deadline_label),
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 val deadlineMs = uiState.deadlineEpochMillis
@@ -155,14 +157,14 @@ fun CreateGoalCard(
                                     )
                                 } else {
                                     Text(
-                                        text = "Selecciona una fecha",
+                                        text = stringResource(R.string.create_goal_deadline_select),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error
                                     )
                                 }
                             }
                             TextButton(onClick = { viewModel.onShowDatePicker() }) {
-                                Text(if (uiState.deadlineEpochMillis != null) "Cambiar fecha" else "Seleccionar fecha")
+                                Text(if (uiState.deadlineEpochMillis != null) stringResource(R.string.create_goal_deadline_change) else stringResource(R.string.create_goal_deadline_select_button))
                             }
                         }
 
@@ -178,11 +180,11 @@ fun CreateGoalCard(
                                         datePickerState.selectedDateMillis?.let {
                                             viewModel.onDeadlineSelected(it)
                                         }
-                                    }) { Text("OK") }
+                                    }) { Text(stringResource(R.string.create_goal_date_ok)) }
                                 },
                                 dismissButton = {
                                     TextButton(onClick = { viewModel.onDismissDatePicker() }) {
-                                        Text("Cancel")
+                                        Text(stringResource(R.string.create_goal_date_cancel))
                                     }
                                 }
                             ) {
@@ -237,7 +239,7 @@ fun CreateGoalCard(
                                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.create_goal_button_cancel))
                         }
 
                         Button(
@@ -253,7 +255,7 @@ fun CreateGoalCard(
                             modifier = Modifier.weight(1f),
                             enabled = uiState.canCreateGoal
                         ) {
-                            Text("Create (No AI)")
+                            Text(stringResource(R.string.create_goal_button_create_no_ai))
                         }
 
                         Button(
@@ -261,7 +263,7 @@ fun CreateGoalCard(
                             modifier = Modifier.weight(1f),
                             enabled = uiState.canGenerateAi
                         ) {
-                            Text("Create with AI")
+                            Text(stringResource(R.string.create_goal_button_create_with_ai))
                         }
                     }
                 }

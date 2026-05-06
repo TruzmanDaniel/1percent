@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,14 +76,14 @@ fun SplashScreen(
     ) {
         Image(
             painter = painterResource(id = finalLogoResId),
-            contentDescription = "App logo",
+            contentDescription = stringResource(R.string.splash_logo_content_description),
             modifier = Modifier.size(300.dp)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Earn your 1%\nStay Consistent",
+            text = stringResource(R.string.splash_tagline),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontFamily = FontFamily.SansSerif,

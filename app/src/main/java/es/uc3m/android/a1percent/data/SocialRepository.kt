@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.tasks.await
 
@@ -42,28 +42,28 @@ object SocialRepository {
 
     // List of CONFIRMED friends
     fun observeFriends(userId: String): Flow<List<UserProfile>> {
-        return friendshipTable.map { relations ->
+        return combine(friendshipTable, UserRepository.allUsers) { relations, users ->
             val friendIds = relations
                 .filter { rel ->
-                    rel.status == RelationshipStatus.FRIENDS && 
+                    rel.status == RelationshipStatus.FRIENDS &&
                     (rel.userAId == userId || rel.userBId == userId)
                 }
                 .map { rel ->
                     if (rel.userAId == userId) rel.userBId else rel.userAId
                 }
-            friendIds.mapNotNull { UserRepository.findUserById(it) }
+            friendIds.mapNotNull { id -> users.find { it.id == id } }
         }
     }
 
     // List of RECEIVED pending requests (user is userBId)
     fun observePendingRequests(userId: String): Flow<List<UserProfile>> {
-        return friendshipTable.map { relations ->
+        return combine(friendshipTable, UserRepository.allUsers) { relations, users ->
             val requesterIds = relations
                 .filter { rel ->
                     rel.status == RelationshipStatus.PENDING && rel.userBId == userId
                 }
                 .map { it.userAId }
-            requesterIds.mapNotNull { UserRepository.findUserById(it) }
+            requesterIds.mapNotNull { id -> users.find { it.id == id } }
         }
     }
 

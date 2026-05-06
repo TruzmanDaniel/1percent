@@ -9,12 +9,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 import kotlinx.coroutines.launch
@@ -28,6 +31,7 @@ fun LoginScreen(navController: NavController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
 
     Column(
@@ -38,7 +42,7 @@ fun LoginScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Welcome to 1%",
+            text = stringResource(R.string.login_title),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(bottom = 32.dp)
@@ -46,11 +50,11 @@ fun LoginScreen(navController: NavController) {
 
         OutlinedTextField(
             value = email,
-            onValueChange = { 
+            onValueChange = {
                 email = it
-                showError = false 
+                showError = false
             },
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.login_field_email)) },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
@@ -61,11 +65,11 @@ fun LoginScreen(navController: NavController) {
 
         OutlinedTextField(
             value = password,
-            onValueChange = { 
+            onValueChange = {
                 password = it
                 showError = false
             },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.login_field_password)) },
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -77,14 +81,17 @@ fun LoginScreen(navController: NavController) {
                 else Icons.Filled.VisibilityOff
 
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                    Icon(
+                        imageVector = image,
+                        contentDescription = if (passwordVisible) stringResource(R.string.login_password_hide) else stringResource(R.string.login_password_show)
+                    )
                 }
             }
         )
 
         if (showError) {
             Text(
-                text = errorMessage ?: "Invalid email or password",
+                text = errorMessage ?: stringResource(R.string.login_error_invalid_credentials),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp).align(Alignment.Start)
@@ -97,7 +104,7 @@ fun LoginScreen(navController: NavController) {
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
                     showError = true
-                    errorMessage = "Please fill in all fields"
+                    errorMessage = context.getString(R.string.login_error_fill_all_fields)
                     return@Button
                 }
 
@@ -117,7 +124,7 @@ fun LoginScreen(navController: NavController) {
                         }
                     }.onFailure { error ->
                         showError = true
-                        errorMessage = error.message ?: "Invalid email or password"
+                        errorMessage = error.message ?: context.getString(R.string.login_error_invalid_credentials)
                     }
 
                     isLoading = false
@@ -128,7 +135,10 @@ fun LoginScreen(navController: NavController) {
                 .height(50.dp),
             shape = MaterialTheme.shapes.medium
         ) {
-            Text(if (isLoading) "Logging in..." else "Login", fontSize = 18.sp)
+            Text(
+                if (isLoading) stringResource(R.string.login_button_logging_in) else stringResource(R.string.login_button_login),
+                fontSize = 18.sp
+            )
         }
 
         TextButton(
@@ -137,7 +147,7 @@ fun LoginScreen(navController: NavController) {
             },
             modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text("Don't have an account? Sign Up")
+            Text(stringResource(R.string.login_no_account))
         }
     }
 }

@@ -34,11 +34,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -75,10 +77,10 @@ fun GoalDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(goal?.title ?: "Goal Details") },
+                title = { Text(goal?.title ?: stringResource(R.string.goal_detail_title_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = stringResource(R.string.goal_detail_back_content_description))
                     }
                 },
                 actions = {
@@ -86,11 +88,11 @@ fun GoalDetailScreen(
                         IconButton(onClick = { viewModel.onTogglePause() }) {
                             Icon(
                                 if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) Icons.Default.PlayArrow else Icons.Default.Pause,
-                                contentDescription = if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) "Reanudar" else "Pausar"
+                                contentDescription = if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) stringResource(R.string.goal_detail_resume_content_description) else stringResource(R.string.goal_detail_pause_content_description)
                             )
                         }
                         IconButton(onClick = { viewModel.onShareGoalRequested() }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share goal")
+                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.goal_detail_share_content_description))
                         }
                     }
                 }
@@ -123,7 +125,7 @@ fun GoalDetailScreen(
                             onClick = { viewModel.onCompleteGoal() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Completar objetivo")
+                            Text(stringResource(R.string.goal_detail_complete_button))
                         }
                     }
                 }
@@ -131,7 +133,7 @@ fun GoalDetailScreen(
                 if (missions.isNotEmpty()) {
                     item {
                         Text(
-                            text = "Missions (${missions.size})",
+                            text = stringResource(R.string.goal_detail_missions_header, missions.size),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
@@ -152,7 +154,7 @@ fun GoalDetailScreen(
                 } else {
                     item {
                         Text(
-                            text = "No missions yet",
+                            text = stringResource(R.string.goal_detail_no_missions),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -167,7 +169,7 @@ fun GoalDetailScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Goal not found", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.goal_detail_not_found), style = MaterialTheme.typography.bodyLarge)
             }
         }
 
@@ -239,7 +241,7 @@ private fun GoalHeaderCard(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(text = "Progreso", style = MaterialTheme.typography.labelSmall)
+                    Text(text = stringResource(R.string.goal_detail_progress_label), style = MaterialTheme.typography.labelSmall)
                     Text(text = "${goal.progress}%", style = MaterialTheme.typography.labelSmall)
                 }
                 LinearProgressIndicator(
@@ -248,14 +250,14 @@ private fun GoalHeaderCard(
                 )
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatColumn("Progreso", "${goal.progress}%")
-                StatColumn("Semanas", "${goal.weeksRemaining()}")
-                StatColumn("Intensidad", "%.1f".format(goal.currentIntensity))
+                StatColumn(stringResource(R.string.goal_detail_progress_label), "${goal.progress}%")
+                StatColumn(stringResource(R.string.goal_detail_weeks_label), "${goal.weeksRemaining()}")
+                StatColumn(stringResource(R.string.goal_detail_intensity_label), "%.1f".format(goal.currentIntensity))
             }
 
             if (goal.status == GoalStatus.COMPLETED) {
                 Text(
-                    text = "COMPLETADO",
+                    text = stringResource(R.string.goal_detail_completed_label),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -266,11 +268,11 @@ private fun GoalHeaderCard(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(text = "Category", style = MaterialTheme.typography.labelSmall)
+                    Text(text = stringResource(R.string.goal_detail_category_label), style = MaterialTheme.typography.labelSmall)
                     Text(text = goal.category.displayName, style = MaterialTheme.typography.bodyMedium)
                 }
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(text = "Status", style = MaterialTheme.typography.labelSmall)
+                    Text(text = stringResource(R.string.goal_detail_status_label), style = MaterialTheme.typography.labelSmall)
                     Text(text = goal.status.displayName, style = MaterialTheme.typography.bodyMedium)
                 }
             }

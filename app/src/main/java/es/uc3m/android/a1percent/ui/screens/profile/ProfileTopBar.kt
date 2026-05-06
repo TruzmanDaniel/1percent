@@ -8,6 +8,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import es.uc3m.android.a1percent.R
 
 // PROFILE TOP BAR: custom top bar for the Profile screen
 @OptIn(ExperimentalMaterial3Api::class)
@@ -20,7 +22,7 @@ fun ProfileTopBar(
         title = { Text(username) },
         navigationIcon = {
             IconButton(onClick = onBack) {
-                Icon(imageVector = Icons.Default.ArrowBackIosNew, contentDescription = "Back")
+                Icon(imageVector = Icons.Default.ArrowBackIosNew, contentDescription = stringResource(R.string.profile_topbar_back_content_description))
             }
         }
     )
