@@ -2,16 +2,12 @@ package es.uc3m.android.a1percent.data.model
 
 import kotlinx.serialization.Serializable
 
-/**
- * Pure user profile model.
- * Next step: connect this model to profile state, repository and remote/local sources.
- */
 @Serializable
 data class UserProfile(
     val id: String,
     val name: String,
     val email: String,
-    val password: String = "", // Added for local logic, usually handled by Firebase Auth
+    val password: String = "",
     val createdAt: Long? = null,
     val level: Int = 1,
     val currentXp: Int = 0,
@@ -21,5 +17,7 @@ data class UserProfile(
     val totalTasksCompleted: Int = 0,
     val availableCredits: Int = 5,
     val creditsResetDate: Long? = null,
-    val lastActivityDate: Long? = null  // epoch ms of midnight on the last day a task was completed
+    val lastActivityDate: Long? = null,
+    val isVacationMode: Boolean = false,
+    val vacationStartDate: Long? = null
 )

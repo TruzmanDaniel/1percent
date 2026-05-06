@@ -3,21 +3,19 @@ package es.uc3m.android.a1percent.data.model
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.Category
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
+import es.uc3m.android.a1percent.data.model.enums.GoalType
+import es.uc3m.android.a1percent.data.model.enums.PausedBy
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.util.UUID
 
-/**
- * Pure model for user goals.
- * Next step: map this model to persistence/network DTOs when data layer is added.
- */
 @Serializable
 data class Goal(
     val id: String = UUID.randomUUID().toString(),
-    val title: String, // TODO: AI generated from Description
+    val title: String,
     val description: String = "",
     val category: Category,
     val difficulty: Int,
-    // val intensity: Int, // difficulty means effort, intensity means constance of activity
     val xp: Int,
     val deadline: Long? = null,
     val status: GoalStatus = GoalStatus.ACTIVE,
@@ -27,10 +25,17 @@ data class Goal(
     val sharedWith: List<String> = emptyList(),
     val currentIntensity: Float = difficulty.toFloat(),
     val nextGenerationDate: Long? = null,
-    val aiRoadmapStatus: AiRoadmapStatus = AiRoadmapStatus.NONE
+    val aiRoadmapStatus: AiRoadmapStatus = AiRoadmapStatus.NONE,
+    val weeklyStreak: Int = 0,
+    val extensionCount: Int = 0,
+    val streakStartDate: Long? = null,
+    val pausedBy: PausedBy? = null
 ) {
     init {
         require(difficulty in 1..5) { "Goal difficulty must be between 1 and 5" }
         require(progress in 0..100) { "Goal progress must be between 0 and 100" }
     }
+
+    @Transient
+    val goalType: GoalType = if (deadline != null) GoalType.FINITE else GoalType.INFINITE
 }
