@@ -11,5 +11,10 @@ data class ProfileUiState(
     val uploadError: String? = null,
     val relationshipStatus: RelationshipStatus? = null,
     val relationship: UserRelationship? = null,
-    val currentUserId: String = ""
+    val currentUserId: String = "",
+    val isUpdatingUsername: Boolean = false,
+    val usernameError: String? = null,
+    val isUpdatingPassword: Boolean = false,
+    val passwordError: String? = null,
+    val profileUpdateSuccess: String? = null
 )

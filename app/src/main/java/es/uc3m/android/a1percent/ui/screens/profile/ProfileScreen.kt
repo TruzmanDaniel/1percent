@@ -7,6 +7,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -67,6 +69,9 @@ fun ProfileScreen(navController: NavController, text: String?, viewModel: Profil
             onAcceptRequest = { viewModel.onAcceptRequest(uiState.user?.id ?: return@ProfileBodyContent) },
             onRejectRequest = { viewModel.onRejectRequest(uiState.user?.id ?: return@ProfileBodyContent) },
             onVacationToggle = { viewModel.onToggleVacationMode() },
+            onUpdateUsername = { newName -> viewModel.updateUsername(newName) },
+            onUpdatePassword = { current, newPwd -> viewModel.updatePassword(current, newPwd) },
+            onDismissSuccess = { viewModel.clearProfileUpdateSuccess() },
             modifier = innerPadding
         )
     }
@@ -81,6 +86,9 @@ fun ProfileBodyContent(
     onAcceptRequest: () -> Unit = {},
     onRejectRequest: () -> Unit = {},
     onVacationToggle: () -> Unit = {},
+    onUpdateUsername: (String) -> Unit = {},
+    onUpdatePassword: (String, String) -> Unit = { _, _ -> },
+    onDismissSuccess: () -> Unit = {},
     modifier: PaddingValues = PaddingValues(0.dp)
 ) {
     val user = uiState.user
@@ -89,6 +97,13 @@ fun ProfileBodyContent(
 
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showUsernameDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var newUsernameInput by remember { mutableStateOf("") }
+    var currentPasswordInput by remember { mutableStateOf("") }
+    var newPasswordInput by remember { mutableStateOf("") }
+    var confirmPasswordInput by remember { mutableStateOf("") }
+    var confirmPasswordError by remember { mutableStateOf<String?>(null) }
 
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -112,6 +127,130 @@ fun ProfileBodyContent(
             Text("Profile not available")
         }
         return
+    }
+
+    // Success snackbar-style message
+    uiState.profileUpdateSuccess?.let { msg ->
+        LaunchedEffect(msg) {
+            kotlinx.coroutines.delay(2000)
+            onDismissSuccess()
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(msg, color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+
+    // Change Username dialog
+    if (showUsernameDialog) {
+        LaunchedEffect(showUsernameDialog) { newUsernameInput = user.name }
+        AlertDialog(
+            onDismissRequest = { showUsernameDialog = false },
+            title = { Text("Change Username") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = newUsernameInput,
+                        onValueChange = { newUsernameInput = it },
+                        label = { Text("New username") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    uiState.usernameError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newUsernameInput.isNotBlank()) {
+                            onUpdateUsername(newUsernameInput.trim())
+                            showUsernameDialog = false
+                        }
+                    },
+                    enabled = !uiState.isUpdatingUsername
+                ) {
+                    if (uiState.isUpdatingUsername) CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    else Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    // Change Password dialog
+    if (showPasswordDialog) {
+        LaunchedEffect(showPasswordDialog) {
+            currentPasswordInput = ""
+            newPasswordInput = ""
+            confirmPasswordInput = ""
+            confirmPasswordError = null
+        }
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Change Password") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = currentPasswordInput,
+                        onValueChange = { currentPasswordInput = it },
+                        label = { Text("Current password") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = newPasswordInput,
+                        onValueChange = { newPasswordInput = it },
+                        label = { Text("New password") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = confirmPasswordInput,
+                        onValueChange = { confirmPasswordInput = it; confirmPasswordError = null },
+                        label = { Text("Confirm new password") },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    confirmPasswordError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                    uiState.passwordError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newPasswordInput != confirmPasswordInput) {
+                            confirmPasswordError = "Passwords do not match"
+                        } else if (currentPasswordInput.isNotBlank() && newPasswordInput.isNotBlank()) {
+                            onUpdatePassword(currentPasswordInput, newPasswordInput)
+                            showPasswordDialog = false
+                        }
+                    },
+                    enabled = !uiState.isUpdatingPassword
+                ) {
+                    if (uiState.isUpdatingPassword) CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    else Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showImagePickerDialog) {
@@ -157,7 +296,8 @@ fun ProfileBodyContent(
         modifier = Modifier
             .fillMaxSize()
             .padding(modifier)
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         // SECTION 1: AVATAR + NAME
@@ -344,10 +484,20 @@ fun ProfileBodyContent(
 
         HorizontalDivider()
 
-        Spacer(modifier = Modifier.weight(1f))
-
         // ACTIONS BASED ON PROFILE OWNERSHIP
         if (isOwn) {
+            OutlinedButton(
+                onClick = { showUsernameDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Change Username")
+            }
+            OutlinedButton(
+                onClick = { showPasswordDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Change Password")
+            }
             Button(
                 onClick = {
                     SessionRepository.logout()

@@ -1,6 +1,7 @@
 package es.uc3m.android.a1percent.data
 
 import android.net.Uri
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -131,6 +132,29 @@ object SessionRepository {
                 .set(profile.encodeToMap()!!)
                 .await()
             _currentUser.value = profile
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUsername(newUsername: String): Result<Unit> {
+        return try {
+            val current = _currentUser.value ?: throw Exception("Not authenticated")
+            val updated = current.copy(name = newUsername)
+            updateUserProfile(updated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updatePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        return try {
+            val firebaseUser = auth.currentUser ?: throw Exception("Not authenticated")
+            val email = firebaseUser.email ?: throw Exception("No email on account")
+            val credential = EmailAuthProvider.getCredential(email, currentPassword)
+            firebaseUser.reauthenticate(credential).await()
+            firebaseUser.updatePassword(newPassword).await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

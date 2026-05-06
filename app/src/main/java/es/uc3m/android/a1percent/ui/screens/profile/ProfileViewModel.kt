@@ -107,6 +107,46 @@ class ProfileViewModel : ViewModel() {
         }
     }
 
+    fun updateUsername(newUsername: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingUsername = true, usernameError = null, profileUpdateSuccess = null) }
+            val result = SessionRepository.updateUsername(newUsername)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { state ->
+                        state.copy(
+                            isUpdatingUsername = false,
+                            user = state.user?.copy(name = newUsername),
+                            profileUpdateSuccess = "Username updated successfully"
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdatingUsername = false, usernameError = e.message) }
+                }
+            )
+        }
+    }
+
+    fun updatePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUpdatingPassword = true, passwordError = null, profileUpdateSuccess = null) }
+            val result = SessionRepository.updatePassword(currentPassword, newPassword)
+            result.fold(
+                onSuccess = {
+                    _uiState.update { it.copy(isUpdatingPassword = false, profileUpdateSuccess = "Password updated successfully") }
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(isUpdatingPassword = false, passwordError = e.message) }
+                }
+            )
+        }
+    }
+
+    fun clearProfileUpdateSuccess() {
+        _uiState.update { it.copy(profileUpdateSuccess = null) }
+    }
+
     fun onToggleVacationMode() {
         val user = uiState.value.user ?: return
         val currentUser = SessionRepository.currentUser.value ?: return
