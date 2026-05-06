@@ -8,7 +8,7 @@ import org.junit.Test
 class IntensityCalculationTest {
 
     private fun goal(
-        deadline: Long? = null,
+        deadline: Long = System.currentTimeMillis() + 20 * 7 * 24 * 3600 * 1000L,
         createdAt: Long = System.currentTimeMillis(),
         currentIntensity: Float = 3.0f,
         difficulty: Int = 3
@@ -23,22 +23,11 @@ class IntensityCalculationTest {
     )
 
     @Test
-    fun `infinite goal caps at difficulty x 1_5`() {
-        val infiniteGoal = goal(difficulty = 4, currentIntensity = 5.9f)
-        val result = AICoachService.calculateNewIntensity(
-            goal = infiniteGoal,
-            epicPassed = true,
-            feedback = "SOBRADO"
-        )
-        assertTrue(result <= 4 * 1.5f)
-    }
-
-    @Test
-    fun `finite goal caps at difficulty x 2_0`() {
+    fun `caps at difficulty x 2_0`() {
         val fourWeeks = System.currentTimeMillis() + 4 * 7 * 24 * 3600 * 1000L
-        val finiteGoal = goal(deadline = fourWeeks, difficulty = 3, currentIntensity = 5.8f)
+        val g = goal(deadline = fourWeeks, difficulty = 3, currentIntensity = 5.8f)
         val result = AICoachService.calculateNewIntensity(
-            goal = finiteGoal,
+            goal = g,
             epicPassed = true,
             feedback = "SOBRADO"
         )
@@ -46,16 +35,17 @@ class IntensityCalculationTest {
     }
 
     @Test
-    fun `sprint final accelerates growth for finite goals with less than 4 weeks`() {
+    fun `sprint final accelerates growth for goals with less than 4 weeks`() {
         val twoWeeks = System.currentTimeMillis() + 2 * 7 * 24 * 3600 * 1000L
-        val finiteGoal = goal(deadline = twoWeeks, difficulty = 5, currentIntensity = 3.0f)
+        val sprintGoal = goal(deadline = twoWeeks, difficulty = 5, currentIntensity = 3.0f)
+        val normalGoal = goal(difficulty = 5, currentIntensity = 3.0f)
         val normalGrowth = AICoachService.calculateNewIntensity(
-            goal = goal(deadline = System.currentTimeMillis() + 20 * 7 * 24 * 3600 * 1000L, difficulty = 5, currentIntensity = 3.0f),
+            goal = normalGoal,
             epicPassed = true,
             feedback = "PERFECTO"
         )
         val sprintGrowth = AICoachService.calculateNewIntensity(
-            goal = finiteGoal,
+            goal = sprintGoal,
             epicPassed = true,
             feedback = "PERFECTO"
         )
@@ -64,12 +54,12 @@ class IntensityCalculationTest {
 
     @Test
     fun `agotado feedback reduces intensity`() {
-        val infiniteGoal = goal(currentIntensity = 3.0f)
+        val g = goal(currentIntensity = 3.0f)
         val normal = AICoachService.calculateNewIntensity(
-            goal = infiniteGoal, epicPassed = true, feedback = "PERFECTO"
+            goal = g, epicPassed = true, feedback = "PERFECTO"
         )
         val agotado = AICoachService.calculateNewIntensity(
-            goal = infiniteGoal, epicPassed = true, feedback = "AGOTADO"
+            goal = g, epicPassed = true, feedback = "AGOTADO"
         )
         assertTrue(agotado < normal)
     }
