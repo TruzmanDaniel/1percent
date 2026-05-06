@@ -8,6 +8,7 @@ import es.uc3m.android.a1percent.data.TaskRespository
 import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.SocialRepository
 import es.uc3m.android.a1percent.data.model.UserProfile
@@ -181,6 +182,24 @@ class GoalDetailViewModel : ViewModel() {
 
     fun clearSnackbarMessage() {
         _uiState.update { it.copy(snackbarMessage = null) }
+    }
+
+    fun onTogglePause() {
+        val goal = _uiState.value.goal ?: return
+        viewModelScope.launch {
+            val result = if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) {
+                GoalRepository.resumeGoal(goal)
+            } else {
+                GoalRepository.pauseGoal(goal)
+            }
+            result.onSuccess {
+                val goalId = goal.id
+                val userId = SessionRepository.currentUser.value?.id ?: return@onSuccess
+                loadGoalForUser(userId, goalId)
+                val action = if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) "reanudado" else "pausado"
+                _uiState.update { it.copy(snackbarMessage = "Objetivo $action") }
+            }
+        }
     }
 
     private fun applyLocalToggleCompletion(taskId: String, userId: String) {

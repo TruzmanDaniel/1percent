@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,6 +42,11 @@ import androidx.navigation.NavController
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.UserProfile
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.intensityDisplay
+import es.uc3m.android.a1percent.data.model.isFinite
+import es.uc3m.android.a1percent.data.model.streakDisplay
+import es.uc3m.android.a1percent.data.model.weeksRemaining
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.EditTaskCard
 import es.uc3m.android.a1percent.ui.components.ShareBottomSheet
@@ -75,6 +83,12 @@ fun GoalDetailScreen(
                 },
                 actions = {
                     if (goal != null) {
+                        IconButton(onClick = { viewModel.onTogglePause() }) {
+                            Icon(
+                                if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                contentDescription = if (goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED) "Reanudar" else "Pausar"
+                            )
+                        }
                         IconButton(onClick = { viewModel.onShareGoalRequested() }) {
                             Icon(Icons.Default.Share, contentDescription = "Share goal")
                         }
@@ -93,18 +107,10 @@ fun GoalDetailScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    val currentUserId = SessionRepository.currentUser.value?.id ?: ""
-                    val aiMissions = missions.filter { it.isAiGenerated }
-                    val missionProgress = if (aiMissions.isNotEmpty()) {
-                        aiMissions.count { currentUserId in it.completedBy }.toFloat() / aiMissions.size
-                    } else {
-                        goal.progress / 100f
-                    }
                     GoalHeaderCard(
                         goal = goal,
-                        missionProgress = missionProgress,
                         friends = uiState.friends,
-                        currentUserId = currentUserId,
+                        currentUserId = SessionRepository.currentUser.value?.id ?: "",
                         onProfileClicked = { userId ->
                             navController.navigate(AppScreens.ProfileScreen.route + "/$userId")
                         }
@@ -195,7 +201,6 @@ fun GoalDetailScreen(
 @Composable
 private fun GoalHeaderCard(
     goal: Goal,
-    missionProgress: Float,
     friends: List<UserProfile>,
     currentUserId: String,
     onProfileClicked: (String) -> Unit
@@ -206,9 +211,7 @@ private fun GoalHeaderCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(text = goal.title, style = MaterialTheme.typography.headlineSmall)
@@ -223,75 +226,54 @@ private fun GoalHeaderCard(
 
             HorizontalDivider()
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+            if (goal.isFinite) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(text = "Progreso", style = MaterialTheme.typography.labelSmall)
+                        Text(text = "${goal.progress}%", style = MaterialTheme.typography.labelSmall)
+                    }
+                    LinearProgressIndicator(
+                        progress = { goal.progress / 100f },
+                        modifier = Modifier.fillMaxWidth().height(8.dp)
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    StatColumn("Progreso", "${goal.progress}%")
+                    StatColumn("Semanas", "${goal.weeksRemaining() ?: 0}")
+                    StatColumn("Intensidad", "%.1f".format(goal.currentIntensity))
+                }
+            } else {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    StatColumn("Nivel", goal.intensityDisplay() ?: "1")
+                    StatColumn("Racha", goal.streakDisplay() ?: "0 sem")
+                    StatColumn("Misiones", "—")
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(text = "Category", style = MaterialTheme.typography.labelSmall)
-                    Text(
-                        text = goal.category.displayName,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text(text = goal.category.displayName, style = MaterialTheme.typography.bodyMedium)
                 }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(text = "Status", style = MaterialTheme.typography.labelSmall)
-                    Text(
-                        text = goal.status.displayName,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Progress", style = MaterialTheme.typography.labelSmall)
-                    Text(text = "${(missionProgress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall)
-                }
-                LinearProgressIndicator(
-                    progress = { missionProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(text = "XP Reward", style = MaterialTheme.typography.labelSmall)
-                    Text(text = "+${goal.xp} XP", style = MaterialTheme.typography.bodyMedium)
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(text = "Difficulty", style = MaterialTheme.typography.labelSmall)
-                    Text(text = "${goal.difficulty}/5", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = goal.status.displayName, style = MaterialTheme.typography.bodyMedium)
                 }
             }
 
             SharedWithDropdown(
-                sharedProfiles = goal.sharedWith.mapNotNull { userId ->
-                    friends.find { it.id == userId }
-                },
+                sharedProfiles = goal.sharedWith.mapNotNull { userId -> friends.find { it.id == userId } },
                 currentUserId = currentUserId,
                 onProfileClicked = onProfileClicked
             )
         }
+    }
+}
+
+@Composable
+private fun StatColumn(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
