@@ -3,6 +3,8 @@ package es.uc3m.android.a1percent.data
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import es.uc3m.android.a1percent.data.model.Goal
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.enums.PausedBy
 import es.uc3m.android.a1percent.data.remote.encodeToMap
 import es.uc3m.android.a1percent.data.remote.toObjectSerializable
 import es.uc3m.android.a1percent.data.remote.toObjectsSerializable
@@ -113,6 +115,65 @@ object GoalRepository {
 
             childTasks.documents.forEach { doc ->
                 batch.update(doc.reference, "sharedWith", FieldValue.arrayUnion(friendUserId))
+            }
+
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun pauseGoal(goal: Goal): Result<Unit> {
+        val paused = goal.copy(
+            aiRoadmapStatus = AiRoadmapStatus.PAUSED,
+            pausedBy = PausedBy.USER
+        )
+        return updateGoal(paused)
+    }
+
+    suspend fun resumeGoal(goal: Goal): Result<Unit> {
+        val resumed = goal.copy(
+            aiRoadmapStatus = AiRoadmapStatus.READY,
+            pausedBy = null,
+            nextGenerationDate = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
+        )
+        return updateGoal(resumed)
+    }
+
+    suspend fun activateVacationMode(userId: String): Result<Unit> {
+        return try {
+            val goals = getGoals(userId).getOrThrow()
+            val batch = db.batch()
+
+            goals.filter { it.aiRoadmapStatus == AiRoadmapStatus.READY }.forEach { goal ->
+                val paused = goal.copy(
+                    aiRoadmapStatus = AiRoadmapStatus.PAUSED,
+                    pausedBy = PausedBy.VACATION
+                )
+                batch.set(goalsCollection.document(goal.id), paused.encodeToMap()!!)
+            }
+
+            batch.commit().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deactivateVacationMode(userId: String): Result<Unit> {
+        return try {
+            val goals = getGoals(userId).getOrThrow()
+            val now = System.currentTimeMillis()
+            val batch = db.batch()
+
+            goals.filter { it.pausedBy == PausedBy.VACATION }.forEach { goal ->
+                val resumed = goal.copy(
+                    aiRoadmapStatus = AiRoadmapStatus.READY,
+                    pausedBy = null,
+                    nextGenerationDate = now + 7L * 24 * 60 * 60 * 1000
+                )
+                batch.set(goalsCollection.document(goal.id), resumed.encodeToMap()!!)
             }
 
             batch.commit().await()
