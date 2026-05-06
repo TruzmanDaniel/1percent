@@ -5,6 +5,10 @@ import es.uc3m.android.a1percent.data.CreditManager
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.WeeklySummary
+import es.uc3m.android.a1percent.data.model.enums.GoalType
+import es.uc3m.android.a1percent.data.model.isFinite
+import es.uc3m.android.a1percent.data.model.weeksRemaining
+import es.uc3m.android.a1percent.data.model.nextMilestone
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -97,6 +101,8 @@ object AICoachService {
             ""
         }
 
+        val goalTypeContext = buildGoalTypeContext(goal)
+
         return """
             Eres un coach personal basado en la filosofía del 1% de mejora diaria.
             Genera exactamente 7 misiones diarias para el siguiente objetivo:
@@ -104,6 +110,8 @@ object AICoachService {
             Objetivo: ${goal.title}
             Categoría: ${goal.category.displayName}
             Nivel de intensidad actual: ${goal.currentIntensity}
+
+            $goalTypeContext
 
             $timeContext
 
@@ -135,15 +143,64 @@ object AICoachService {
         """.trimIndent()
     }
 
-    fun calculateNewIntensity(
-        currentIntensity: Float,
-        epicPassed: Boolean,
-        feedback: String?,
-        maxIntensity: Float
-    ): Float {
-        if (!epicPassed) return currentIntensity
+    private fun buildGoalTypeContext(goal: Goal): String {
+        return when (goal.goalType) {
+            GoalType.FINITE -> {
+                val weeksLeft = goal.weeksRemaining() ?: 0
+                val totalWeeks = if (goal.deadline != null) {
+                    ((goal.deadline - goal.createdAt) / (7L * 24 * 3600 * 1000)).toInt().coerceAtLeast(1)
+                } else 0
+                """
+                CONTEXTO DEL PROYECTO:
+                - Tipo: Proyecto finito con fecha límite
+                - Semanas restantes: $weeksLeft de $totalWeeks
+                - Progreso actual: ${goal.progress}%
+                - Extensiones usadas: ${goal.extensionCount}
 
-        val baseGrowth = currentIntensity * Math.pow(1.01, 7.0).toFloat()
+                DIRECTRIZ: Este es un proyecto con fecha de examen. Diseña las misiones
+                para un progreso lineal que se intensifique gradualmente hacia el deadline.
+                Si quedan pocas semanas, prioriza las tareas más críticas para el objetivo
+                final. La misión épica debe simular un "ensayo general" del reto final.
+                """.trimIndent()
+            }
+            GoalType.INFINITE -> {
+                val nextMilestone = goal.nextMilestone()
+                """
+                CONTEXTO DEL HÁBITO:
+                - Tipo: Hábito de por vida (sin fecha límite)
+                - Racha actual: ${goal.weeklyStreak} semanas consecutivas
+                - Próximo hito de constancia: ${nextMilestone ?: "N/A"} semanas
+
+                DIRECTRIZ: Este es un hábito para toda la vida. Prioriza la variedad y
+                la sostenibilidad a largo plazo. Evita la monotonía rotando tipos de
+                actividad. La misión épica debe ser un pico de motivación y diversión,
+                no un examen. ${if (goal.weeklyStreak > 12) "La racha es larga: introduce retos creativos para mantener el interés fresco." else ""}
+                """.trimIndent()
+            }
+        }
+    }
+
+    fun calculateNewIntensity(
+        goal: Goal,
+        epicPassed: Boolean,
+        feedback: String?
+    ): Float {
+        if (!epicPassed) return goal.currentIntensity
+
+        val maxIntensity = if (goal.goalType == GoalType.FINITE) {
+            goal.difficulty * 2.0f
+        } else {
+            goal.difficulty * 1.5f
+        }
+
+        val weeksLeft = goal.weeksRemaining()
+        val growthMultiplier = if (goal.isFinite && weeksLeft != null && weeksLeft <= 4) {
+            1.0 + (4.0 - weeksLeft) / 4.0
+        } else {
+            1.0
+        }
+
+        val baseGrowth = goal.currentIntensity * Math.pow(1.01, 7.0 * growthMultiplier).toFloat()
 
         val adjusted = when (feedback) {
             "SOBRADO" -> baseGrowth * 1.05f
@@ -155,11 +212,16 @@ object AICoachService {
     }
 
     fun calculateCatchUpIntensity(
-        currentIntensity: Float,
-        feedback: String?,
-        maxIntensity: Float
+        goal: Goal,
+        feedback: String?
     ): Float {
-        val reduced = currentIntensity * 0.85f
+        val maxIntensity = if (goal.isFinite) {
+            goal.difficulty * 2.0f
+        } else {
+            goal.difficulty * 1.5f
+        }
+
+        val reduced = goal.currentIntensity * 0.85f
 
         val adjusted = when (feedback) {
             "SOBRADO" -> reduced * 1.05f

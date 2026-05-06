@@ -188,12 +188,11 @@ class HomeViewModel : ViewModel() {
                 }
             }
 
-            val maxIntensity = goal.difficulty * 2.0f
             val newIntensity = if (isCatchUp) {
-                AICoachService.calculateCatchUpIntensity(goal.currentIntensity, feedback, maxIntensity)
+                AICoachService.calculateCatchUpIntensity(goal, feedback)
             } else {
                 AICoachService.calculateNewIntensity(
-                    goal.currentIntensity, _uiState.value.ritualEpicPassed, feedback, maxIntensity
+                    goal, _uiState.value.ritualEpicPassed, feedback
                 )
             }
 
