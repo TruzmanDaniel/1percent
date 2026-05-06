@@ -26,10 +26,7 @@ data class ProgressUiState(
     val categoryBreakdown: List<CategorySlice> = emptyList(),
 
     // Chart 6 — Per-goal weekly completion rate sparklines
-    val goalSparklines: List<GoalSparkline> = emptyList(),
-
-    // Chart 7 — Milestones achieved per goal
-    val milestones: List<GoalMilestoneItem> = emptyList()
+    val goalSparklines: List<GoalSparkline> = emptyList()
 )
 
 data class GoalProgressItem(
@@ -47,11 +44,4 @@ data class CategorySlice(
 data class GoalSparkline(
     val goalTitle: String,
     val weeklyCompletionRates: List<Float>  // 0f..1f per week, oldest first
-)
-
-data class GoalMilestoneItem(
-    val goalTitle: String,
-    val weekThreshold: Int,
-    val milestoneName: String,
-    val unlockedAt: Long
 )
