@@ -46,6 +46,7 @@ import es.uc3m.android.a1percent.ui.screens.login.RegisterScreen
 import es.uc3m.android.a1percent.ui.screens.profile.ProfileScreen
 
 import es.uc3m.android.a1percent.ui.screens.progress.ProgressScreen
+import es.uc3m.android.a1percent.ui.screens.ritual.RitualScreen
 import es.uc3m.android.a1percent.ui.screens.social.SocialScreen
 import es.uc3m.android.a1percent.ui.screens.splash.SplashScreen
 import es.uc3m.android.a1percent.ui.screens.targets.GoalDetailScreen
@@ -88,6 +89,7 @@ fun NavGraph() {
 
     // Sub-screens that live under a top-level route but should manage their own chrome
     val isSubScreen = currentRoute == AppScreens.TargetsScreen.route + "/goal/{goalId}"
+            || currentBaseRoute == AppScreens.RitualScreen.route
 
 
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -231,6 +233,24 @@ fun NavGraph() {
                     SocialScreen(navController, initialSection = section)
                 }
                 composable(route = AppScreens.ProgressScreen.route) { ProgressScreen(navController) }
+                composable(
+                    route = AppScreens.RitualScreen.route + "/{goalId}",
+                    arguments = listOf(navArgument("goalId") { type = NavType.StringType }),
+                    enterTransition = {
+                        fadeIn(tween(FADE_DURATION))
+                    },
+                    exitTransition = {
+                        fadeOut(tween(FADE_DURATION))
+                    }
+                ) { backStackEntry ->
+                    val goalId = backStackEntry.arguments?.getString("goalId") ?: return@composable
+                    RitualScreen(
+                        goalId = goalId,
+                        onFinished = {
+                            navController.popBackStack(AppScreens.HomeScreen.route, inclusive = false)
+                        }
+                    )
+                }
             }
         }
 

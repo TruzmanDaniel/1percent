@@ -18,6 +18,7 @@ sealed class AppScreens(val route: String, val label: String = "", val icon: Ima
     object TargetsScreen : AppScreens("targets",  "Targets",  Icons.Default.Flag)
     object SocialScreen  : AppScreens("social",   "Social",   Icons.Default.Group)
     object ProgressScreen: AppScreens("progress", "Progress", Icons.Default.BarChart)
+    object RitualScreen : AppScreens("ritual", "Ritual")
 
     companion object {
 
