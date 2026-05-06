@@ -74,7 +74,14 @@ import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
+import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
 import es.uc3m.android.a1percent.data.model.enums.GoalStatus
+import es.uc3m.android.a1percent.data.model.intensityDisplay
+import es.uc3m.android.a1percent.data.model.isFinite
+import es.uc3m.android.a1percent.data.model.nextMilestone
+import es.uc3m.android.a1percent.data.model.streakDisplay
+import es.uc3m.android.a1percent.data.model.weeksRemaining
+import androidx.compose.material3.LinearProgressIndicator
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.navigation.AppScreens
 import es.uc3m.android.a1percent.ui.components.CollaboratorAvatars
@@ -354,7 +361,6 @@ private fun GoalsTabContent(
         items(items = uiState.goals, key = { it.id }) { goal ->
             GoalCompactItem(
                 goal = goal,
-                progress = uiState.goalProgressById[goal.id] ?: (goal.progress / 100f),
                 friends = uiState.friends,
                 currentUserId = uiState.currentUserId,
                 onClick = { onGoalClicked(goal.id) },
@@ -606,52 +612,108 @@ internal fun TaskRowWithActions(
 @Composable
 private fun GoalCompactItem(
     goal: Goal,
-    progress: Float,
     friends: List<UserProfile>,
     currentUserId: String,
     onClick: () -> Unit,
     onDelete: () -> Unit = {}
 ) {
+    val isPaused = goal.aiRoadmapStatus == AiRoadmapStatus.PAUSED
+    val alpha = if (isPaused) 0.5f else 1f
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = alpha)
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = goal.title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                text = "${(progress * 100).toInt()}% progress",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = "Status: ${goal.status.name}",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (goal.status == GoalStatus.ACTIVE) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-            CollaboratorAvatars(
-                sharedWith = goal.sharedWith,
-                currentUserId = currentUserId,
-                friends = friends,
-                avatarSize = 24
-            )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete goal", tint = MaterialTheme.colorScheme.error)
+                AssistChip(
+                    onClick = {},
+                    label = { Text(goal.category.displayName, style = MaterialTheme.typography.labelSmall) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (goal.isFinite) MaterialTheme.colorScheme.tertiaryContainer
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+                if (isPaused) {
+                    Text("Pausado", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Text(goal.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+            if (goal.isFinite) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Progreso", style = MaterialTheme.typography.labelSmall)
+                        Text("${goal.progress}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                    }
+                    LinearProgressIndicator(
+                        progress = { goal.progress / 100f },
+                        modifier = Modifier.fillMaxWidth().height(6.dp),
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                val weeksLeft = goal.weeksRemaining()
+                if (weeksLeft != null) {
+                    Text(
+                        "$weeksLeft semanas restantes",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Nivel", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            goal.intensityDisplay() ?: "1",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("Racha", style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            goal.streakDisplay() ?: "0 sem",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFFFFD700)
+                        )
+                    }
+                }
+
+                val nextMs = goal.nextMilestone()
+                if (nextMs != null) {
+                    Text(
+                        "Próximo hito: $nextMs semanas",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
