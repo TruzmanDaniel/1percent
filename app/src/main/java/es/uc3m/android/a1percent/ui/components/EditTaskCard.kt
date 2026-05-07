@@ -47,12 +47,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseAuth
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 import es.uc3m.android.a1percent.data.TaskCategoryRepository
 import es.uc3m.android.a1percent.data.model.Task
@@ -125,7 +127,8 @@ fun EditTaskCard(
                 ) {
                     // Header
                     Text(
-                        text = "Edit ${if (task.goalId != null) "Mission" else "Task"}",
+                        text = if (task.goalId != null) stringResource(R.string.edit_task_header_mission) else stringResource(
+                            R.string.edit_task_header_task),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
@@ -142,7 +145,7 @@ fun EditTaskCard(
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
-                            label = { Text("Title") },
+                            label = { Text(stringResource(R.string.create_task_field_name)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -150,7 +153,7 @@ fun EditTaskCard(
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
-                            label = { Text("Description") },
+                            label = { Text(stringResource(R.string.create_task_field_description)) },
                             modifier = Modifier.fillMaxWidth(),
                             minLines = 3,
                             maxLines = 5
@@ -171,7 +174,7 @@ fun EditTaskCard(
                                 value = categoryLabel,
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Category") },
+                                label = { Text(stringResource(R.string.create_task_field_category)) },
                                 trailingIcon = {
                                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = isCategoryDropdownExpanded)
                                 },
@@ -222,7 +225,7 @@ fun EditTaskCard(
                                                 }) {
                                                     Icon(
                                                         Icons.Default.Delete,
-                                                        contentDescription = "Delete category",
+                                                        contentDescription = stringResource(R.string.edit_task_delete_category_content_description),
                                                         tint = MaterialTheme.colorScheme.error,
                                                         modifier = Modifier.size(18.dp)
                                                     )
@@ -235,7 +238,7 @@ fun EditTaskCard(
                                 HorizontalDivider()
 
                                 DropdownMenuItem(
-                                    text = { Text("Create a Category") },
+                                    text = { Text(stringResource(R.string.edit_task_create_category)) },
                                     onClick = {
                                         isCategoryDropdownExpanded = false
                                         newCategoryName = ""
@@ -250,20 +253,20 @@ fun EditTaskCard(
                             onClick = { showDeadlineOptions = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Change Deadline")
+                            Text(stringResource(R.string.edit_task_change_deadline))
                         }
 
                         // Display current deadline
                         if (selectedDeadline != null) {
                             val deadlineText = when (selectedDeadline) {
-                                is TaskDeadline.ThisWeek -> "Deadline: This Week"
+                                is TaskDeadline.ThisWeek -> stringResource(R.string.edit_task_deadline_this_week)
                                 is TaskDeadline.OnDate -> {
                                     val epochDay = (selectedDeadline as TaskDeadline.OnDate).epochDay
                                     val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
                                     val formattedDate = formatter.format(Date(epochDay * 86_400_000L))
-                                    "Deadline: $formattedDate"
+                                    stringResource(R.string.edit_task_deadline_prefix, formattedDate)
                                 }
-                                else -> "No Deadline"
+                                else -> stringResource(R.string.edit_task_no_deadline)
                             }
                             Text(
                                 text = deadlineText,
@@ -273,7 +276,7 @@ fun EditTaskCard(
                             )
                         } else {
                             Text(
-                                text = "No Deadline",
+                                text = stringResource(R.string.edit_task_no_deadline),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 4.dp)
@@ -285,12 +288,12 @@ fun EditTaskCard(
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "XP: ${task.xp}",
+                                text = stringResource(R.string.edit_task_xp_label, task.xp),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Difficulty: ${task.difficulty}/5",
+                                text = stringResource(R.string.edit_task_difficulty_label, task.difficulty),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -308,7 +311,7 @@ fun EditTaskCard(
                             onClick = onDismiss,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.edit_task_cancel))
                         }
                         Button(
                             onClick = {
@@ -325,7 +328,7 @@ fun EditTaskCard(
                             modifier = Modifier.weight(1f),
                             enabled = title.isNotBlank()
                         ) {
-                            Text("Save")
+                            Text(stringResource(R.string.edit_task_save))
                         }
                     }
                 }
@@ -338,7 +341,7 @@ fun EditTaskCard(
         AlertDialog(
             onDismissRequest = { showDeadlineOptions = false },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            title = { Text("Change Deadline") },
+            title = { Text(stringResource(R.string.edit_task_change_deadline)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     // No Deadline
@@ -358,7 +361,7 @@ fun EditTaskCard(
                                 showDeadlineOptions = false
                             }
                         )
-                        Text("No Deadline", modifier = Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.edit_task_no_deadline), modifier = Modifier.padding(start = 8.dp))
                     }
 
                     // This Week
@@ -378,7 +381,7 @@ fun EditTaskCard(
                                 showDeadlineOptions = false
                             }
                         )
-                        Text("This Week", modifier = Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.edit_task_deadline_this_week), modifier = Modifier.padding(start = 8.dp))
                     }
 
                     // Specific Date
@@ -392,13 +395,13 @@ fun EditTaskCard(
                             selected = selectedDeadline is TaskDeadline.OnDate,
                             onClick = { isDatePickerVisible = true }
                         )
-                        Text("Specific Date", modifier = Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.create_task_deadline_specific_date), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showDeadlineOptions = false }) {
-                    Text("Done")
+                    Text(stringResource(R.string.edit_task_done))
                 }
             }
         )
@@ -426,12 +429,12 @@ fun EditTaskCard(
                         }
                     }
                 ) {
-                    Text("Confirm")
+                    Text(stringResource(R.string.edit_task_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { isDatePickerVisible = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.edit_task_cancel))
                 }
             }
         ) {
@@ -449,12 +452,12 @@ fun EditTaskCard(
         AlertDialog(
             onDismissRequest = { isCreateCategoryDialogVisible = false },
             containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
-            title = { Text("Create a Category") },
+            title = { Text(stringResource(R.string.edit_task_create_category)) },
             text = {
                 OutlinedTextField(
                     value = newCategoryName,
                     onValueChange = { newCategoryName = it },
-                    label = { Text("Category name") },
+                    label = { Text(stringResource(R.string.edit_task_category_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -476,13 +479,13 @@ fun EditTaskCard(
                         }
                     },
                     enabled = newCategoryName.trim().isNotEmpty()
-                ) { Text("Create") }
+                ) { Text(stringResource(R.string.edit_task_create)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     isCreateCategoryDialogVisible = false
                     newCategoryName = ""
-                }) { Text("Cancel") }
+                }) { Text(stringResource(R.string.edit_task_cancel)) }
             }
         )
     }

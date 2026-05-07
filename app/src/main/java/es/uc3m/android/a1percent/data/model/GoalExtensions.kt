@@ -14,7 +14,7 @@ fun Goal.totalWeeks(): Int {
 }
 
 fun Goal.weekLabel(currentWeek: Int): String {
-    return "Semana $currentWeek de ${totalWeeks()}"
+    return "Week $currentWeek of ${totalWeeks()}"
 }
 
 fun Goal.isDeadlineWeek(): Boolean {

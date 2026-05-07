@@ -28,9 +28,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.UserProfile
 
 @Composable
@@ -65,7 +67,7 @@ fun SharedWithDropdown(
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
-                    contentDescription = "Shared with",
+                    contentDescription = stringResource(R.string.social_shared_with),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(18.dp)
                 )
@@ -76,12 +78,12 @@ fun SharedWithDropdown(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "Shared with",
+                    text = stringResource(R.string.social_shared_with),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "${visibleProfiles.size} ${if (visibleProfiles.size == 1) "person" else "people"}",
+                    text = "${visibleProfiles.size} ${if (visibleProfiles.size == 1) stringResource(R.string.shared_person) else stringResource(R.string.shared_people)}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -89,7 +91,7 @@ fun SharedWithDropdown(
 
             Icon(
                 imageVector = Icons.Default.ExpandMore,
-                contentDescription = "Expand shared with",
+                contentDescription = stringResource(R.string.social_expand_shared_with),
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -129,14 +131,14 @@ fun SharedWithDropdown(
                                     if (!profile.avatarUrl.isNullOrEmpty()) {
                                         AsyncImage(
                                             model = profile.avatarUrl,
-                                            contentDescription = "Profile avatar of ${profile.name}",
+                                            contentDescription = "${stringResource(R.string.profile_avatar)} ${profile.name}",
                                             contentScale = ContentScale.Crop,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     } else {
                                         Icon(
                                             imageVector = Icons.Default.AccountCircle,
-                                            contentDescription = "Profile avatar fallback",
+                                            contentDescription = stringResource(R.string.profile_avatar_fb),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(24.dp)
                                         )

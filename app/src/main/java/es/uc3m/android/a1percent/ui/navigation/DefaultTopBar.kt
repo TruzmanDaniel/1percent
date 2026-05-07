@@ -17,8 +17,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.SessionRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,7 +44,7 @@ fun DefaultTopBar(
                     // Mostrar foto de perfil si existe
                     AsyncImage(
                         model = currentUser?.avatarUrl,
-                        contentDescription = "Profile",
+                        contentDescription = stringResource(R.string.nav_profile_label),
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape),
@@ -52,7 +54,7 @@ fun DefaultTopBar(
                     // Fallback al icono default si no hay foto
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Profile",
+                        contentDescription = stringResource(R.string.nav_profile_label),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

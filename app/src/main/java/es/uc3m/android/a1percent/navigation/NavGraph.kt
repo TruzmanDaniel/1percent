@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -85,7 +86,7 @@ fun NavGraph() {
 
     val topLevelRoutes = AppScreens.topLevelScreens.map { it.route }.toSet()
     val currentScreenTitle = AppScreens.topLevelScreens
-        .firstOrNull { it.route == currentRoute }?.label ?: ""
+        .firstOrNull { it.route == currentRoute }?.labelRes?.let { stringResource(it) } ?: ""
 
     // Sub-screens that live under a top-level route but should manage their own chrome
     val isSubScreen = currentRoute == AppScreens.TargetsScreen.route + "/goal/{goalId}"

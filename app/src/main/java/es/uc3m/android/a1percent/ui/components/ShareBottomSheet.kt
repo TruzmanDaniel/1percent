@@ -28,10 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.data.model.UserProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,19 +58,19 @@ fun ShareBottomSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Share with a friend",
+                text = stringResource(R.string.share_friend),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "They'll see this in their tasks",
+                text = stringResource(R.string.shared_message_taskvisible),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             if (friends.isEmpty()) {
                 Text(
-                    text = "No friends yet. Add friends from the Social tab.",
+                    text = stringResource(R.string.no_friends_yet),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 16.dp)
@@ -102,12 +104,12 @@ fun ShareBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "Share \"$itemName\" with ${selected.name}?",
+                        text = "${stringResource(R.string.targets_task_share_content_description)}\"$itemName\" ${stringResource(R.string.with)} ${selected.name}?",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.weight(1f)
                     )
                     Button(onClick = { onShareWith(selected.id, selected.name) }) {
-                        Text("Send")
+                        Text(stringResource(R.string.send))
                     }
                 }
             }

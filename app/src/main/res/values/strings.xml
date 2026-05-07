@@ -2,6 +2,18 @@
 <resources>
     <string name="app_name">1percent</string>
 
+    <!-- Navigation Labels -->
+    <string name="nav_login_label">Login</string>
+    <string name="nav_register_label">Register</string>
+    <string name="nav_home_label">Home</string>
+    <string name="nav_profile_label">Profile</string>
+    <string name="nav_targets_label">Targets</string>
+    <string name="nav_social_label">Social</string>
+    <string name="nav_progress_label">Progress</string>
+    <string name="nav_ritual_label">Ritual</string>
+    <string name="nav_add_content_description">Add</string>
+    <string name="nav_close_content_description">Close</string>
+
     <!-- Login Screen -->
     <string name="login_title">Welcome to 1%</string>
     <string name="login_field_email">Email</string>
@@ -26,6 +38,20 @@
     <!-- Splash Screen -->
     <string name="splash_logo_content_description">App logo</string>
     <string name="splash_tagline">Earn your 1%\nStay Consistent</string>
+
+    <!-- Navigation Bar -->
+    <string name="navbar_login">Login</string>
+    <string name="navbar_register">Register</string>
+    <string name="navbar_home">Home</string>
+    <string name="navbar_targets">Targets</string>
+    <string name="navbar_social">Social</string>
+    <string name="navbar_progress">Progress</string>
+    <string name="navbar_ritual">Ritual</string>
+    <string name="navbar_profile">Profile</string>
+    <string name="close_label">Close</string>
+
+
+
 
     <!-- Profile Screen -->
     <string name="profile_not_available">Profile not available</string>
@@ -77,6 +103,14 @@
     <string name="home_progress_tagline">1% better every day = 37x better in a year</string>
     <string name="home_task_deadline_overdue">Overdue</string>
     <string name="home_task_deadline_due">Due</string>
+    <string name="home_greeting">Hey %1$s!</string>
+    <string name="home_vacation_since_days">Since %1$d days</string>
+    <string name="home_streak_days">🔥 %1$d days</string>
+    <string name="home_level">Level %1$d</string>
+    <string name="home_xp_progress">%1$d / %2$d XP</string>
+    <string name="home_separator_dot">·</string>
+    <string name="home_mission_badge">⚡ Mission · %1$s</string>
+    <string name="home_deadline_this_week">This Week</string>
 
     <!-- Home Filters -->
     <string name="home_filter_status_all">Status: All</string>
@@ -106,6 +140,15 @@
     <string name="social_group_study_sprint_description">Shared goals and weekly check-ins.</string>
     <string name="social_group_fitness_crew_title">Fitness Crew</string>
     <string name="social_group_fitness_crew_description">Track goals and challenge progress together.</string>
+    <string name="social_shared_with">Shared with</string>
+    <string name="social_expand_shared_with">Expand shared with</string>
+    <string name="shared_people">people</string>
+    <string name="shared_person">person</string>
+    <string name="share_friend">Share with a friend</string>
+    <string name="shared_message_taskvisible">They will see this in their tasks</string>
+    <string name="no_friends_yet">No friends yet. Add friends from the Social tab.</string>
+    <string name="profile_avatar">Profile avatar of</string>
+    <string name="profile_avatar_fb">Profile avatar fallback</string>
 
     <!-- Targets Screen -->
     <string name="targets_goal_progress_label">Progress</string>
@@ -140,6 +183,9 @@
     <string name="targets_task_detail_button_complete">Complete</string>
     <string name="targets_task_detail_button_delete">Delete</string>
     <string name="targets_cancel">Cancel</string>
+    <string name="with">with</string>
+    <string name="send">send</string>
+
 
     <!-- Targets Filters -->
     <string name="targets_filter_status_pending">Status: Pending</string>
@@ -162,8 +208,8 @@
     <string name="goal_detail_pause_content_description">Pause</string>
     <string name="goal_detail_resume_content_description">Resume</string>
     <string name="goal_detail_complete_button">Complete goal</string>
-    <string name="goal_detail_missions_header">Misiones pendientes (%1$d)</string>
-    <string name="goal_detail_no_missions">No hay misiones pendientes</string>
+    <string name="goal_detail_missions_header">Pending missions (%1$d)</string>
+    <string name="goal_detail_no_missions">There are no pending missions</string>
     <string name="goal_detail_not_found">Goal not found</string>
     <string name="goal_detail_completed_label">COMPLETED</string>
     <string name="goal_detail_progress_label">Progress</string>
@@ -276,4 +322,22 @@
     <string name="create_task_dialog_category_name_label">Category name</string>
     <string name="create_task_dialog_create_button">Create</string>
     <string name="create_task_dialog_cancel_button">Cancel</string>
+
+    <!-- Edit Task Card -->
+    <string name="edit_task_header_mission">Edit Mission</string>
+    <string name="edit_task_header_task">Edit Task</string>
+    <string name="edit_task_delete_category_content_description">Delete category</string>
+    <string name="edit_task_create_category">Create a Category</string>
+    <string name="edit_task_change_deadline">Change Deadline</string>
+    <string name="edit_task_deadline_this_week">Deadline: This Week</string>
+    <string name="edit_task_deadline_prefix">Deadline: %1$s</string>
+    <string name="edit_task_no_deadline">No Deadline</string>
+    <string name="edit_task_cancel">Cancel</string>
+    <string name="edit_task_save">Save</string>
+    <string name="edit_task_done">Done</string>
+    <string name="edit_task_confirm">Confirm</string>
+    <string name="edit_task_category_name">Category name</string>
+    <string name="edit_task_create">Create</string>
+    <string name="edit_task_xp_label">XP: %1$d</string>
+    <string name="edit_task_difficulty_label">Difficulty: %1$d/5</string>
 </resources>

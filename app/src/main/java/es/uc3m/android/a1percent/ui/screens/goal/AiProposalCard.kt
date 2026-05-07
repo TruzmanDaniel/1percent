@@ -139,7 +139,7 @@ private fun ProposedTaskItem(task: Task) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Día ${task.dayIndex}${if (isEpic) " - ÉPICA" else ""}",
+                    text = "Day ${task.dayIndex}${if (isEpic) " - EPIC" else ""}",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = if (isEpic) MaterialTheme.colorScheme.primary

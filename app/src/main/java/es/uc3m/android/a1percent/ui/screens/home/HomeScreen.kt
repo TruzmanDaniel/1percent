@@ -141,6 +141,7 @@ fun HomeBodyContent(
     onTaskClicked: (Task) -> Unit = {}
 ) {
     var isFocusMode by rememberSaveable { mutableStateOf(false) }
+    // val context = LocalContext.current
 
     LazyColumn(
         modifier = Modifier
@@ -178,7 +179,7 @@ fun HomeBodyContent(
                             val days = if (user.vacationStartDate != null) {
                                 ((System.currentTimeMillis() - user.vacationStartDate) / (24 * 3600 * 1000)).toInt()
                             } else 0
-                            Text("Since $days days", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.home_vacation_since_days, days), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
@@ -263,9 +264,10 @@ fun HomeBodyContent(
     }
 }
 
+@Composable
 private fun TaskDeadline.toUiLabel(): String {
     return when (this) {
-        TaskDeadline.ThisWeek -> "This Week"
+        TaskDeadline.ThisWeek -> stringResource(R.string.home_deadline_this_week)
         is TaskDeadline.OnDate -> {
             val formatter = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH)
             val millisAtUtcMidnight = epochDay * 24L * 60L * 60L * 1000L
@@ -328,7 +330,7 @@ private fun HeaderSection(uiState: HomeUiState) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Hey ${user.name}!",
+                            text = stringResource(R.string.home_greeting, user.name),
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -340,7 +342,7 @@ private fun HeaderSection(uiState: HomeUiState) {
                             elevation = CardDefaults.cardElevation(0.dp)
                         ) {
                             Text(
-                                text = "🔥 ${user.streakDays} days",
+                                text = stringResource(R.string.home_streak_days, user.streakDays),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -359,16 +361,16 @@ private fun HeaderSection(uiState: HomeUiState) {
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "Level ${user.level}",
+                            text = stringResource(R.string.home_level, user.level),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "·",
+                            text = stringResource(R.string.home_separator_dot),
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
                         )
                         Text(
-                            text = "${user.currentXp} / ${user.xpToNextLevel} XP",
+                            text = stringResource(R.string.home_xp_progress, user.currentXp, user.xpToNextLevel),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                         )
@@ -455,7 +457,7 @@ fun TaskItem(
 
                     if (goalTitle != null) {
                         Text(
-                            text = "⚡ Mission · $goalTitle",
+                            text = stringResource(R.string.home_mission_badge, goalTitle),
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier
                                 .background(

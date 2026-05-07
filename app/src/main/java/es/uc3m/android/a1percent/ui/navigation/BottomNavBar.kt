@@ -15,7 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import es.uc3m.android.a1percent.R
 import es.uc3m.android.a1percent.navigation.AppScreens
 
 // REUSABLE NAV BAR
@@ -46,7 +48,11 @@ fun BottomNavBar(
                     icon = {
                         Icon(
                             imageVector = if (isFabExpanded) Icons.Default.Close else Icons.Default.AddCircle,
-                            contentDescription = if (isFabExpanded) "Close" else "Add",
+                            contentDescription = if (isFabExpanded) {
+                                stringResource(R.string.nav_close_content_description)
+                            } else {
+                                stringResource(R.string.nav_add_content_description)
+                            },
                             tint = if (isFabExpanded) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                             modifier = Modifier
                                 .size(32.dp)
@@ -64,10 +70,17 @@ fun BottomNavBar(
                 onClick = { onNavigate(screen.route) },
                 icon = {
                     screen.icon?.let {
-                        Icon(imageVector = it, contentDescription = screen.label)
+                        Icon(
+                            imageVector = it,
+                            contentDescription = screen.labelRes?.let { resId -> stringResource(resId) }
+                        )
                     }
                 },
-                label = { if (selected) Text(screen.label) },
+                label = {
+                    if (selected) {
+                        Text(text = screen.labelRes?.let { resId -> stringResource(resId) }.orEmpty())
+                    }
+                },
                 alwaysShowLabel = false
             )
         }
