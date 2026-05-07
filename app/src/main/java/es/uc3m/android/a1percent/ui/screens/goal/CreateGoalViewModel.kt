@@ -69,16 +69,15 @@ class CreateGoalViewModel : ViewModel() {
                 weeklySummary = null,
                 isWeekend = isWeekend,
                 userFeedback = null,
-                userId = userId,
                 weekNumber = 1
             )
 
-            result.onSuccess { tasks ->
+            result.onSuccess { aiResult ->
                 _uiState.update {
                     it.copy(
                         aiState = AiNegotiationState.PROPOSAL_READY,
-                        proposedTasks = tasks,
-                        availableCredits = it.availableCredits - 1
+                        proposedTasks = aiResult.tasks,
+                        availableCredits = aiResult.availableCredits
                     )
                 }
             }

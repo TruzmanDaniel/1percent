@@ -2,7 +2,6 @@ package es.uc3m.android.a1percent.ui.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import es.uc3m.android.a1percent.data.CreditManager
 import es.uc3m.android.a1percent.data.GoalRepository
 import es.uc3m.android.a1percent.data.XpManager
 import es.uc3m.android.a1percent.data.SessionRepository
@@ -84,9 +83,6 @@ class HomeViewModel : ViewModel() {
             }
             .launchIn(viewModelScope)
 
-        viewModelScope.launch {
-            CreditManager.resetCreditsIfNeeded(userId)
-        }
     }
 
     private fun buildSharedProfileMap(tasks: List<Task>, userId: String): Map<String, UserProfile> {

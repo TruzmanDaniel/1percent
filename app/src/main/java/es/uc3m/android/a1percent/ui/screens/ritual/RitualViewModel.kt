@@ -237,13 +237,12 @@ class RitualViewModel : ViewModel() {
                 weeklySummary = if (isCatchUp) null else latestSummary,
                 isWeekend = isWeekend,
                 userFeedback = feedback.name,
-                userId = userId,
                 weekNumber = weekNumber,
                 isDeadlineWeek = nextWeekIsDeadline
             )
 
-            result.onSuccess { tasks ->
-                TaskRespository.saveTaskBatch(userId, tasks.map { it.copy(goalId = goal.id) })
+            result.onSuccess { aiResult ->
+                TaskRespository.saveTaskBatch(userId, aiResult.tasks.map { it.copy(goalId = goal.id) })
 
                 val finalGoal = updatedGoal.copy(
                     nextGenerationDate = System.currentTimeMillis() + SEVEN_DAYS_MILLIS,
