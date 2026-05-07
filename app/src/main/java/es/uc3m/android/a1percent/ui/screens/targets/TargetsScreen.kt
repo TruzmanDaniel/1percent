@@ -353,7 +353,6 @@ private fun TasksTabContent(
                     selected = uiState.taskFilters.selectedStatus != null
                 )
 
-                // TODO: Placeholder filter controls. Replace with advanced filter sheet/dropdowns.
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     uiState.taskFilterItems.forEach { filter ->
                         FilterChip(
@@ -416,7 +415,6 @@ private fun GoalsTabContent(
         }
 
         item {
-            // TODO: Placeholder for future goal sorting/filtering controls.
             uiState.goalFilterItems.forEach { filter ->
                 FilterChip(
                     onClick = { onGoalFilterClicked(filter.key) },

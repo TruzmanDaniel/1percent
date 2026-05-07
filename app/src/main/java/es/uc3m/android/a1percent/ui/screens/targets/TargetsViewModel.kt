@@ -227,11 +227,6 @@ class TargetsViewModel : ViewModel() {
 
     // GOAL DETAIL VIEW
 
-    @Suppress("UNUSED_PARAMETER")
-    fun onGoalClicked(goalId: String) {
-        // TODO: navigate to goal detail when detail flow is implemented.
-    }
-
 
     // ACTIONS
 

@@ -34,9 +34,7 @@ data class GoalDetailUiState(
 
 /**
  * ViewModel for Goal Detail screen.
- * Handles goal lookup and mission management (complete, delete actions).
- * TODO: Replace mock data with real repository once backend is integrated.
- */
+ * Handles goal lookup and mission management (complete, delete actions).*/
 class GoalDetailViewModel : ViewModel() {
     private var currentGoalId: String? = null
 
