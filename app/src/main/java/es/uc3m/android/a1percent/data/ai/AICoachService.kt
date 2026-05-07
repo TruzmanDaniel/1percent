@@ -17,7 +17,7 @@ object AICoachService {
 
     private val cloudFunctionApi by lazy {
         Retrofit.Builder()
-            .baseUrl("https://us-central1-uc3m-it-2026-16504-g04-96.cloudfunctions.net/app/")
+            .baseUrl("https://app-uh7c5dyzza-uc.a.run.app/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(CloudFunctionApi::class.java)
