@@ -1,432 +1,312 @@
-# Evolucionando el Sistema de Objetivos en 1Percent
+# Design: Refactoring Goals to Finite-Only Architecture
 
 **Fecha**: 2026-05-06
-**Estado**: Aprobado
-**Alcance**: Modelo de datos, Ritual Semanal, UI diferenciada (Finito/Infinito), Pausa/Vacaciones, Milestones, Prompts de IA
+**Estado**: En revision
+**Alcance**: Eliminacion de goals infinitos, unificacion a sistema finito, reconversion del ritual, Epic Completion mechanic
 
 ---
 
-## Resumen
+## 1. Background & Motivation
 
-El sistema actual trata todos los objetivos de forma idéntica. Este rediseño introduce una bifurcación basada en la existencia del campo `deadline` en el modelo `Goal`, creando dos caminos diferenciados:
-
-- **Objetivos Finitos** (con deadline): Proyectos con fecha de examen. Progreso lineal 0-100%, cuenta atrás, intensidad creciente hacia el final.
-- **Objetivos Infinitos** (sin deadline): Hábitos de por vida. Racha semanal, nivel de intensidad sostenible, milestones de constancia.
-
-Adicionalmente, el Ritual Semanal pasa de ser un AlertDialog a una pantalla completa inmersiva, y se implementa un sistema de Pausa individual + Modo Vacaciones global.
+The current architecture bifurcates Goals into "Finite" (with a deadline) and "Infinite" (no deadline). This dual system introduces complexity across the data model, AI prompts, gamification logic, and UI rendering. This refactor eliminates infinite goals entirely, standardizing on a purely finite, mission-based project management system.
 
 ---
 
-## 1. Cambios en el Modelo de Datos
+## 2. Decisions
 
-### 1.1 Goal.kt — Campos nuevos
+| Topic | Decision |
+|-------|----------|
+| Weekly streaks | Delete (`Goal.weeklyStreak`, `streakStartDate`) |
+| Daily streaks | Keep (`UserProfile.streakDays`) — untouched |
+| Milestones | Delete entirely (`MilestoneRecord`, `MilestoneRepository`, `awardMilestoneBonus`) |
+| Ritual semanal | Reconvert to show finite goal progress + epic weekly bonus |
+| GoalStatus | Keep all 5: ACTIVE, PAUSED, COMPLETED, ARCHIVED, UPCOMING |
+| Epic Completion | Fewer daily missions + 1 Epic in final week; client-side detection |
+| Migration | None — DB will be reset, no production users |
+| Intensity curve | All goals use finite curve (cap `difficulty * 2.0`, acceleration in final 4 weeks) |
+| AI prompt | Improve finite prompt with deadline week mode and UPCOMING handling |
+| Approach | Client-side deadline week detection — AI only generates content, never calculates dates |
 
-```kotlin
-val weeklyStreak: Int = 0,           // Semanas consecutivas completadas (por goal)
-val extensionCount: Int = 0,         // Veces que se ha extendido el deadline (solo finitos)
-val streakStartDate: Long? = null,   // Cuándo empezó la racha actual
-val pausedBy: PausedBy? = null,      // Quién pausó: USER o VACATION (null = no pausado)
-```
+---
 
-Propiedad computada (no serializada):
+## 3. Data Model
 
-```kotlin
-val goalType: GoalType
-    get() = if (deadline != null) GoalType.FINITE else GoalType.INFINITE
-```
+### 3.1 Goal.kt
 
-### 1.2 Nuevo enum GoalType.kt
-
-```kotlin
-enum class GoalType { FINITE, INFINITE }
-```
-
-### 1.3 Nuevo enum PausedBy.kt
+`deadline` becomes non-nullable. `weeklyStreak`, `streakStartDate`, and computed `goalType` are removed.
 
 ```kotlin
-enum class PausedBy { USER, VACATION }
-```
-
-### 1.4 AiRoadmapStatus.kt — Nuevo valor
-
-```kotlin
-enum class AiRoadmapStatus {
-    NONE, NEGOTIATING, READY,
-    PAUSED  // Goal pausado (individual o por vacaciones)
-}
-```
-
-### 1.5 UserProfile.kt — Campos nuevos
-
-```kotlin
-val isVacationMode: Boolean = false,
-val vacationStartDate: Long? = null
-```
-
-### 1.6 GoalExtensions.kt (nuevo archivo)
-
-Extension functions que centralizan toda la lógica de presentación:
-
-```kotlin
-val Goal.isFinite: Boolean get() = goalType == GoalType.FINITE
-val Goal.isInfinite: Boolean get() = goalType == GoalType.INFINITE
-
-fun Goal.weekLabel(currentWeek: Int): String
-// Finito: "Semana 18 de 52"  |  Infinito: "Semana 18"
-
-fun Goal.progressDisplay(): Int?
-// Finito: 0-100  |  Infinito: null
-
-fun Goal.intensityDisplay(): String?
-// Infinito: "3.5"  |  Finito: null
-
-fun Goal.streakDisplay(): String?
-// Infinito: "12 sem"  |  Finito: null
-
-fun Goal.weeksRemaining(): Int?
-// Finito: semanas hasta deadline  |  Infinito: null
-
-fun Goal.nextMilestone(): Int?
-// Infinito: próximo hito (4, 12, 26, 52)  |  Finito: null
-
-fun Goal.justReachedMilestone(): Int?
-// Comprueba si weeklyStreak coincide con un hito
-// Usa lista [52, 26, 12, 4] y devuelve el primer match con streak % milestone == 0
-// Prioriza el mayor para evitar doble-disparo
-```
-
-### 1.7 Milestone persistence (Firestore)
-
-Nueva subcolección `goals/{goalId}/milestones/{milestoneId}`:
-
-```kotlin
-data class MilestoneRecord(
-    val id: String,
-    val milestone: Int,        // 4, 12, 26, 52
-    val weeklyStreak: Int,     // Racha en el momento del desbloqueo
-    val xpAwarded: Int,
-    val unlockedAt: Long
+data class Goal(
+    val id: String = UUID.randomUUID().toString(),
+    val title: String,
+    val description: String = "",
+    val category: Category,
+    val difficulty: Int,
+    val xp: Int,
+    val deadline: Long,                         // Non-nullable, mandatory
+    val status: GoalStatus = GoalStatus.ACTIVE,
+    val progress: Int = 0,
+    val createdAt: Long = System.currentTimeMillis(),
+    val ownerId: String = "",
+    val sharedWith: List<String> = emptyList(),
+    val currentIntensity: Float = difficulty.toFloat(),
+    val nextGenerationDate: Long? = null,
+    val aiRoadmapStatus: AiRoadmapStatus = AiRoadmapStatus.NONE,
+    val extensionCount: Int = 0,
+    val pausedBy: PausedBy? = null
 )
 ```
 
-Persiste para siempre, independiente de la racha actual. Alimenta la sección de logros en ProgressScreen.
+### 3.2 Files to Delete
+
+- `GoalType.kt` — FINITE/INFINITE enum no longer exists
+- `MilestoneRecord.kt` — milestone data class
+- `MilestoneRepository.kt` — milestone Firestore persistence
+
+### 3.3 GoalExtensions.kt
+
+**Delete:**
+- `isFinite`, `isInfinite` — no types to check
+- `streakDisplay()` — weekly streaks removed
+- `nextMilestone()`, `justReachedMilestone()` — milestones removed
+- `intensityDisplay()` — only showed for infinite goals
+- `progressDisplay()` — guard no longer needed, progress always applies
+
+**Keep and simplify (remove type guards):**
+- `weeksRemaining(): Int` — deadline is always present, returns non-nullable
+- `totalWeeks(): Int` — same simplification
+
+**Add:**
+- `isDeadlineWeek(): Boolean` — returns true if `deadline` falls within the current Monday-to-Sunday week
+
+### 3.4 Enums Unchanged
+
+- `GoalStatus`: ACTIVE, PAUSED, COMPLETED, ARCHIVED, UPCOMING — no changes
+- `PausedBy`: USER, VACATION — no changes
 
 ---
 
-## 2. Ritual Semanal Inmersivo
+## 4. XP & Gamification
 
-### 2.1 Arquitectura
+### 4.1 XpManager.kt
 
-Nueva ruta en el NavGraph: `ritual/{goalId}`. Cuando `HomeViewModel` detecta que `now >= goal.nextGenerationDate`, navega a esta ruta en lugar de mostrar un AlertDialog.
+**Delete:** `awardMilestoneBonus()` — milestones no longer exist
 
-Nuevo `RitualViewModel` con máquina de estados:
+**Keep unchanged:**
+- `awardTaskXp()` — `difficulty * 10` + deadline bonus per task completion
+- `awardEpicWeeklyBonus()` — `difficulty * 30` per ritual completion
+- `awardGoalCompletionBonus()` — `difficulty * 50` on goal completion
+- `applyXpGain()` — level progression (`n * 100` XP per level)
 
-```kotlin
-enum class RitualStep {
-    SUMMARY,          // Resumen: X/Y misiones, XP ganado
-    EPIC_RESULT,      // ¿Pasaste la Misión Épica?
-    DEADLINE_CHECK,   // Solo finitos: si esta semana == deadline
-    FEEDBACK,         // Sobrado / Perfecto / Agotado
-    INTENSITY_CHANGE, // Animación del cambio de nivel
-    MILESTONE,        // Solo infinitos: si weeklyStreak alcanza hito
-    GENERATING,       // Llamada real a AI + loading
-    COMPLETE          // "¡Tu semana está lista!" → Home
-}
-```
+### 4.2 XP Flow
 
-### 2.2 Pasos visibles (calculados al inicio)
+| Event | XP | When |
+|-------|-----|------|
+| Daily mission completed | `difficulty * 10` + bonus | Each task completed |
+| Epic weekly bonus | `difficulty * 30` | Weekly ritual completed |
+| Goal completion bonus | `difficulty * 50` | Epic final mission completed or manual completion |
 
-```
-Siempre:      SUMMARY → EPIC_RESULT → FEEDBACK → INTENSITY_CHANGE → GENERATING → COMPLETE
-
-Condicional:  DEADLINE_CHECK  (si goal.isFinite && deadline cae dentro de la semana actual)
-              MILESTONE       (si goal.isInfinite && goal.justReachedMilestone() != null)
-
-Posición:     DEADLINE_CHECK va después de EPIC_RESULT
-              MILESTONE va después de INTENSITY_CHANGE
-```
-
-### 2.3 Detalle de cada paso
-
-**SUMMARY**: Fondo con color de categoría. Título del goal. Etiqueta temporal ("Semana X de Y" o "Semana X"). Tarjetas animadas de misiones completadas apareciendo una a una. Total: "5/6 misiones — 180 XP".
-
-**EPIC_RESULT**: Si completada: animación de celebración (confetti). "Mision Epica superada!". Si no completada: tono neutro, "La Epica se resistio esta semana", sin penalización emocional.
-
-**DEADLINE_CHECK** (condicional): Se activa cuando el deadline del goal cae dentro de la semana actual del ritual (entre `now` y `now + 7 días`), es decir, esta es la última semana antes de la fecha límite. Muestra progreso alcanzado (ej. "78%"), stats del camino, extensionCount si aplica. Dos opciones:
-- "Extender deadline" → abre date picker, incrementa `extensionCount`
-- "Completar objetivo" → marca goal como `COMPLETED`, otorga `goalCompletionBonus`, navega a celebración/Hall of Fame. **Sale del ritual sin pasar por FEEDBACK ni GENERATING.**
-
-**FEEDBACK**: Tres botones grandes: Sobrado / Perfecto / Agotado, cada uno con icono y descripción corta. Selección guardada en `RitualUiState.selectedFeedback`.
-
-**INTENSITY_CHANGE**: Animación del nivel cambiando: viejo → nuevo con flecha y color (verde sube, rojo baja). Ej: "Nivel 3.2 → 3.4".
-
-**MILESTONE** (condicional): Celebración grande: nombre del hito, XP bonus con animación, próximo milestone a alcanzar.
-
-**GENERATING**: "Preparando tu proxima semana..." con loading real mientras `AICoachService.generateWeeklyTasks()` ejecuta la llamada a OpenAI.
-
-**COMPLETE**: "Tu semana esta lista!" con resumen (nuevo nivel, racha actual) y botón "Ver misiones" → Home.
-
-### 2.4 Skip
-
-Botón discreto en esquina superior derecha, visible en SUMMARY, EPIC_RESULT e INTENSITY_CHANGE. Salta directo a FEEDBACK (único paso obligatorio del ritual). GENERATING y COMPLETE no se pueden saltar.
-
-### 2.5 BackHandler
-
-El botón "Atrás" del dispositivo está interceptado durante todo el ritual. Si se pulsa, el ritual se cancela sin guardar nada. La próxima vez que entre al Home, `nextGenerationDate` sigue expirado y el ritual se dispara de nuevo.
-
-### 2.6 Catch-up (2+ semanas sin actividad)
-
-Flujo reducido: `SUMMARY(adaptado) → FEEDBACK(adaptado) → INTENSITY_CHANGE → GENERATING → COMPLETE`.
-- Sin EPIC_RESULT ni DEADLINE_CHECK
-- SUMMARY muestra "Has vuelto! Llevas X semanas sin entrar"
-- FEEDBACK usa opciones adaptadas: "Con energia / Normal / Cansado"
-
-### 2.7 Estado del RitualViewModel
-
-```kotlin
-data class RitualUiState(
-    val goal: Goal,
-    val visibleSteps: List<RitualStep>,
-    val currentStepIndex: Int = 0,
-    val tasksCompleted: Int,
-    val totalTasks: Int,
-    val epicMissionPassed: Boolean,
-    val xpEarned: Int,
-    val selectedFeedback: EnergyFeedback? = null,
-    val newIntensity: Float? = null,
-    val oldIntensity: Float? = null,
-    val milestoneReached: Int? = null,
-    val newDeadline: Long? = null,
-    val isGenerating: Boolean = false,
-    val isCatchUp: Boolean = false
-)
-```
+Daily streak (`UserProfile.streakDays`) remains untouched — tracked in `awardTaskXp()`.
 
 ---
 
-## 3. UI Diferenciada — TargetsScreen y GoalDetailScreen
+## 5. AI Coach Service
 
-### 3.1 Goal Cards en TargetsScreen
+### 5.1 buildGoalTypeContext() — Rewrite
 
-**Objetivo Finito**:
-- Badge de categoría (color accent rojo/naranja)
-- Etiqueta "Semana X de Y" en esquina superior derecha
-- Barra de progreso 0-100% con porcentaje
-- Footer: cuenta atrás ("X semanas restantes") + XP
-- Indicador de Epica ("Epica en X dias" o "Epica hoy") como pill en footer
+Delete the `INFINITE` branch entirely (current lines 166-179). The finite branch becomes the only path, with two modes:
 
-**Objetivo Infinito**:
-- Badge de categoría (color accent verde/teal)
-- Etiqueta "Semana X" en esquina superior derecha
-- Nivel de Intensidad grande (X/10) + Racha semanal con fuego
-- Footer: próximo hito ("Proximo hito: 26 semanas") + XP
-- Indicador de Epica (mismo formato que finito)
+**Normal mode** (`isDeadlineWeek = false`):
+- Same as current finite prompt: weeks remaining, progress %, intensity, extension count
+- Instructs AI to generate 7 daily missions (dayIndex 1-7)
 
-**Objetivo Pausado** (ambos tipos):
-- Opacidad reducida en la card
-- Badge "Pausado" superpuesto
-- Misiones siguen visibles y completables
+**Deadline week mode** (`isDeadlineWeek = true`):
+- New prompt section instructing AI to generate 4-5 daily closure missions + 1 Epic final mission
+- Epic mission must be the highest `dayIndex` and have `difficulty = goal.difficulty`
 
-### 3.2 GoalDetailScreen Header
+Deadline week prompt addition:
 
-**Finito**: Dashboard de 3 columnas — Progreso (%) | Semanas restantes | Intensidad
+```
+Esta es la ULTIMA SEMANA del proyecto "{title}". El deadline es el {fecha}.
+Progreso actual: {progress}%. Intensidad: {intensity}.
 
-**Infinito**: Dashboard de 3 columnas — Nivel | Racha (semanas) | Misiones totales
+Genera entre 4 y 5 misiones diarias enfocadas en cerrar lo pendiente,
+mas 1 MISION EPICA FINAL que represente la culminacion del proyecto.
+La mision epica debe ser el ultimo dayIndex y tener difficulty = {goal.difficulty}.
+Total de misiones esta semana: entre 5 y 6 (en vez de las 7 habituales).
+```
 
-Implementación: `Row` con `weight(1f)` por columna y `VerticalDivider`.
+### 5.2 calculateNewIntensity() — Simplification
 
-### 3.3 Colores semánticos
+- Remove the `GoalType.INFINITE` branch that capped intensity at `difficulty * 1.5`
+- All goals use: cap `difficulty * 2.0f`
+- Acceleration in final 4 weeks: growth multiplier = `1.0 + (4 - weeksRemaining) / 4.0`
+- Feedback modifiers unchanged: SOBRADO +5%, AGOTADO -10%
 
-En lugar de hardcodear colores, usar roles de Material 3:
-- **Finitos**: Perfil basado en `tertiary` / tonos cálidos (urgencia)
-- **Infinitos**: Perfil basado en `primary` / tonos fríos (constancia)
-- Soporte para Dark/Light mode y Dynamic Color (Android 12+)
+### 5.3 generateWeeklyTasks() — Minor Adjustment
+
+- New parameter: `isDeadlineWeek: Boolean`
+- Passed through to `buildGoalTypeContext()` to switch prompt mode
+- Response parsing unchanged — still a `List<AiTaskResponse>`
+- No `isEpic` field needed in the model — Epic detection is positional: in a deadline week, the task with the highest `dayIndex` is the Epic
 
 ---
 
-## 4. Sistema de Pausa / Vacaciones
+## 6. UI Changes
 
-### 4.1 Pausa Individual (por Goal)
+### 6.1 CreateGoalCard.kt / CreateGoalViewModel.kt
 
-**UI**: Opción en menú de GoalDetailScreen: "Pausar objetivo" / "Reanudar objetivo".
+- Remove the "Proyecto con fecha limite" / "Habito de por vida" toggle entirely
+- DatePicker is always visible and mandatory — no toggle needed
+- `deadlineEpochMillis` becomes non-nullable in UiState
+- Create button disabled until both title and deadline are set
+- Default deadline suggestion: 30 days from today (existing behavior)
 
-**Al pausar**:
-1. `goal.aiRoadmapStatus` → `PAUSED`
-2. `goal.pausedBy` → `PausedBy.USER`
-3. `goal.nextGenerationDate` se congela (no se borra)
-4. `goal.weeklyStreak` se congela (no se resetea)
-5. Misiones de la semana en curso se congelan en su sitio, completables con badge "Pausado"
-6. Goal card en TargetsScreen: opacidad reducida + badge
+### 6.2 TargetsScreen.kt
 
-**Al reanudar**:
-1. `goal.aiRoadmapStatus` → `READY`
-2. `goal.pausedBy` → `null`
-3. `goal.nextGenerationDate` → `now + 7 dias`
-4. `goal.weeklyStreak` continúa (sin penalización)
-5. Si es goal finito, el deadline **no se mueve** (pérdida consciente de semanas)
+- Remove differentiated cards for infinite goals (Level + Streak + Milestone display)
+- All goal cards show unified layout: progress bar, weeks remaining, intensity
+- Remove import and usage of `streakDisplay`
+- Sort by "Progress" applies to all goals uniformly
 
-### 4.2 Modo Vacaciones (Global)
+### 6.3 GoalDetailScreen.kt
 
-**UI**: Toggle en ProfileScreen/Settings. Icono de palmera/avión. "Modo Vacaciones".
+- Remove `if (goal.isInfinite)` branch from GoalHeaderCard entirely
+- All goals show: progress bar, weeks remaining, intensity, mission list
+- Pause/resume toggle unchanged
+- Add visual `COMPLETED` badge when `goal.status == GoalStatus.COMPLETED`
+- Add "Completar goal" button for manual completion (safety net)
 
-**Al activar**:
-1. `userProfile.isVacationMode` → `true`
-2. `userProfile.vacationStartDate` → `now`
-3. Todos los goals con `aiRoadmapStatus == READY` → `PAUSED` con `pausedBy = VACATION`
-4. Goals que ya estaban `PAUSED` con `pausedBy = USER` **no se tocan**
-5. `userProfile.streakDays` se congela
-6. HomeScreen: banner permanente "Modo Vacaciones activo desde hace X dias" + botón "Volver al 1%"
-7. Notificaciones/alarmas silenciadas
+### 6.4 ProgressScreen.kt
 
-**Al desactivar** ("Volver al 1%"):
-1. `userProfile.isVacationMode` → `false`
-2. `userProfile.vacationStartDate` → `null`
-3. Solo goals con `pausedBy == VACATION` → `READY` con `nextGenerationDate` recalculado y `pausedBy = null`
-4. Goals con `pausedBy == USER` permanecen pausados (respeto a la intención original)
-5. Notificaciones reactivadas
+- Remove Milestones section entirely (the one that says "Maintain weekly Streaks to unlock Milestones")
+- Keep Chart 5 (Level / XP / Streak) — "Streak" here refers to daily streak (`streakDays`), unaffected
 
-### 4.3 Misiones en curso al pausar
+### 6.5 HomeScreen.kt
 
-Opción A (confirmada): Las misiones de la semana se congelan en su sitio. Si iba por el miércoles de la Semana 4, al volver de vacaciones sigue en el miércoles de la Semana 4. El usuario puede completarlas a su ritmo. Al completar la épica (o cuando expire nextGenerationDate tras reanudar), el ritual se dispara normalmente.
+No changes — only displays daily streak (`streakDays`).
+
+### 6.6 ProfileScreen.kt
+
+No changes — only displays `streakDays`.
+
+### 6.7 SocialScreen.kt
+
+- Replace "Track habits and challenge streaks together" with relevant copy for finite goals (e.g., "Track goals and challenge progress together")
+- Keep day streak display in user profiles
 
 ---
 
-## 5. Sistema de Milestones y XP
+## 7. Ritual Reconversion
 
-### 5.1 Milestones de Constancia (solo Objetivos Infinitos)
+### 7.1 RitualViewModel.kt — New Flow
 
-| Semanas | Nombre | XP Bonus | Formula |
-|---------|--------|----------|---------|
-| 4 | "Primer Mes" | `difficulty x 40` | base x1 |
-| 12 | "Trimestre de Hierro" | `difficulty x 80` | base x2 |
-| 26 | "Medio Ano Imparable" | `difficulty x 150` | base x3 |
-| 52 | "Un Ano Legendario" | `difficulty x 300` | base x5 |
+**Current flow (to delete):**
+1. Increment `weeklyStreak`
+2. Check milestones reached
+3. Show streak in weeks
+4. Award milestone bonus if applicable
 
-Después de 52 semanas, el ciclo se repite (semana 56 = nuevo "Primer Mes"). El XP bonus del segundo ciclo y sucesivos se mantiene igual.
+**New flow:**
+1. Show week summary: missions completed vs total for that goal
+2. Show goal progress: `progress %`, weeks remaining to deadline
+3. Collect user feedback (SOBRADO / BIEN / AGOTADO) — existing mechanic
+4. Award `awardEpicWeeklyBonus()` (`difficulty * 30`)
+5. Trigger mission generation for next week
+6. If next week is deadline week, pass `isDeadlineWeek = true` to `generateWeeklyTasks()`
 
-### 5.2 Calculo de weeklyStreak
+**Delete from RitualViewModel:**
+- `newWeeklyStreak` calculation logic
+- `computeVisibleSteps()` streak and milestone calculation
+- `awardMilestoneBonus()` call
+- Goal update of `weeklyStreak` and `streakStartDate` fields
 
-Se actualiza durante el ritual semanal:
+### 7.2 RitualUiState.kt
 
-```
-Si tasksCompleted > 0: weeklyStreak += 1
-Si tasksCompleted == 0: weeklyStreak = 0 (reset)
-Si goal PAUSED: weeklyStreak no cambia (congelado)
-```
+**Delete:**
+- `newWeeklyStreak: Int`
 
-Criterio: basta con completar al menos 1 mision para mantener la racha. Constancia > perfección.
+**Add:**
+- `weekMissionsCompleted: Int` — missions completed this week
+- `weekMissionsTotal: Int` — total missions this week
+- `goalProgress: Int` — current goal progress percentage
+- `weeksRemaining: Int` — weeks until deadline
 
-### 5.3 Deteccion de milestones
+### 7.3 RitualScreen.kt
 
-`justReachedMilestone()` usa lista descendente `[52, 26, 12, 4]`, devuelve el primer match con `streak % milestone == 0`. Prioriza el mayor para evitar doble-disparo (semana 52 no dispara también el de 4 ni el de 12).
+- Remove: "X semanas consecutivas", "Racha: X semanas" displays
+- Replace with: progress bar for goal, "X% completado", "Y semanas restantes"
+- Keep: feedback collection step, weekly summary step, intensity change animation
 
-### 5.4 Cambios en XpManager
+### 7.4 Deadline Week in Ritual
 
-```kotlin
-suspend fun awardMilestoneBonus(userId: String, goal: Goal, milestone: Int): Result<Unit> {
-    val multiplier = when(milestone) {
-        4 -> 1; 12 -> 2; 26 -> 3; 52 -> 5
-        else -> 1
-    }
-    val bonus = goal.difficulty * 40 * multiplier
-    // Guardar MilestoneRecord en Firestore
-    // Aplicar XP gain al perfil
-}
-```
-
-### 5.5 Dónde aparecen los milestones
-
-1. **Ritual Semanal** (paso MILESTONE): Celebración principal al alcanzar un hito
-2. **Goal Card infinita**: "Proximo hito: 26 semanas"
-3. **ProgressScreen**: Nueva sección "Hitos conseguidos" — badges desbloqueados por goal
+- If the ritual detects that the NEXT generation will be for a deadline week: passes `isDeadlineWeek = true` to `AICoachService.generateWeeklyTasks()`
+- If the current week WAS the deadline week and the user completed the Epic mission: show celebration screen + award `awardGoalCompletionBonus()`
 
 ---
 
-## 6. Diferenciacion de Prompts de IA
+## 8. Goal Completion Logic
 
-### 6.1 Contexto segun GoalType
+### 8.1 Automatic Completion (Epic Mission)
 
-**Goals FINITOS**:
+1. User completes the task with the highest `dayIndex` during a deadline week
+2. Client-side detection in task completion flow identifies this as the Epic task of a deadline-week goal
+3. Updates `goal.status = COMPLETED`, `goal.progress = 100`
+4. Awards `awardGoalCompletionBonus()` (`difficulty * 50`)
+5. Shows celebration UI
 
-```
-CONTEXTO DEL PROYECTO:
-- Tipo: Proyecto finito con fecha limite
-- Deadline: [fecha]
-- Semanas restantes: [X de Y]
-- Progreso actual: [Z]%
-- Extensiones usadas: [N]
+### 8.2 Manual Completion (Safety Net)
 
-DIRECTRIZ: Este es un proyecto con fecha de examen. Diseña las misiones
-para un progreso lineal que se intensifique gradualmente hacia el deadline.
-Si quedan pocas semanas, prioriza las tareas mas criticas para el objetivo
-final. La mision epica debe simular un "ensayo general" del reto final.
-```
+- User can mark any goal as completed from `GoalDetailScreen` at any time via "Completar goal" button
+- Triggers same result: status COMPLETED, progress 100, XP bonus awarded
+- Useful for: early completion, Epic mission generation failure, user preference
 
-**Goals INFINITOS**:
+### 8.3 Post-Completion Behavior
 
-```
-CONTEXTO DEL HABITO:
-- Tipo: Habito de por vida (sin fecha limite)
-- Semanas activas: [X]
-- Racha actual: [Y] semanas consecutivas
-- Proximo hito de constancia: [Z] semanas
+- Goal shows `COMPLETED` badge in TargetsScreen and GoalDetailScreen
+- AI ignores COMPLETED goals — no more missions generated
+- Pending missions for the completed goal are cancelled (status set to reflect this)
+- User can move the goal to `ARCHIVED` to remove from main view
 
-DIRECTRIZ: Este es un habito para toda la vida. Prioriza la variedad y
-la sostenibilidad a largo plazo. Evita la monotonia rotando tipos de
-actividad. La mision epica debe ser un pico de motivacion y diversion,
-no un examen. Si la racha es larga (>12 semanas), introduce retos
-creativos para mantener el interes fresco.
-```
+### 8.4 Deadline Passed Without Completion
 
-### 6.2 Estructura del prompt en AICoachService
-
-```kotlin
-private fun buildPromptContext(goal: Goal, summary: WeeklySummary?): String {
-    val baseContext = // titulo, categoria, intensidad, feedback previo, regla de 7 dias
-    val typeContext = when (goal.goalType) {
-        GoalType.FINITE -> buildFiniteContext(goal)
-        GoalType.INFINITE -> buildInfiniteContext(goal)
-    }
-    return baseContext + typeContext
-}
-```
-
-Las reglas rigidas (exactamente 7 misiones, dayIndex 1-7, formato de respuesta) permanecen en `baseContext` por encima del `typeContext` creativo.
-
-### 6.3 Curvas de intensidad diferenciadas
-
-**Finitos**: Crecimiento base 7.2%. Cuando `weeksRemaining <= 4`, el crecimiento sube a `7.2% × (1 + (4 - weeksRemaining) / 4)`, es decir: 4 semanas → 7.2%, 3 → 9%, 2 → 10.8%, 1 → 12.6%. Hard cap: `difficulty × 2.0`. Siempre respeta el feedback del usuario (AGOTADO sigue reduciendo un 10%).
-
-**Infinitos**: Crecimiento base 7.2% con hard cap reducido a `difficulty × 1.5` (en vez de ×2.0). La intensidad sube más despacio y se estabiliza antes, priorizando sostenibilidad. Si el usuario lleva >26 semanas con intensidad variando menos de ±0.3, el prompt sugiere variedad en vez de subir dificultad.
-
-La logica de calculo se centraliza en `AICoachService.calculateNewIntensity()` recibiendo el Goal completo (incluyendo goalType y weeksRemaining).
+- Goal does NOT auto-complete — stays ACTIVE
+- Next AI generation detects deadline has passed, generates "late closure" missions
+- User options: complete manually, extend deadline (`extensionCount + 1`), or archive
 
 ---
 
-## Decisiones de Diseno Clave
+## 9. Files Affected
 
-| Decision | Razon |
-|----------|-------|
-| `goalType` computado desde `deadline` | Evita redundancia; un solo campo determina el tipo |
-| `AiRoadmapStatus.PAUSED` separado de `GoalStatus.PAUSED` | Permite goal ACTIVE con IA pausada |
-| `PausedBy` enum | Resuelve conflicto entre pausa manual y vacaciones |
-| Racha por goal (no global) | Milestones de constancia tienen sentido por objetivo individual |
-| Skip en el ritual salta a FEEDBACK | FEEDBACK es obligatorio (alimenta el motor de IA), animaciones son opcionales |
-| BackHandler cancela sin guardar | El ritual se re-dispara al volver; no hay estado inconsistente |
-| Misiones se congelan al pausar | El usuario puede completarlas a su ritmo; sin borrado en Firestore |
-| Deadline no se mueve al pausar finitos | Refleja la realidad; la pausa tiene un coste consciente |
-| Extension sin limite pero con contador | Respeta la autonomia del usuario sin juzgar |
-| tasksCompleted > 0 mantiene racha | Constancia > perfeccion; filosofia del 1% |
-| Milestones persistidos en subcoleccion | Sobreviven a resets de racha; alimentan logros en ProgressScreen |
+### Delete entirely:
+- `GoalType.kt`
+- `MilestoneRecord.kt`
+- `MilestoneRepository.kt`
 
----
+### Major changes:
+| File | Changes |
+|------|---------|
+| `Goal.kt` | Remove `weeklyStreak`, `streakStartDate`, `goalType`; make `deadline` non-nullable |
+| `GoalExtensions.kt` | Remove 6 functions, add `isDeadlineWeek()`, simplify `weeksRemaining()` and `totalWeeks()` |
+| `XpManager.kt` | Remove `awardMilestoneBonus()` |
+| `AICoachService.kt` | Rewrite `buildGoalTypeContext()`, simplify `calculateNewIntensity()`, add `isDeadlineWeek` param to `generateWeeklyTasks()` |
+| `CreateGoalCard.kt` | Remove finite/infinite toggle, make DatePicker always visible and mandatory |
+| `CreateGoalViewModel.kt` | Make `deadlineEpochMillis` non-nullable in UiState |
+| `TargetsScreen.kt` | Remove infinite goal cards, unify to single display layout |
+| `GoalDetailScreen.kt` | Remove infinite branch, add COMPLETED badge, add manual completion button |
+| `ProgressScreen.kt` | Remove Milestones section |
+| `RitualViewModel.kt` | Rewrite to finite progress flow, remove streak/milestone logic |
+| `RitualUiState.kt` | Replace `newWeeklyStreak` with progress state fields |
+| `RitualScreen.kt` | Replace streak UI with progress bar and weeks remaining |
 
-## Enfoque Arquitectonico
+### Minor changes:
+| File | Changes |
+|------|---------|
+| `SocialScreen.kt` | Update copy text |
+| `TaskRepository.kt` | Add Epic mission completion detection in `toggleTaskCompletion()` |
 
-**Enfoque B: GoalType computado + RitualScreen dedicado**
-
-- Propiedad computada `goalType` en Goal (sin serializar)
-- Extension functions en `GoalExtensions.kt` para toda la logica de presentacion
-- `RitualViewModel` con maquina de estados (`RitualStep`) para el flujo multi-paso
-- Roles de color de Material 3 para la diferenciacion visual
-- Vacation mode como toggle en UserProfile con resolucion de conflictos via PausedBy
+### No changes needed:
+- `HomeScreen.kt`, `ProfileScreen.kt`, `UserProfile.kt`
+- `SessionRepository.kt`, `CreditManager.kt`
+- `TaskDeadlineResolver.kt`, `NotificationHelper.kt`
+- `GoalRepository.kt` (vacation mode already correct)

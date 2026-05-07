@@ -12,15 +12,6 @@ object XpManager {
             ?: return Result.failure(IllegalStateException("No logged-in user"))
         if (profile.id != userId) return Result.failure(IllegalStateException("User mismatch"))
 
-        val base = task.difficulty * 10
-        val bonus = if (task.deadline != null && task.completedAt != null) {
-            val deadlineMillis = TaskDeadlineResolver.toSortKey(task.deadline)
-            if (task.completedAt < deadlineMillis) (base * 0.2).toInt() else 0
-        } else 0
-        val total = base + bonus
-
-        TaskRespository.updateXpAwarded(task.id, total)
-
         val today = startOfDay()
         val yesterday = today - 86_400_000L
         val newStreak = when (profile.lastActivityDate) {
@@ -28,6 +19,17 @@ object XpManager {
             yesterday -> profile.streakDays + 1
             else      -> 1
         }
+
+        val total = if (task.goalId != null) {
+            val goal = GoalRepository.getGoalById(task.goalId).getOrNull()
+            val progressWeight = 1.0 + ((goal?.progress ?: 0) / 100.0)
+            val streakMultiplier = 1.05 * newStreak
+            (task.xp * progressWeight * streakMultiplier).toInt()
+        } else {
+            task.xp
+        }
+
+        TaskRespository.updateXpAwarded(task.id, total)
 
         val updated = applyXpGain(profile, total).copy(
             totalTasksCompleted = profile.totalTasksCompleted + 1,
