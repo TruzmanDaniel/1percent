@@ -247,6 +247,6 @@ const { defineSecret } = require("firebase-functions/params");
 const openaiKey = defineSecret("OPENAI_API_KEY");
 
 exports.app = functions.https.onRequest(
-  { secrets: [openaiKey] },
-  app
+  { secrets: [openaiKey], invoker: "public" },
+  (req, res) => app(req, res)
 );
