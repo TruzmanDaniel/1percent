@@ -1,6 +1,15 @@
 package es.uc3m.android.a1percent.ui.screens.home
 
 import android.Manifest
+import android.annotation.SuppressLint
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.painterResource
+import kotlin.math.min
+
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -286,65 +295,96 @@ private fun HeaderSection(uiState: HomeUiState) {
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Hey ${user.name}!",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                // Selecciona dinámicamente la imagen según el nivel del usuario
+                val levelIndex = min(user.level, 9)
+                val drawables = remember {
+                    arrayOf(
+                        R.drawable.material1, R.drawable.material2, R.drawable.material3,
+                        R.drawable.material4, R.drawable.material5, R.drawable.material6,
+                        R.drawable.material7, R.drawable.material8, R.drawable.material9
+                    )
+                }
+                val painter = painterResource(id = drawables[levelIndex - 1])
+
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(18.dp)),
+                    contentScale = ContentScale.Fit
                 )
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
-                    ),
-                    elevation = CardDefaults.cardElevation(0.dp)
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = "🔥 ${user.streakDays} days",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Hey ${user.name}!",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                            ),
+                            elevation = CardDefaults.cardElevation(0.dp)
+                        ) {
+                            Text(
+                                text = "🔥 ${user.streakDays} days",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Level ${user.level}",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "·",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
+                        )
+                        Text(
+                            text = "${user.currentXp} / ${user.xpToNextLevel} XP",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                        )
+                    }
+
+                    LinearProgressIndicator(
+                        progress = { xpProgress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
                     )
                 }
             }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = "Level ${user.level}",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    text = "·",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
-                )
-                Text(
-                    text = "${user.currentXp} / ${user.xpToNextLevel} XP",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
-                )
-            }
-
-            LinearProgressIndicator(
-                progress = { xpProgress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f)
-            )
         }
     }
 }
