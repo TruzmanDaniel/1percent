@@ -115,10 +115,13 @@ class GoalDetailViewModel : ViewModel() {
 
     private suspend fun recalculateGoalProgress(userId: String) {
         val goal = _uiState.value.goal ?: return
-        val missions = _uiState.value.missions
-        if (missions.isEmpty()) return
-        val completed = missions.count { userId in it.completedBy }
-        val progress = (completed * 100) / missions.size
+        val aiMissions = _uiState.value.missions.filter { it.isAiGenerated }
+        if (aiMissions.isEmpty()) return
+        val latestWeek = aiMissions.maxOf { it.weekNumber ?: 0 }
+        val currentWeekMissions = aiMissions.filter { it.weekNumber == latestWeek }
+        if (currentWeekMissions.isEmpty()) return
+        val completed = currentWeekMissions.count { userId in it.completedBy }
+        val progress = (completed * 100) / currentWeekMissions.size
         if (goal.progress != progress) {
             GoalRepository.updateGoal(goal.copy(progress = progress))
         }
@@ -201,7 +204,11 @@ class GoalDetailViewModel : ViewModel() {
         val goal = _uiState.value.goal ?: return
         val userId = SessionRepository.currentUser.value?.id ?: return
         viewModelScope.launch {
-            val completed = goal.copy(status = GoalStatus.COMPLETED, progress = 100)
+            val completed = goal.copy(
+                status = GoalStatus.COMPLETED,
+                aiRoadmapStatus = AiRoadmapStatus.NONE,
+                progress = 100
+            )
             GoalRepository.updateGoal(completed)
             XpManager.awardGoalCompletionBonus(userId, goal)
             loadGoalForUser(userId, goal.id)

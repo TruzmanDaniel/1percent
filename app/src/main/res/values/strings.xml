@@ -162,8 +162,8 @@
     <string name="goal_detail_pause_content_description">Pause</string>
     <string name="goal_detail_resume_content_description">Resume</string>
     <string name="goal_detail_complete_button">Complete goal</string>
-    <string name="goal_detail_missions_header">Missions (%1$d)</string>
-    <string name="goal_detail_no_missions">No missions yet</string>
+    <string name="goal_detail_missions_header">Misiones pendientes (%1$d)</string>
+    <string name="goal_detail_no_missions">No hay misiones pendientes</string>
     <string name="goal_detail_not_found">Goal not found</string>
     <string name="goal_detail_completed_label">COMPLETED</string>
     <string name="goal_detail_progress_label">Progress</string>
@@ -229,6 +229,9 @@
     <string name="ritual_generating_message">Preparing your next week…</string>
     <string name="ritual_complete_title">Your week is ready!</string>
     <string name="ritual_complete_view_missions">View missions</string>
+    <string name="ritual_goal_completed_title">Goal completed!</string>
+    <string name="ritual_goal_completed_message">Congratulations! You\'ve reached your goal.</string>
+    <string name="ritual_goal_completed_close">Close</string>
 
     <!-- Create Goal Card -->
     <string name="create_goal_title">Create Goal</string>

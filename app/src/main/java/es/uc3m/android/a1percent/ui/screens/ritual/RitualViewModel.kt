@@ -45,6 +45,21 @@ class RitualViewModel : ViewModel() {
                 .sumOf { it.xpAwarded ?: it.xp }
 
             val now = System.currentTimeMillis()
+
+            val deadlineReached = goal.deadline <= now + SEVEN_DAYS_MILLIS
+            val allDone = goalTasks.isNotEmpty() && completed == goalTasks.size
+            if (deadlineReached && (goal.progress >= 100 || allDone)) {
+                val completedGoal = goal.copy(
+                    status = GoalStatus.COMPLETED,
+                    aiRoadmapStatus = AiRoadmapStatus.NONE,
+                    progress = 100
+                )
+                GoalRepository.updateGoal(completedGoal)
+                XpManager.awardGoalCompletionBonus(userId, goal)
+                _uiState.update { RitualUiState(goal = goal, goalCompleted = true) }
+                return@launch
+            }
+
             val isCatchUp = (now - (goal.nextGenerationDate ?: 0)) > SEVEN_DAYS_MILLIS * 2
 
             val latestSummary = WeeklySummaryRepository.getLatestSummary(goal.id).getOrNull()
@@ -87,7 +102,7 @@ class RitualViewModel : ViewModel() {
         )
 
         val now = System.currentTimeMillis()
-        if (goal.deadline in now..(now + SEVEN_DAYS_MILLIS)) {
+        if (goal.deadline <= now + SEVEN_DAYS_MILLIS) {
             steps.add(RitualStep.DEADLINE_CHECK)
         }
 
@@ -246,6 +261,9 @@ class RitualViewModel : ViewModel() {
             }
 
             result.onFailure {
+                GoalRepository.updateGoal(updatedGoal.copy(
+                    nextGenerationDate = System.currentTimeMillis() + SEVEN_DAYS_MILLIS
+                ))
                 _uiState.update {
                     it.copy(
                         isGenerating = false,

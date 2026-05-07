@@ -109,9 +109,9 @@ class HomeViewModel : ViewModel() {
                 && goal.aiRoadmapStatus == AiRoadmapStatus.READY
                 && goal.nextGenerationDate != null
                 && now >= goal.nextGenerationDate
-        } ?: return
+        }
 
-        _uiState.update { it.copy(navigateToRitual = pendingGoal.id) }
+        _uiState.update { it.copy(navigateToRitual = pendingGoal?.id) }
     }
 
     fun onMissionsFilterToggled() {

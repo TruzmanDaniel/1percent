@@ -70,7 +70,7 @@ fun RitualScreen(
     BackHandler { onFinished() }
 
     if (uiState.goalCompleted) {
-        LaunchedEffect(Unit) { onFinished() }
+        GoalCompletedStep(goalTitle = uiState.goal?.title ?: "", onFinished = onFinished)
         return
     }
 
@@ -340,6 +340,27 @@ private fun CompleteStep(uiState: RitualUiState, onFinished: () -> Unit) {
         Spacer(Modifier.height(48.dp))
         Button(onClick = onFinished, modifier = Modifier.fillMaxWidth(0.7f)) {
             Text(stringResource(R.string.ritual_complete_view_missions))
+        }
+    }
+}
+
+@Composable
+private fun GoalCompletedStep(goalTitle: String, onFinished: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.EmojiEvents, contentDescription = null, modifier = Modifier.size(80.dp), tint = Color(0xFFFFD700))
+        Spacer(Modifier.height(24.dp))
+        Text(stringResource(R.string.ritual_goal_completed_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(8.dp))
+        Text(goalTitle, style = MaterialTheme.typography.titleLarge)
+        Spacer(Modifier.height(16.dp))
+        Text(stringResource(R.string.ritual_goal_completed_message), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(48.dp))
+        Button(onClick = onFinished, modifier = Modifier.fillMaxWidth(0.7f)) {
+            Text(stringResource(R.string.ritual_goal_completed_close))
         }
     }
 }

@@ -1,0 +1,167 @@
+<h2>Seccion 3: UI Diferenciada — Goal Cards</h2>
+<p class="subtitle">Como se ven los objetivos Finitos vs Infinitos en TargetsScreen y GoalDetailScreen</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">FINITO — "Maraton de Madrid 2027"</div>
+    <div class="mockup-body" style="background: #1a1a2e; padding: 16px; font-family: system-ui;">
+
+      <!-- Goal Card Finito -->
+      <div style="background: #16213e; border-radius: 16px; padding: 20px; color: #e0e0e0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="background: #e94560; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">FITNESS</span>
+          <span style="color: #e94560; font-size: 12px; font-weight: 600;">Semana 18 de 52</span>
+        </div>
+
+        <h3 style="color: white; margin: 8px 0 4px; font-size: 18px;">Maraton de Madrid 2027</h3>
+        <p style="color: #888; font-size: 13px; margin: 0 0 16px;">Completar la maraton en menos de 4 horas</p>
+
+        <!-- Progress Bar -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span style="font-size: 12px; color: #888;">Progreso</span>
+            <span style="font-size: 12px; color: #e94560; font-weight: 600;">35%</span>
+          </div>
+          <div style="background: #0f3460; border-radius: 8px; height: 8px; overflow: hidden;">
+            <div style="background: linear-gradient(90deg, #e94560, #ff6b6b); width: 35%; height: 100%; border-radius: 8px;"></div>
+          </div>
+        </div>
+
+        <!-- Deadline Countdown -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #0f3460;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 14px;">&#9200;</span>
+            <span style="color: #ffa500; font-size: 13px; font-weight: 500;">34 semanas restantes</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 12px; color: #888;">XP</span>
+            <span style="color: #ffd700; font-size: 14px; font-weight: 600;">250</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Header Finito -->
+      <div style="margin-top: 24px; padding: 16px; background: #0f3460; border-radius: 12px; border-left: 4px solid #e94560;">
+        <p style="color: #888; font-size: 11px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px;">Vista en GoalDetailScreen</p>
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 12px;">
+          <div>
+            <div style="color: white; font-size: 22px; font-weight: 700;">35%</div>
+            <div style="color: #888; font-size: 11px;">Progreso</div>
+          </div>
+          <div style="border-left: 1px solid #1a1a2e; padding-left: 16px;">
+            <div style="color: #ffa500; font-size: 22px; font-weight: 700;">34</div>
+            <div style="color: #888; font-size: 11px;">Semanas</div>
+          </div>
+          <div style="border-left: 1px solid #1a1a2e; padding-left: 16px;">
+            <div style="color: #e94560; font-size: 22px; font-weight: 700;">3.5</div>
+            <div style="color: #888; font-size: 11px;">Intensidad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">INFINITO — "Correr mejor"</div>
+    <div class="mockup-body" style="background: #1a1a2e; padding: 16px; font-family: system-ui;">
+
+      <!-- Goal Card Infinito -->
+      <div style="background: #16213e; border-radius: 16px; padding: 20px; color: #e0e0e0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="background: #4ecca3; color: #1a1a2e; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">FITNESS</span>
+          <span style="color: #4ecca3; font-size: 12px; font-weight: 600;">Semana 12</span>
+        </div>
+
+        <h3 style="color: white; margin: 8px 0 4px; font-size: 18px;">Correr mejor</h3>
+        <p style="color: #888; font-size: 13px; margin: 0 0 16px;">Mejorar mi resistencia y velocidad</p>
+
+        <!-- Intensity Level (replaces progress bar) -->
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <span style="font-size: 12px; color: #888;">Nivel de Intensidad</span>
+              <div style="display: flex; align-items: baseline; gap: 4px; margin-top: 4px;">
+                <span style="color: #4ecca3; font-size: 28px; font-weight: 700;">3.5</span>
+                <span style="color: #4ecca3; font-size: 14px;">/10</span>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 12px; color: #888;">Racha</span>
+              <div style="margin-top: 4px;">
+                <span style="font-size: 24px;">&#128293;</span>
+                <span style="color: #ffd700; font-size: 18px; font-weight: 700;">12 sem</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Milestone -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #0f3460;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 14px;">&#127942;</span>
+            <span style="color: #888; font-size: 13px;">Proximo hito: <span style="color: #ffd700; font-weight: 500;">26 semanas</span></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 12px; color: #888;">XP</span>
+            <span style="color: #ffd700; font-size: 14px; font-weight: 600;">180</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail Header Infinito -->
+      <div style="margin-top: 24px; padding: 16px; background: #0f3460; border-radius: 12px; border-left: 4px solid #4ecca3;">
+        <p style="color: #888; font-size: 11px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 1px;">Vista en GoalDetailScreen</p>
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 12px;">
+          <div>
+            <div style="color: #4ecca3; font-size: 22px; font-weight: 700;">3.5</div>
+            <div style="color: #888; font-size: 11px;">Nivel</div>
+          </div>
+          <div style="border-left: 1px solid #1a1a2e; padding-left: 16px;">
+            <div style="font-size: 20px;">&#128293;</div>
+            <div style="color: #ffd700; font-size: 11px;">12 sem</div>
+          </div>
+          <div style="border-left: 1px solid #1a1a2e; padding-left: 16px;">
+            <div style="color: white; font-size: 22px; font-weight: 700;">87</div>
+            <div style="color: #888; font-size: 11px;">Misiones</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 24px;">
+  <h3>Diferencias clave</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Finito</h4>
+      <ul>
+        <li>Barra de progreso 0-100%</li>
+        <li>Cuenta atras: "X semanas restantes"</li>
+        <li>"Semana X de Y" (contexto temporal)</li>
+        <li>Stats: Progreso + Semanas + Intensidad</li>
+        <li>Color accent: rojo/naranja (urgencia)</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Infinito</h4>
+      <ul>
+        <li>Nivel de Intensidad grande (X/10)</li>
+        <li>Contador de racha semanal con fuego</li>
+        <li>"Semana X" (sin tope)</li>
+        <li>Stats: Nivel + Racha + Misiones totales</li>
+        <li>Color accent: verde/teal (constancia)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 16px;">
+  <h3>Contexto temporal en ambas pantallas</h3>
+  <p>Tanto TargetsScreen (en la card) como GoalDetailScreen (en el header) mostraran:</p>
+  <ul style="color: #ccc; line-height: 1.8;">
+    <li><strong>Finitos:</strong> "Semana 18 de 52" + indicador de dias hasta la proxima Mision Epica</li>
+    <li><strong>Infinitos:</strong> "Semana 12" + indicador de dias hasta la proxima Mision Epica</li>
+    <li>El indicador de Epica es comun a ambos tipos (ej. "Epica en 3 dias")</li>
+  </ul>
+</div>

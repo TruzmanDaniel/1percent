@@ -65,7 +65,8 @@ fun GoalDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val goal = uiState.goal
-    val missions = uiState.missions
+    val currentUserId = SessionRepository.currentUser.value?.id ?: ""
+    val pendingMissions = uiState.missions.filter { currentUserId !in it.completedBy }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.snackbarMessage) {
@@ -130,20 +131,20 @@ fun GoalDetailScreen(
                     }
                 }
 
-                if (missions.isNotEmpty()) {
+                if (pendingMissions.isNotEmpty()) {
                     item {
                         Text(
-                            text = stringResource(R.string.goal_detail_missions_header, missions.size),
+                            text = stringResource(R.string.goal_detail_missions_header, pendingMissions.size),
                             style = MaterialTheme.typography.titleMedium
                         )
                     }
 
-                    items(items = missions, key = { it.id }) { mission ->
+                    items(items = pendingMissions, key = { it.id }) { mission ->
                         TaskRowWithActions(
                             task = mission,
                             parentGoalTitle = goal.title,
                             friends = uiState.friends,
-                            currentUserId = SessionRepository.currentUser.value?.id ?: "",
+                            currentUserId = currentUserId,
                             currentUserProfile = SessionRepository.currentUser.value,
                             onTaskDetail = { viewModel.onMissionClicked(mission) },
                             onTaskComplete = { viewModel.onTaskComplete(mission.id) },
