@@ -29,7 +29,21 @@ class ProfileViewModel : ViewModel() {
         }
 
         if (userId == null || userId == "placeholder" || userId == sessionUser.id) {
-            _uiState.update { it.copy(user = sessionUser, isOwnProfile = true, relationshipStatus = null, relationship = null, currentUserId = sessionUser.id) }
+            // Observe the session user StateFlow so changes (e.g. vacation mode toggle)
+            // are immediately reflected in the Profile UI.
+            userObserverJob = viewModelScope.launch {
+                SessionRepository.currentUser.collect { current ->
+                    _uiState.update {
+                        it.copy(
+                            user = current,
+                            isOwnProfile = true,
+                            relationshipStatus = null,
+                            relationship = null,
+                            currentUserId = current?.id ?: sessionUser.id
+                        )
+                    }
+                }
+            }
         } else {
             userObserverJob = UserRepository.allUsers
                 .onEach { users ->
