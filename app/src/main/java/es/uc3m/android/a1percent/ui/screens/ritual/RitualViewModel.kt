@@ -149,6 +149,7 @@ class RitualViewModel : ViewModel() {
         viewModelScope.launch {
             val completedGoal = goal.copy(
                 status = GoalStatus.COMPLETED,
+                aiRoadmapStatus = AiRoadmapStatus.NONE,
                 progress = 100
             )
             GoalRepository.updateGoal(completedGoal)
@@ -166,6 +167,7 @@ class RitualViewModel : ViewModel() {
     }
 
     fun onStartGeneration() {
+        if (_uiState.value.isGenerating || _uiState.value.generationComplete) return
         val goal = _uiState.value.goal ?: return
         val userId = SessionRepository.currentUser.value?.id ?: return
         val feedback = _uiState.value.selectedFeedback ?: return
@@ -194,10 +196,6 @@ class RitualViewModel : ViewModel() {
                 if (_uiState.value.epicMissionPassed) {
                     XpManager.awardEpicWeeklyBonus(userId, goal)
                 }
-
-                val totalWeeks = ((goal.deadline - goal.createdAt) / SEVEN_DAYS_MILLIS).toInt().coerceAtLeast(1)
-                val newProgress = ((weekNumber * 100) / totalWeeks).coerceIn(0, 100)
-                GoalRepository.updateGoal(goal.copy(progress = newProgress))
             }
 
             var updatedGoal = goal.copy(currentIntensity = newIntensity)
@@ -233,7 +231,8 @@ class RitualViewModel : ViewModel() {
                 TaskRespository.saveTaskBatch(userId, tasks.map { it.copy(goalId = goal.id) })
 
                 val finalGoal = updatedGoal.copy(
-                    nextGenerationDate = System.currentTimeMillis() + SEVEN_DAYS_MILLIS
+                    nextGenerationDate = System.currentTimeMillis() + SEVEN_DAYS_MILLIS,
+                    progress = 0
                 )
                 GoalRepository.updateGoal(finalGoal)
 

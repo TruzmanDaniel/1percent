@@ -88,8 +88,8 @@ fun RitualScreen(
                     (slideOutHorizontally { -it } + fadeOut())
             },
             label = "RitualStep"
-        ) { _ ->
-            when (uiState.currentStep) {
+        ) { targetIndex ->
+            when (uiState.visibleSteps.getOrNull(targetIndex)) {
                 RitualStep.SUMMARY -> SummaryStep(uiState, onNext = viewModel::onNextStep)
                 RitualStep.EPIC_RESULT -> EpicResultStep(uiState, onNext = viewModel::onNextStep)
                 RitualStep.DEADLINE_CHECK -> DeadlineCheckStep(

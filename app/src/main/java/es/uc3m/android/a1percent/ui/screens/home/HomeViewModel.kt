@@ -15,6 +15,7 @@ import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.TaskDeadline
 import es.uc3m.android.a1percent.data.model.UserProfile
 import es.uc3m.android.a1percent.data.model.enums.AiRoadmapStatus
+import es.uc3m.android.a1percent.data.model.enums.GoalStatus
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -104,7 +105,8 @@ class HomeViewModel : ViewModel() {
         val now = System.currentTimeMillis()
 
         val pendingGoal = goals.firstOrNull { goal ->
-            goal.aiRoadmapStatus == AiRoadmapStatus.READY
+            goal.status == GoalStatus.ACTIVE
+                && goal.aiRoadmapStatus == AiRoadmapStatus.READY
                 && goal.nextGenerationDate != null
                 && now >= goal.nextGenerationDate
         } ?: return
@@ -174,10 +176,13 @@ class HomeViewModel : ViewModel() {
 
     private suspend fun recalculateGoalProgress(goalId: String, userId: String) {
         val allTasks = _uiState.value.tasks
-        val goalTasks = allTasks.filter { it.goalId == goalId }
+        val goalTasks = allTasks.filter { it.goalId == goalId && it.isAiGenerated }
         if (goalTasks.isEmpty()) return
-        val completed = goalTasks.count { userId in it.completedBy }
-        val progress = (completed * 100) / goalTasks.size
+        val latestWeek = goalTasks.maxOf { it.weekNumber ?: 0 }
+        val currentWeekTasks = goalTasks.filter { it.weekNumber == latestWeek }
+        if (currentWeekTasks.isEmpty()) return
+        val completed = currentWeekTasks.count { userId in it.completedBy }
+        val progress = (completed * 100) / currentWeekTasks.size
         val goal = _uiState.value.goals.find { it.id == goalId } ?: return
         if (goal.progress != progress) {
             GoalRepository.updateGoal(goal.copy(progress = progress))
