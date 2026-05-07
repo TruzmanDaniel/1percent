@@ -1,11 +1,11 @@
 package es.uc3m.android.a1percent.data.ai
 
-import es.uc3m.android.a1percent.BuildConfig
-import es.uc3m.android.a1percent.data.CreditManager
+import com.google.firebase.auth.FirebaseAuth
 import es.uc3m.android.a1percent.data.model.Goal
 import es.uc3m.android.a1percent.data.model.Task
 import es.uc3m.android.a1percent.data.model.WeeklySummary
 import es.uc3m.android.a1percent.data.model.weeksRemaining
+import kotlinx.coroutines.tasks.await
 import kotlinx.serialization.json.Json
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -15,12 +15,12 @@ import retrofit2.http.POST
 
 object AICoachService {
 
-    private val openAIApi by lazy {
+    private val cloudFunctionApi by lazy {
         Retrofit.Builder()
-            .baseUrl("https://api.openai.com/")
+            .baseUrl("https://us-central1-uc3m-it-2026-16504-g04-96.cloudfunctions.net/app/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(OpenAIApi::class.java)
+            .create(CloudFunctionApi::class.java)
     }
 
     private val json = Json {
@@ -34,28 +34,23 @@ object AICoachService {
         weeklySummary: WeeklySummary?,
         isWeekend: Boolean,
         userFeedback: String?,
-        userId: String,
         weekNumber: Int,
         isDeadlineWeek: Boolean = false
-    ): Result<List<Task>> {
-        val creditResult = CreditManager.deductCredit(userId)
-        if (creditResult.isFailure) {
-            return Result.failure(creditResult.exceptionOrNull()!!)
-        }
-
+    ): Result<AiGenerationResult> {
         return try {
+            val idToken = FirebaseAuth.getInstance().currentUser
+                ?.getIdToken(false)?.await()?.token
+                ?: throw IllegalStateException("User not authenticated")
+
             val prompt = buildPrompt(goal, weeklySummary, isWeekend, userFeedback, isDeadlineWeek)
-            val request = ChatCompletionRequest(
-                model = "gpt-4o-mini",
-                messages = listOf(ChatMessage(role = "user", content = prompt))
-            )
-            val response = openAIApi.createChatCompletion(
-                authorization = "Bearer ${BuildConfig.OPENAI_API_KEY}",
+            val request = GenerateMissionsRequest(prompt = prompt)
+            val response = cloudFunctionApi.generateMissions(
+                authorization = "Bearer $idToken",
                 request = request
             )
-            val text = response.choices.firstOrNull()?.message?.content
-                ?: throw IllegalStateException("Empty AI response")
-            val cleanJson = text.trim().removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
+
+            val cleanJson = response.content.trim()
+                .removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
             val parsed = json.decodeFromString<AiTaskListResponse>(cleanJson)
 
             if (parsed.tasks.isEmpty()) {
@@ -63,9 +58,8 @@ object AICoachService {
             }
 
             val tasks = parsed.tasks.map { it.toTask(goal.id, weekNumber, goal.category) }
-            Result.success(tasks)
+            Result.success(AiGenerationResult(tasks = tasks, availableCredits = response.availableCredits))
         } catch (e: Exception) {
-            CreditManager.refundCredit(userId)
             Result.failure(e)
         }
     }
@@ -232,29 +226,24 @@ object AICoachService {
     }
 }
 
-private interface OpenAIApi {
-    @POST("v1/chat/completions")
-    suspend fun createChatCompletion(
+private interface CloudFunctionApi {
+    @POST("generate-missions")
+    suspend fun generateMissions(
         @Header("Authorization") authorization: String,
-        @Body request: ChatCompletionRequest
-    ): ChatCompletionResponse
+        @Body request: GenerateMissionsRequest
+    ): GenerateMissionsResponse
 }
 
-private data class ChatCompletionRequest(
-    val model: String,
-    val messages: List<ChatMessage>,
-    val temperature: Double = 0.7
+private data class GenerateMissionsRequest(
+    val prompt: String
 )
 
-private data class ChatMessage(
-    val role: String,
-    val content: String
+private data class GenerateMissionsResponse(
+    val content: String,
+    val availableCredits: Int
 )
 
-private data class ChatCompletionResponse(
-    val choices: List<Choice>
-)
-
-private data class Choice(
-    val message: ChatMessage
+data class AiGenerationResult(
+    val tasks: List<Task>,
+    val availableCredits: Int
 )
