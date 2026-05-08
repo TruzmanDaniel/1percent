@@ -94,7 +94,7 @@
     <!-- Home Screen -->
     <string name="home_focus_mode_label">Focus mode</string>
     <string name="home_vacation_mode_active">Vacation Mode active</string>
-    <string name="home_today_missions">Today\'s missions</string>
+    <string name="home_today_missions">Coming Up</string>
     <string name="home_disable_focus_mode">Disable focus mode</string>
     <string name="home_enable_focus_mode">Enable focus mode</string>
     <string name="home_no_tasks_today">No tasks for today</string>
